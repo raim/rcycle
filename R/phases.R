@@ -10,27 +10,28 @@
 
 
 
-## return the rank of an angle in radian ' returns the rank of a phase
-#angle in circular coordinates
+## return the rank of an angle in radian
+
+#' Returns the rank of a phase angle in circular coordinates.
 #' @param align align the original phase angle and the rank phase
 #'     angle at phase 0.
 #' @param shift shift the aligned phase angle such that all phases are
 #'     in -pi:pi, using \link{phase_align}.
 #' @export
-phase_rank <- function(phi, align=TRUE, shift=TRUE) {
+phase_rank <- function(theta, align=TRUE, shift=TRUE) {
 
-    rnk <- rank(phi)
+    phi <- rank(theta)
     
     ## norm rank between -pi and pi
-    rnk <- 2*pi* rnk/max(rnk) - pi
+    phi <- 2*pi* phi/max(phi) - pi
 
     ## align at phase 0
-    if ( align ) rnk <- phase_align(rnk, target=phi, shift=shift)
+    if ( align ) phi <- phase_align(phi, target=theta, shift=shift)
 
-    rnk
+    phi
 }
 
-#' align to phase vectors at 0
+#' Align two phase vectors at 0.
 #' @export
 phase_align <- function(phi, target, shift=TRUE) {
 
@@ -39,31 +40,85 @@ phase_align <- function(phi, target, shift=TRUE) {
 
 }
 
+## simple circular interpolation
+## TODO: better use approxfun.circular?
+approx_phase <- function(x, y, xout, ...) {
+
+    if ( any(xout > max(x+2*pi) ) | any(xout < min(x-2*pi)) )
+        stop('xout of range')
+    
+    x <- c(x-2*pi, x, x+2*pi)
+    y <- rep(y, 3)
+    approx(x=x, y=y, xout=xout, ...)
+}
+
+
+revert <- function(phases, verb=1) {
+
+    pca <- attr(phases, 'pca')
+    
+    rphase <- revert_phase(phi=pca$x$phase)
+    
+    if ( rphase ) {
+        if ( verb>0 )
+            cat(paste("\treverting phases\n"))
+
+        ## cells
+        pca$rotation$angle <- -pca$rotation$angle
+        pca$rotation$phase <- -pca$rotation$phase
+        pca$rotation$order <- order(pca$rotation$phase)
+
+        ## cohorts
+        pca$x$angle <- -pca$x$angle
+        pca$x$phase <- -pca$x$phase
+        pca$x$order <- order(pca$x$phase)
+        
+        attr(phases, 'pca') <- pca
+    }
+    phases    
+}
+
+segments <- function(phases, plot=TRUE, verb=1) {
+
+    pca <- attr(phases, 'pca')
+    
+    phi   <- pca$rotation$phase
+    theta <- pca$rotation$angle
+
+
+    
+}
+
+shift <- function(phases, dphi) {}
+classify <- function(phases) {}
+
 ## TODO: * expancd prcomp class instead of defining an new class!  *
 ## better way to reverse, * validate directly by comparing to row
 ## order of state,
+
 #' get the pseudophase from a cohort state matrix
 #' @param state a cohort expression state table, with cohort mean
 #'     counts as rows and cells as columns.
 #' @export
-get_pseudophase <- function(state,
+get_pseudophase <- function(states,
                             center, revert.phase=FALSE, window=.05,
                             segments=FALSE, spar=1e-3,
                             classify=FALSE, validate=FALSE,
+                            ##use.states=FALSE,
                             add.loadings=TRUE, # required for PCA plots
                             row.center=TRUE,  # required: rm option?
                             verb=1) {
 
-    cstate <- state
+    cstates <- states
     
     ## ROW-CENTERING cohorts
     if ( row.center )
-        cstate <- cstate - apply(cstate,1,mean) 
+        cstates <- cstates - apply(cstates,1,mean) 
         
     ## PCA of cells
     ## scale: bring to unit variance and do COLUMN-CENTERING
-    ## equiv to eigen(cor(cstate))
-    pca <- prcomp(cstate, scale.=TRUE) 
+    ## equiv to eigen(cor(cstates))
+    pca <- prcomp(cstates, scale.=TRUE) 
 
 
     ## CELL PSEUDOPHASE from loadings of PC1 vs. PC2
@@ -71,12 +126,12 @@ get_pseudophase <- function(state,
     Y <- pca$rotation[,2]
 
     ## get cell phase angle
-    atn <- atan2(Y, X)
+    theta <- atan2(Y, X)
     amp <- sqrt(Y^2 + X^2)
 
-    ## scaled phase: order in radian
+    ## phase: rank(theta) in radian
     ## aligned at 0
-    phase <- phase_rank(atn, align=TRUE, shift=TRUE)
+    phi <- phase_rank(theta, align=TRUE, shift=TRUE)
 
     
     ## COHORT PSEUDOPHASE
@@ -84,9 +139,15 @@ get_pseudophase <- function(state,
     cY <- pca$x[,2]
 
     ## get cohort phase angle
-    catn <- atan2(cY, cX)
+    ctheta <- atan2(cY, cX)
     camp <- sqrt(cY^2 + cX^2)
 
+    ## interpolate to cell rank phase
+    ## TODO: ends, currently dirty via rule=2; how can this be done better?
+    ## use circular approx: approxfun.circular
+    cphi <- approx_phase(x=theta, y=phi, xout=ctheta)$y
+    
+     
 
     ## FURTHER PROCESS PHASES
     
@@ -94,69 +155,72 @@ get_pseudophase <- function(state,
     if ( !missing(center) ) {
 
         ## centering based on center cohort maximal expression
-        ph0 <- state_phase(state=cstate, phase=atn, center=center,
+        dph <- state_phase(states=cstates, phase=theta, center=center,
                            window=window, verb=verb)
     
         ## centering based on cohort phase angle
         ## appears to work WORSE than centering based on cohort expression;
         ## TODO: test different centerings/sortings in comparison
         if ( FALSE ) 
-            ph0 <- catn[which(rownames(cstate)==center)]
+            dph <- ctheta[which(rownames(cstates)==center)]
         
         if ( verb>0 )
-            cat(paste("phase shift by", round(ph0,3), "\n"))
+            cat(paste("phase shift by", round(dph,3), "\n"))
 
         ## cell phase shift
-        atn <- phase_shift(atn, ph0, shift=TRUE)
+        theta <- phase_shift(theta, dph, shift=TRUE)
 
         ## re-calculate rank phase
-        phase <- phase_rank(atn, align=TRUE, shift=TRUE)
+        phi <- phase_rank(theta, align=TRUE, shift=TRUE)
 
         ## cohort phase shift
-        catn <- phase_shift(catn, ph0, shift=TRUE)
+        ctheta <- phase_shift(ctheta, dph, shift=TRUE)
+        cphi <- phase_shift(cphi, dph, shift=TRUE)
     }
 
     
     ## reverse phases if necessary
     if ( revert.phase ) {
-        rphase <- revert_phases(state, phase=phase,
-                                window=window, verb=verb)
+        
+        ##rphase2 <- revert_phase_state(phi=phi, states=state,  window=window)
+        rphase <- revert_phase(phi=cphi)#, states=state,  window=window)
+
+        ##if ( rphase!=rphase2 ) warning('orderings differ', rphase, rphase2)
+        
         if ( rphase ) {
             if ( verb>0 )
                 cat(paste("\treverting phases\n"))
-            atn <- -atn
-            phase <- -phase
+            theta <- -theta
+            phi <- -phi
 
-            catn <- -catn
+            ctheta <- -ctheta
+            cphi <- -cphi
         }
     }
 
-    ## TODO: REMOVE JUMPS ALREADY HERE?
-    ## and avoid downstream; problem:
-    ##atn[order(phase)] <- remove_jumps(atn[order(phase)], shift=FALSE, verb=verb)
    
     ## validate if state order (rows) is reproduced by phase order
     sord <- NULL
     if ( validate ) {
 
-        sord <- get_state_order(state[, order(phase)],
+        sord <- get_state_order(states=states[, order(phi)],
                                 window=window, names=TRUE)
-        ldst <- state_order_distance(reference=rownames(state),
+        ldst <- state_order_distance(reference=rownames(states),
                                      test=sord)
         if ( verb>0 )
             cat(paste("Levensthein order distance:", ldst, "\n"))
     }
 
     ## cohort ordering
-    ord <- order(phase)
+    ord <- order(phi)
 
     ## collect results
-    res <- data.frame(order=ord, phase=phase, amplitude=amp, angle=atn)
+    res <- data.frame(order=ord, phase=phi, amplitude=amp, angle=theta)
 
 
     ## add simple classification via max of log2 ratio
     if ( classify ) {
-        cls <- get_classes(state=state)
+        cls <- get_classes(states=states)
         res <- cbind(res, class=cls)
     }
 
@@ -186,21 +250,46 @@ get_pseudophase <- function(state,
 
     ## add eigenvalues as attributes
     ## NOTE: "% variance explained" is eigenvalues/sum(eigenvalues)
-    names(pca$sdev) <- paste0("PC",1:length(pca$sdev))
-    attr(res, "eigenvalues") <- pca$sdev^2
+    evals <- pca$sdev
+    names(evals) <- paste0("PC",1:length(evals))
+    attr(res, "eigenvalues") <- evals^2
 
     ## add cohorts
     ## get order phase via approx!
     ## TODO: ends, currently dirty via rule=2; how can this be done better?
     ## use circular approx: approxfun.circular
-    cphase <- approx(x=atn, y=phase, xout=catn, rule=2)$y
-    attr(res, "cohorts") <- data.frame(phase=cphase, amp=camp,
-                                       angle=catn, pca$x)
+    ##cphi <- approx(x=theta, y=phi, xout=ctheta, rule=2)$y
+    attr(res, "cohorts") <- data.frame(phase=cphi, amp=camp,
+                                       angle=ctheta, pca$x)
 
     ## add order as attribute
     if ( !is.null(sord) ) {
         attr(res, "order") <- sord    
         attr(res, "distance") <- ldst
+    }
+
+
+   ## TODO: extent PCA class instead of defining new class
+    if ( TRUE ) {
+        
+        pca$rotation <- cbind.data.frame(order=order(phi),
+                                         phase=phi,
+                                         angle=theta,
+                                         amplitude=amp, 
+                                         pca$rotation)
+        pca$x <- cbind.data.frame(order=order(cphi),
+                                  phase=cphi,
+                                  angle=ctheta,
+                                  amp=camp,
+                                  pca$x)
+        ## add % var explained
+        pca$variance <- pca$sdev^2
+        pca$variance <- pca$variance/sum(pca$variance)
+
+        ## extent PCA class
+        class(pca) <- append("phases", class(pca))
+        ## for now add as attribute until everything works
+        attr(res, 'pca') <- pca
     }
 
     ## DEFINE A CLASS 
@@ -211,12 +300,12 @@ get_pseudophase <- function(state,
 
 #' Classify cells by maximal state log2 fold change.
 #' @export
-get_classes <- function(state) {
+get_classes <- function(states) {
 
-    cls <- row.names(state)
+    cls <- row.names(states)
 
     ## cohort log2 fold change over mean
-    nrm <- log2(state/apply(state,1,mean))
+    nrm <- log2(states/apply(states,1,mean))
 
     ## for each cell get cohort with maximal fold change
     ccls <- apply(nrm, 2, function(x) {
@@ -227,11 +316,24 @@ get_classes <- function(state) {
     cls[ccls]
 }
 
+#' Establish whether the phases should be reverted wrt state order.
+#' @export
+revert_phase <- function(phi, states, ...) {
+
+    ## use state maxima-based approach
+    if ( !missing(states) )
+        revert_phase_state(states=states, phi=phi, ...)
+    
+    
+    ord <- diff(order(phi))
+    return(sum(diff(rev(ord))<0) <= sum(diff(ord)<0))
+
+}
 
 ## TODO: avoid states, only do on PC1/2 angles
 #' Establish whether the phases should be reverted wrt state order.
 #' @export
-revert_phases <- function(state, phase, window=.05, verb=1) {
+revert_phase_state <- function(states, phi, window=.05) {
 
     ## reverse order if most are negative
     ## NOTE: this relies on state matrix row order reflecting actual order!
@@ -242,7 +344,7 @@ revert_phases <- function(state, phase, window=.05, verb=1) {
     ##       to fully validate we need to account for circular data
     ##idx <- order(nord)
 
-    idx <- get_state_order(state[, order(phase)], window=window)
+    idx <- get_state_order(states=states[, order(phi)], window=window)
 
 
     ## return IF phases should be reverted
@@ -255,9 +357,9 @@ revert_phases <- function(state, phase, window=.05, verb=1) {
     ##if ( sum(diff(rev(idx))<0) <= sum(diff(idx)<0) ) {
     ##    if ( verb>0 )
     ##        cat(paste("reversing phases\n"))
-    ##    phase <- -phase
+    ##    phi <- -phi
     ##}
-    ##phase
+    ##phi
 }
 
 
@@ -269,7 +371,7 @@ state_order_distance <- function(state, test, reference,  ...) {
 
     ## NOTE: either test string or state matrix is required
     if ( missing(test) )
-        test <-  get_state_order(state, ...)
+        test <-  get_state_order(states=state, ...)
     if ( missing(reference) )
         reference <- rownames(state)
 
@@ -308,17 +410,17 @@ state_order_distance <- function(state, test, reference,  ...) {
 ## NOTE: CELLS (state columns) MUST BE ORDERED!
 #' Get the order of states (rows of the cohort state matrix).
 #' @export
-get_state_order <- function(state, window=.05,
+get_state_order <- function(states, window=.05,
                             sides=2, circular=TRUE, names=FALSE) {
 
     ## window size for moving average, default: 5% of cells
-    n <- ncol(state)*window
+    n <- ncol(states)*window
     
     ## find maxima of a moving average for each cohort (state row)
-    nord <- rep(NA, nrow(state))
-    for ( k in 1:nrow(state) ) {
+    nord <- rep(NA, nrow(states))
+    for ( k in 1:nrow(states) ) {
         
-        mavg <- stats::filter(state[k, ], rep(1/n, n),
+        mavg <- stats::filter(states[k, ], rep(1/n, n),
                               sides=sides, circular=circular)
         nord[k] <- which.max(mavg)
 
@@ -329,16 +431,11 @@ get_state_order <- function(state, window=.05,
 
     ## return state names instead of row order
     if ( names )
-        idx <- rownames(state)[idx]
+        idx <- rownames(states)[idx]
 
     idx
 }
 
-
-get_phase <- function(phases) {
-
-
-}
 
 ## re-order:
 ## center and revert, assuming that rows in the state matrix reflect order,
@@ -349,22 +446,26 @@ get_phase <- function(phases) {
 
 #' Get the phase of a cohort state.
 #' @export
-state_phase <- function(state, phase, center, window=0.05, verb=0) {
+state_phase <- function(states, phase, center, window=0.05, verb=0) {
 
     
-    n <- ncol(state)*window # window size: default 5% of all cells
+    n <- ncol(states)*window # window size: default 5% of all cells
     ord <- order(phase) 
     
     ## get state to center 0: the peak of this state
     if ( is.character(center) )
-        center <- which(rownames(state)==center)
+        center <- which(rownames(states)==center)
     
     ## get peak cell of expression for each cohort
     ## of a moving average over phase-sorted cells
-    nord <- rep(NA, nrow(state))
-    for ( k in 1:nrow(state) ) {
-        mavg <- ma(state[k, ord], n=n, circular=TRUE)
+    nord <- rep(NA, nrow(states))
+    for ( k in 1:nrow(states) ) {
+
+        ## TODO: align with direct filter use and sides option
+        ##       in get_state_order
+        mavg <- ma(states[k, ord], n=n, circular=TRUE)
         nord[k] <- which.max(mavg)
+        
     }
     
     ## get phase where cohort `center` has it's moving average peak
@@ -378,7 +479,7 @@ state_phase <- function(state, phase, center, window=0.05, verb=0) {
 
 #' Shift all phases in a phase object.
 #' @export
-shift_phases <- function(phases, dph, shift=TRUE, verb=0) {
+shift_phase <- function(phases, dph, shift=TRUE, verb=0) {
 
     ## cell phases
     if ( verb>0 ) cat(paste("shift cell phases\n"))

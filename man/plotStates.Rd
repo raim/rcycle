@@ -16,7 +16,7 @@ plotStates(
   sid = "",
   legend = TRUE,
   leg.nrow = 1,
-  xlab,
+  xlab = expression(pseudophase * phi),
   ylab,
   ...
 )
