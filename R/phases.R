@@ -51,8 +51,7 @@ get_pseudophase <- function(state,
                             segments=FALSE, spar=1e-3,
                             classify=FALSE, validate=FALSE,
                             add.loadings=TRUE, # required for PCA plots
-                            unit=FALSE, # convert PC1/2 to unit circle: remove
-                            row.center=TRUE,  # required: rm option
+                            row.center=TRUE,  # required: rm option?
                             verb=1) {
 
     cstate <- state
@@ -66,31 +65,30 @@ get_pseudophase <- function(state,
     ## equiv to eigen(cor(cstate))
     pca <- prcomp(cstate, scale.=TRUE) 
 
-    ## TODO: skip, this is better handled by order(phi)
-    if ( unit ) 
-        pca$rotation <- apply(pca$rotation, 2, minmax)*2 -1
 
     ## CELL PSEUDOPHASE from loadings of PC1 vs. PC2
     X <- pca$rotation[,1]
     Y <- pca$rotation[,2]
 
-    ## get phase angle
+    ## get cell phase angle
     atn <- atan2(Y, X)
     amp <- sqrt(Y^2 + X^2)
 
     ## scaled phase: order in radian
     ## aligned at 0
-    phase <- phase_rank(atn)
+    phase <- phase_rank(atn, align=TRUE, shift=TRUE)
 
     
     ## COHORT PSEUDOPHASE
     cX <- pca$x[,1]
     cY <- pca$x[,2]
+
+    ## get cohort phase angle
     catn <- atan2(cY, cX)
     camp <- sqrt(cY^2 + cX^2)
 
 
-    ## FURTHER PROCESS PHASES:
+    ## FURTHER PROCESS PHASES
     
     ## phase shift to center at a selected cohort
     if ( !missing(center) ) {

@@ -3,13 +3,56 @@
 ## plot state time series along phase
 ## TODO: why is the moving average in some cases, Urea, below the curve?
 
+#' Plot genes of interest time series
+#' @export
+plotGOI <- function(phases, counts, goi, names, col,
+                    win=.05,
+                    xlab=expression(pseudophase*phi),
+                    ylab="mov. avg. of counts/total") {
+
+    ## phase
+    phs <- phases[,"phase"]
+    pord <- order(phs)
+
+    if ( missing(col) )
+        col <- 1:length(goi)
+
+    if ( missing(names) )
+        names <- rownames(counts)[goi]
+    
+    ## moving average
+    Ncells <- ncol(counts)*win 
+
+    pho <- apply(counts[goi, pord], 1, ma,  n=Ncells, circular=TRUE)
+
+    
+    matplot(x=phs[pord], pho, col=col, type="l", lty=1, axes=FALSE,
+            xlab=xlab, ylab=ylab)
+    
+    legend("topright", names, 
+           col=col, lty=1, lwd=2, bg="#ffffff99",
+           box.col=NA, inset=c(-.1,-.1), xpd=TRUE, y.intersp=.7,
+           seg.len=.7, cex=.8)
+    
+    circ.axis(1)
+    axis(2)
+
+}
+
+## TODO:
+## * fuse plotStates and plotGOI, and align with segmenTools::plotClusters
+##   and clusterAverage
+## * polygon or 'each' style,
+## * polygon: moving average +/- quantiles, sd, etc.
+
 #' Plot cohort state time series.
 #' @export
 plotStates <- function(phases, states, xtype="phase",
                        cls.srt, cls.col,
                        win=.01, norm=FALSE, lines=TRUE,
                        sid="", legend=TRUE, leg.nrow=1,
-                       xlab, ylab, ...) {
+                       xlab=expression(pseudophase*phi),
+                       ylab, ...) {
 
     ## phases can be a numeric vector of x-values
     ## or the object returned by get_pseudophase
@@ -20,7 +63,7 @@ plotStates <- function(phases, states, xtype="phase",
     ord <- order(phase)
 
     if ( norm )    
-        states <- log2(states/apply(states,1,mean))
+        states <- log2(states/apply(states, 1, mean))
 
     
     if ( missing(cls.srt) )
@@ -33,13 +76,10 @@ plotStates <- function(phases, states, xtype="phase",
     tlim <- c(states[cls.srt,])
     tlim <- range(tlim[is.finite(tlim)],na.rm=TRUE)
 
-    if ( missing(xlab) )
-        xlab <- expression(phi)
     if ( missing(ylab) )
         ylab <- ifelse(norm, expression(log[2](sample/mean)),
                        expression(mean~counts))
 
-    xlim <- c(-pi,pi)
     xlim <- range(phase)
     
     plot(1, xlim=xlim, ylim=tlim, col=NA,
