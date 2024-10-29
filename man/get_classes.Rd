@@ -4,7 +4,7 @@
 \alias{get_classes}
 \title{Classify cells by maximal state log2 fold change.}
 \usage{
-get_classes(state)
+get_classes(states)
 }
 \description{
 Classify cells by maximal state log2 fold change.

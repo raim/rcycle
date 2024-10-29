@@ -5,7 +5,7 @@
 \title{Get the order of states (rows of the cohort state matrix).}
 \usage{
 get_state_order(
-  state,
+  states,
   window = 0.05,
   sides = 2,
   circular = TRUE,

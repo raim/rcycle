@@ -2,10 +2,10 @@
 % Please edit documentation in R/phases.R
 \name{phase_align}
 \alias{phase_align}
-\title{align to phase vectors at 0}
+\title{Align two phase vectors at 0.}
 \usage{
 phase_align(phi, target, shift = TRUE)
 }
 \description{
-align to phase vectors at 0
+Align two phase vectors at 0.
 }

@@ -4,7 +4,7 @@
 \alias{phase_rank}
 \title{Returns the rank of a phase angle in circular coordinates.}
 \usage{
-phase_rank(phi, align = TRUE, shift = TRUE)
+phase_rank(theta, align = TRUE, shift = TRUE)
 }
 \arguments{
 \item{align}{align the original phase angle and the rank phase

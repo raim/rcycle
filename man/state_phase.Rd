@@ -4,7 +4,7 @@
 \alias{state_phase}
 \title{Get the phase of a cohort state.}
 \usage{
-state_phase(state, phase, center, window = 0.05, verb = 0)
+state_phase(states, phase, center, window = 0.05, verb = 0)
 }
 \description{
 Get the phase of a cohort state.

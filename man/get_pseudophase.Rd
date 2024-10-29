@@ -5,7 +5,7 @@
 \title{get the pseudophase from a cohort state matrix}
 \usage{
 get_pseudophase(
-  state,
+  states,
   center,
   revert.phase = FALSE,
   window = 0.05,
