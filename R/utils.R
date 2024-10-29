@@ -8,8 +8,7 @@ minmax <- function(x, ...) (x-min(x, ...))/(max(x, ...)-min(x, ...))
 ## moving average, from segmenTools
 ## TODO: also calculate quantiles, sd, etc, for each point,
 ## see segmenTools::clusterAverages
-ma <- function (x, n = 5, circular = FALSE) 
-{
+ma <- function (x, n = 5, circular = FALSE) {
     stats::filter(x, rep(1/n, n), sides = 2, circular = circular)
 }
 
