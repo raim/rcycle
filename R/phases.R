@@ -53,6 +53,15 @@ approx_phase <- function(x, y, xout, ...) {
 }
 
 
+#' Revert all phases if order is wrong.
+#'
+#' This function compares the calculated order of states to the input
+#' order of the state matrix. If the reverse order better matches the
+#' input order, all phases are reverted.
+#'
+#' @param phases
+#' @param verb
+#' @export
 revert <- function(phases, verb=1) {
 
     pca <- attr(phases, 'pca')
@@ -72,6 +81,14 @@ revert <- function(phases, verb=1) {
         pca$x$angle <- -pca$x$angle
         pca$x$phase <- -pca$x$phase
         pca$x$order <- order(pca$x$phase)
+
+        ## revert state order
+        pca$order <- rev(pca$order)
+
+        ## distance to reference
+        pca$distance <- state_order_distance(reference=rownames(pca$x),
+                                             test=pca$order)
+        
         
         attr(phases, 'pca') <- pca
     }
@@ -85,10 +102,28 @@ segments <- function(phases, plot=TRUE, verb=1) {
     phi   <- pca$rotation$phase
     theta <- pca$rotation$angle
 
+    ## TODO: implement inflection/segment here
 
     
 }
 
+#' Calculate the difference between input and calculated state order.
+#'
+#' The differences are calculated as Levenshtein distances, using a
+#' simple circular extension of the base R \link{adist} function.
+#' @param phases the phase object.
+#' @export
+validate <- function(phases) {
+
+    pca <- attr(phases, 'pca')
+
+    ## simply compare the order of cohort phases with the input order
+    ## of the state matrix, reflect in row order of cohort phases in pca$x
+    
+    state_order_distance(reference=rownames(pca$x),
+                         test=rownames(pca$x)[pca$x$order])
+  
+}
 shift <- function(phases, dphi) {}
 classify <- function(phases) {}
 
@@ -286,10 +321,27 @@ get_pseudophase <- function(states,
         pca$variance <- pca$sdev^2
         pca$variance <- pca$variance/sum(pca$variance)
 
+        
+        pca$order <- rownames(pca$x)[pca$x$order]
+        pca$distance <- state_order_distance(reference=rownames(states),
+                                             test=pca$order)
+ 
+        
         ## extent PCA class
         class(pca) <- append("phases", class(pca))
-        ## for now add as attribute until everything works
+
+        ## TEMPORARY
+        
+        ## temporary: add as attribute until everything works
         attr(res, 'pca') <- pca
+
+        ## temporary: use pca-based order if validate was false
+        if ( is.null(sord) ) {
+
+            attr(res, "order") <- pca$order
+            attr(res, "distance") <- pca$distance
+       }
+        
     }
 
     ## DEFINE A CLASS 
@@ -325,7 +377,7 @@ revert_phase <- function(phi, states, ...) {
         revert_phase_state(states=states, phi=phi, ...)
     
     
-    ord <- diff(order(phi))
+    ord <- order(phi)
     return(sum(diff(rev(ord))<0) <= sum(diff(ord)<0))
 
 }
