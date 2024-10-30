@@ -104,7 +104,16 @@ segments <- function(phases, plot=TRUE, verb=1) {
 
     ## TODO: implement inflection/segment here
 
-    
+    ## 1. smoothed theta(phi)
+    ## 2. add dtheta/dphi and d(theta-phi)/dphi to pca$rotation
+    ## 3. define segments and add as extra table,
+    ##    TODO: correct segment coors when phase shifting
+    ## 4. classify segments by comparison with cohort phase angles
+
+    ### extra functions, optionally already here:
+    ## a) shift phases to max dtheta/dphi or max d(theta-phi)/dphi
+    ## b) allow phase shifting, classification, etc. based on
+    ##    segment means instead of just PC1/PC2
 }
 
 #' Calculate the difference between input and calculated state order.
@@ -113,15 +122,15 @@ segments <- function(phases, plot=TRUE, verb=1) {
 #' simple circular extension of the base R \link{adist} function.
 #' @param phases the phase object.
 #' @export
-validate <- function(phases) {
+evaluate_order <- function(phases) {
 
-    pca <- attr(phases, 'pca')
+    phases <- attr(phases, 'pca')
 
     ## simply compare the order of cohort phases with the input order
     ## of the state matrix, reflect in row order of cohort phases in pca$x
     
-    state_order_distance(reference=rownames(pca$x),
-                         test=rownames(pca$x)[pca$x$order])
+    state_order_distance(reference=rownames(phases$x),
+                         test=rownames(phases$x)[phases$x$order])
   
 }
 shift <- function(phases, dphi) {}
