@@ -95,26 +95,7 @@ revert <- function(phases, verb=1) {
     phases    
 }
 
-segments <- function(phases, plot=TRUE, verb=1) {
 
-    pca <- attr(phases, 'pca')
-    
-    phi   <- pca$rotation$phase
-    theta <- pca$rotation$angle
-
-    ## TODO: implement inflection/segment here
-
-    ## 1. smoothed theta(phi)
-    ## 2. add dtheta/dphi and d(theta-phi)/dphi to pca$rotation
-    ## 3. define segments and add as extra table,
-    ##    TODO: correct segment coors when phase shifting
-    ## 4. classify segments by comparison with cohort phase angles
-
-    ### extra functions, optionally already here:
-    ## a) shift phases to max dtheta/dphi or max d(theta-phi)/dphi
-    ## b) allow phase shifting, classification, etc. based on
-    ##    segment means instead of just PC1/PC2
-}
 
 #' Calculate the difference between input and calculated state order.
 #'

@@ -2,6 +2,35 @@
 ## CALCULATE PHASE SEGMENTS
 
 
+#' @export
+segments <- function(phases, plot=TRUE, verb=1) {
+
+    pca <- attr(phases, 'pca')
+    
+    phi   <- pca$rotation$phase
+    theta <- pca$rotation$angle
+
+    ## TODO: implement inflection/segment here
+    ## * keep using inflections,
+    ##   but return full smoothed and derivative vectors additionally
+    ##   to the table
+    ## * try to use the same approach for segmenting cohort means.
+
+    ## 1. smoothed theta(phi)
+    ## 2. add dtheta/dphi and d(theta-phi)/dphi to pca$rotation
+    ## 3. define segments and add as extra table,
+    ##    TODO: correct segment coors when phase shifting
+    ## * (i) inflection segments d(theta-phi)/dphi,
+    ##   (ii) maximal slopes,
+    ##   (iii) fuse (i) and (ii), take max (ii) between segments from (i)
+    ## 4. classify segments by comparison with cohort phase angles
+
+    ### extra functions, optionally already here:
+    ## a) shift phases to max dtheta/dphi or max d(theta-phi)/dphi
+    ## b) allow phase shifting, classification, etc. based on
+    ##    segment means instead of just PC1/PC2
+}
+
 #' Add a phase segmentation to a phase object.
 #' @export
 add_segments <- function(phases, ...) {
@@ -59,6 +88,11 @@ get_segments <- function(phases, ma.win=ceiling(nrow(phases))*.02,
 
     ## shift phases to remove circular jumps
     theta <- remove_jumps(theta, verb=verb)
+
+    if ( plot ) {
+        plot(phi, theta, col="gray", axes=FALSE, xlab='', ylab='', type='l')
+        par(new=TRUE)
+    }
               
     ## get maxima
     ## TODO: inflection is probably overkill and can likely be done
