@@ -11,10 +11,10 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
     theta <- pca$rotation$angle[pca$rotation$order]
 
     ## remove jumps from theta
-    theta <- remove_jumps(theta, shift=FALSE, verb=verb)
+    theta <- remove_jumps(theta, shift=TRUE, verb=verb)
     
     ## circularize
-    phi   <- c(phi-2*pi,     phi, phi+2*pi)
+    phi   <- c(  phi-2*pi,   phi,   phi+2*pi)
     theta <- c(theta-2*pi, theta, theta+2*pi)
 
     ## moving average over win% of data
@@ -23,26 +23,23 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
     dtp <- theta-phi
     if ( win>0 ) {
         dtp <- ma(dtp, ceiling(length(theta)*win))
+    
+        ends <- is.na(dtp) | is.na(phi)
+        phi <- phi[!ends]
+        dtp <- dtp[!ends]
+        theta <- theta[!ends]
     }
-    ends <- is.na(dtp) | is.na(phi)
-
-
-    phi <- phi[!ends]
-    dtp <- dtp[!ends]
-    theta <- theta[!ends]
     
     ## SMOOTH SPLINE FIT
+    ## TODO: instead smooth theta, and also get dtheta/dphi?
     dtpf <- pspline::sm.spline(phi, dtp, spar=spar)
-    
-    ## high resolution equispaced phi
-    phih <- seq(min(phi), max(phi), length.out = 1000)
-    
+        
     ## get smoothed data
-    dtph <- predict(dtpf, phih)
+    dtph <- predict(dtpf, phi)
         
     ## FIND ROOTS
     ## theta-phi: first derivative -> roots, 2nd derivative min/max
-    ddtph <- predict(dtpf, phih, nderiv=1)
+    ddtph <- predict(dtpf, phi, nderiv=1)
     
     dsign <- which(diff(sign(ddtph)) != 0)
     ## interpolate all roots
@@ -50,7 +47,7 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
     for (i in seq_along(dsign)) {
         idx <- dsign[i]
         roots[i] <- approx(x = ddtph[idx:(idx+1)],
-                           y = phih[idx:(idx+1)],
+                           y = phi[idx:(idx+1)],
                            xout = 0)$y
     }
     ## is it a maximum or minimum?
@@ -59,11 +56,25 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
     ismax <- ddy < 0
 
     ## classify phases by segments
+    ## TODO: cyclize: fuse first and last
     segs <- cut(pca$rotation$phase, breaks=roots, include.lowest = TRUE)
 
+    ## TODO: also get dtheta/dphi max/min as alignment anchors
 
-    if ( FALSE ) {
-        plot(phih, ddtph)
+    if ( TRUE ) {
+        plot(phi, theta-phi, pch=20, cex=.3, col="gray",
+             xlim=c(-pi, pi), xlab='', ylab='', axes=FALSE)
+        lines(phi, dtph, col=2, lwd=2)
+        abline(v=roots, lwd=.5, col=2)
+        axis(4, col=2, col.axis=2)
+        mtext(expression(theta-phi), 4, par('mgp')[1], col=2)
+        par(new=TRUE)
+        plot(phi, theta,
+             col=cut(phi, breaks=roots, include.lowest = TRUE),
+             cex=.1, pch=20,
+             xlab=expression(phase~phi), xlim=c(-pi, pi),ylim=c(-pi, pi),
+             ylab=expression(angle~theta), axes=FALSE)
+        circ.axis(1:2)
     } else {
         plot(pca$rotation$phase, pca$rotation$angle, col=segs, cex=.3, pch=20,
              xlab=expression(phase~phi),
@@ -78,6 +89,8 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
                           dy=predict(dtpf, x, nderiv = 1),
                           ddy=predict(dtpf, x, nderiv = 2),
                           dddy=predict(dtpf, x, nderiv = 3))
+
+    ## TODO: add roots or segment table
     pca
     
     ## 1. smoothed theta(phi)
