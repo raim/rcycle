@@ -3,7 +3,7 @@
 
 
 #' @export
-segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
+segments <- function(phases, spar=.001, plot=TRUE, verb=1) {
 
     pca <- attr(phases, 'pca')
     
@@ -17,29 +17,20 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
     phi   <- c(  phi-2*pi,   phi,   phi+2*pi)
     theta <- c(theta-2*pi, theta, theta+2*pi)
 
-    ## moving average over win% of data
-    ## TODO: avoid moving average altogether, this
-    ## should be handled exclusively by pspline
-    dtp <- theta-phi
-    if ( win>0 ) {
-        dtp <- ma(dtp, ceiling(length(theta)*win))
-    
-        ends <- is.na(dtp) | is.na(phi)
-        phi <- phi[!ends]
-        dtp <- dtp[!ends]
-        theta <- theta[!ends]
-    }
-    
-    ## SMOOTH SPLINE FIT
-    ## TODO: instead smooth theta, and also get dtheta/dphi?
-    dtpf <- pspline::sm.spline(phi, dtp, spar=spar)
+
+    ## SMOOTH SPLINE FITS
+    ## theta = f(phi)
+    dtpf <- pspline::sm.spline(phi, theta, spar=spar)
+         
+    ## get smoothed theta
+    thetah <- predict(dtpf, phi)
+    ## theta-phi
+    dtph <- thetah - phi
         
-    ## get smoothed data
-    dtph <- predict(dtpf, phi)
-        
-    ## FIND ROOTS
-    ## theta-phi: first derivative -> roots, 2nd derivative min/max
-    ddtph <- predict(dtpf, phi, nderiv=1)
+    ## FIND ROOTS:
+    ## d(theta-phi)/dphi = dtheta/dphi -1
+    ## first derivative -> roots, 2nd derivative min/max
+    ddtph <- predict(dtpf, phi, nderiv=1) -1
     
     dsign <- which(diff(sign(ddtph)) != 0)
     ## interpolate all roots
@@ -52,8 +43,9 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
     }
     ## is it a maximum or minimum?
     ## TODO: filter based on ddy? e.g. if smaller than 5% of max?
-    ddy <- predict(dtpf, roots, nderiv = 2)
+    ddy <- predict(dtpf, roots, nderiv = 2) 
     ismax <- ddy < 0
+
 
     ## classify phases by segments
     ## TODO: cyclize: fuse first and last
@@ -61,7 +53,7 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
 
     ## TODO: also get dtheta/dphi max/min as alignment anchors
 
-    if ( TRUE ) {
+    if ( plot ) {
         plot(phi, theta-phi, pch=20, cex=.3, col="gray",
              xlim=c(-pi, pi), xlab='', ylab='', axes=FALSE)
         lines(phi, dtph, col=2, lwd=2)
@@ -75,20 +67,16 @@ segments <- function(phases, spar=.001, win=0, plot=TRUE, verb=1) {
              xlab=expression(phase~phi), xlim=c(-pi, pi),ylim=c(-pi, pi),
              ylab=expression(angle~theta), axes=FALSE)
         circ.axis(1:2)
-    } else {
-        plot(pca$rotation$phase, pca$rotation$angle, col=segs, cex=.3, pch=20,
-             xlab=expression(phase~phi),
-             ylab=expression(angle~theta), axes=FALSE)
-        circ.axis(1:2)
-    }
+    } 
 
     x <- pca$rotation$phase
     pca$rotation <- cbind(pca$rotation,
                           segment=segs,
-                          y=predict(dtpf, x, nderiv = 0),
-                          dy=predict(dtpf, x, nderiv = 1),
-                          ddy=predict(dtpf, x, nderiv = 2),
-                          dddy=predict(dtpf, x, nderiv = 3))
+                          y=predict(dtpf, x, nderiv = 0) -x,
+                          dy=predict(dtpf, x, nderiv = 1) -x,
+                          ddy=predict(dtpf, x, nderiv = 2) -x,
+                          dddy=predict(dtpf, x, nderiv = 3) -x)
+    pca$roots <- roots
 
     ## TODO: add roots or segment table
     pca
