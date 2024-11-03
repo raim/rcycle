@@ -66,21 +66,21 @@ revert <- function(phases, verb=1) {
 
     pca <- attr(phases, 'pca')
     
-    rphase <- revert_phase(phi=pca$x$phase)
+    rphase <- revert_phase(phi=pca$x$phi)
     
     if ( rphase ) {
         if ( verb>0 )
             cat(paste("\treverting phases\n"))
 
         ## cells
-        pca$rotation$angle <- -pca$rotation$angle
-        pca$rotation$phase <- -pca$rotation$phase
-        pca$rotation$order <- order(pca$rotation$phase)
+        pca$rotation$phi <- -pca$rotation$phi
+        pca$rotation$theta <- -pca$rotation$theta
+        pca$rotation$order <- order(pca$rotation$phi)
 
         ## cohorts
-        pca$x$angle <- -pca$x$angle
-        pca$x$phase <- -pca$x$phase
-        pca$x$order <- order(pca$x$phase)
+        pca$x$theta <- -pca$x$theta
+        pca$x$phi <- -pca$x$phi
+        pca$x$order <- order(pca$x$phi)
 
         ## revert state order
         pca$order <- rev(pca$order)
@@ -144,7 +144,7 @@ get_pseudophase <- function(states,
     ## scale: bring to unit variance and do COLUMN-CENTERING
     ## equiv to eigen(cor(cstates))
     pca <- prcomp(cstates, scale.=TRUE) 
-
+    
 
     ## CELL PSEUDOPHASE from loadings of PC1 vs. PC2
     X <- pca$rotation[,1]
@@ -168,11 +168,10 @@ get_pseudophase <- function(states,
     camp <- sqrt(cY^2 + cX^2)
 
     ## interpolate to cell rank phase
-    ## TODO: ends, currently dirty via rule=2; how can this be done better?
-    ## use circular approx: approxfun.circular
     cphi <- approx_phase(x=theta, y=phi, xout=ctheta)$y
     
-     
+    ## TODO: remove jumps in theta already here?
+
 
     ## FURTHER PROCESS PHASES
     
@@ -296,20 +295,23 @@ get_pseudophase <- function(states,
 
    ## TODO: extent PCA class instead of defining new class
     if ( TRUE ) {
+
+        ## add default summary for pca
+        pca$summary <- summary(pca)
         
         pca$rotation <- cbind.data.frame(order=order(phi),
-                                         phase=phi,
-                                         angle=theta,
+                                         phi=phi,
+                                         theta=theta,
                                          amplitude=amp, 
                                          pca$rotation)
         pca$x <- cbind.data.frame(order=order(cphi),
-                                  phase=cphi,
-                                  angle=ctheta,
+                                  phi=cphi,
+                                  theta=ctheta,
                                   amp=camp,
                                   pca$x)
         ## add % var explained
-        pca$variance <- pca$sdev^2
-        pca$variance <- pca$variance/sum(pca$variance)
+        eigenvalues <- pca$sdev^2
+        pca$variance <- eigenvalues/sum(eigenvalues)
 
         
         pca$order <- rownames(pca$x)[pca$x$order]

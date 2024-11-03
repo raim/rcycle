@@ -54,6 +54,7 @@ plotStates <- function(phases, states, xtype="phase",
                        xlab=expression(pseudophase*phi),
                        ylab, ...) {
 
+
     ## phases can be a numeric vector of x-values
     ## or the object returned by get_pseudophase
     if ( inherits(phases, "phases") )
@@ -116,6 +117,9 @@ plotStates <- function(phases, states, xtype="phase",
 plotPC <- function(phases, ptyp, x=1, y=2, col, type="PC",
                    eigenvalues, expand=TRUE,
                    cohorts=TRUE, ccol, txt.cex=1, ...) {
+
+    ## TODO: untangle mixed phases object and ptyp
+    if ( FALSE ) pca <- attr(phases, 'pca')
 
     if ( !inherits(phases, "phases") )
         stop("phases must be an object of class 'phases', ",
