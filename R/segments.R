@@ -66,6 +66,17 @@ segments <- function(phases, spar=.001, spari=100*spar, win=.01,
                            max=smax)
     shoulders <- shoulders[!is.na(shoulders$theta),]
 
+    ## SEGMENTS
+
+    ## classify phases by shoulder segments
+    segs <- cut(pca$rotation$phi, breaks=shoulders$phi, include.lowest = TRUE)
+    ## drop levels that are not present
+    segs <- as.numeric(segs)
+    segs <- segs-min(segs)+1
+    ## fuse first and last
+    segs[segs==max(segs)] <- min(segs)
+    ## TODO: classify by comparison with cohort phases in pca$x$phi
+
     ## INFLECTIONS
     ## extrema of dtheta/dphi
     ## roots of d^2theta/dphi^2 
@@ -97,17 +108,9 @@ segments <- function(phases, spar=.001, spari=100*spar, win=.01,
 
     ## SEGMENTS
 
-    ## classify phases by shoulder segments
-    segs <- cut(pca$rotation$phi, breaks=roots, include.lowest = TRUE)
-    ## drop levels that are not present
-    segs <- as.numeric(segs)
-    segs <- segs-min(segs)+1
-    ## fuse first and last
-    segs[segs==max(segs)] <- min(segs)
-    ## TODO: classify by comparison with cohort phases in pca$x$phi
-    
     ## classify phases by max slope segments
-    isegs <- cut(pca$rotation$phi, breaks=iroots[imax], include.lowest = TRUE)
+    isegs <- cut(pca$rotation$phi, breaks=inflections$phi[inflections$imax],
+                 include.lowest = TRUE)
     ## drop levels that are not present
     isegs <- as.numeric(isegs)
     isegs <- isegs-min(isegs)+1
@@ -168,6 +171,7 @@ segments <- function(phases, spar=.001, spari=100*spar, win=.01,
                  labels=sub(".*_","",rownames(pca$x))[i], las=2)
     } 
 
+    ## ADD TO PHASES OBJECT
     x <- pca$rotation$phi
     pca$rotation <- cbind(pca$rotation,
                           segments=segs, # shoulder segments
