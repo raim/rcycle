@@ -1,13 +1,82 @@
 
 ## CALCULATE PHASE SEGMENTS
 
+#' Classify phases into segments.
+#' @export
+phase_segments <- function(phi, breaks, lim=c(-pi, pi)) {
+
+
+    breaks <- c(lim[1], breaks, lim[2])
+    
+    segs <- cut(phi, breaks=breaks, include.lowest = TRUE)
+    
+    ## numeric segments
+    segs <- as.numeric(segs)
+    segs <- segs-min(segs)+1
+
+    ## fuse first and last
+    segs[segs==max(segs)] <- min(segs)
+
+    segs
+}
+
+## get derivatives from smoothed spline
+find_maxima <- function(phi, theta, ND=1, DIA=TRUE, spar=spar, lim=c(-pi,pi)) {
+    
+    dtpf <- pspline::sm.spline(phi, theta, spar=spar)  
+
+    ## get roots of requested derivatives
+    dtheta <- predict(dtpf, phi, nderiv = ND) 
+    
+    ## interpolate all roots
+    roots <- find_roots(phi, dtheta)
+
+    ## add all derivatives at roots
+    dtheta   <- predict(dtpf, roots, nderiv = 1)
+    ddtheta  <- predict(dtpf, roots, nderiv = 2)
+    dddtheta <- predict(dtpf, roots, nderiv = 3)
+    
+    ## add min/max classification
+    dmax <- ddtheta < 0
+    ## add min/max classification
+    ddmax <- dddtheta < 0
+ 
+    roots <- data.frame(phi=roots,
+                        dtheta  =  dtheta,
+                        ddtheta = ddtheta,
+                        dddtheta=dddtheta,
+                        dmax = dmax,
+                        ddmax=ddmax)
+    ## remove roots from cyclization
+    rmc <- roots$phi < lim[1] | roots$phi > lim[2]
+    roots <- roots[!rmc,]
+   
+    list(roots=roots, splinef=dtpf)
+}
+
+## primitive root finding
+## TODO: better version? uniroot?
+find_roots <- function(phi, dtheta) {
+
+    dsign <- which(diff(sign(dtheta)) != 0)
+    roots <- numeric(length(dsign))  
+    for (i in seq_along(dsign)) {
+        idx <- dsign[i]
+        roots[i] <- approx(x = dtheta[idx:(idx+1)],
+                               y = phi[idx:(idx+1)],
+                           xout = 0)$y
+    }
+    roots
+}
 
 #' @export
-segments <- function(phases, spar=.001, spari=100*spar, win=.01,
+segments <- function(phases, spar=.001, spari=100*spar, win=.05,
                      plot=TRUE, verb=0) {
 
     pca <- attr(phases, 'pca')
 
+    ## TODO: make sure phi is within -pi:pi or otherwise adjust lim below
+    
     ## original phi and theta
     ph <- pca$rotation$phi[pca$rotation$order]
     th <- pca$rotation$theta[pca$rotation$order]
@@ -29,176 +98,130 @@ segments <- function(phases, spar=.001, spari=100*spar, win=.01,
     ## min slope, we need the second and third derivatives, and
     ## require a stronger smoothing to avoid to get too many points.
 
-    dtpf <- pspline::sm.spline(phi, theta, spar=spar)  # for shoulders/segments
-    dtpi <- pspline::sm.spline(phi, theta, spar=spari) # for inflections
 
-
-    ## SEGMENT BORDERS
-    
-    ## get smoothed theta
-    thetah <- predict(dtpf, phi)
-        
     ## SHOULDERS
-    ## roots of dtheta/dphi -1
+    ## roots of first derivative
     ## d(theta-phi)/dphi = dtheta/dphi -1 = 0
-    ddtph <- predict(dtpf, phi, nderiv = 1) -1
-    if ( win>0 ) # moving average
-        ddtph <- ma(ddtph, ceiling(length(phi)*win))
-    
-    ## interpolate all roots
-    ## TODO: use uniroot instead?
-    dsign <- which(diff(sign(ddtph)) != 0)
-    roots <- numeric(length(dsign))  
-    for (i in seq_along(dsign)) {
-        idx <- dsign[i]
-        roots[i] <- approx(x = ddtph[idx:(idx+1)],
-                           y = phi[idx:(idx+1)],
-                           xout = 0)$y
-    }
-    ## max or min?
-    ## TODO: filter based on ddy? e.g. if smaller than 5% of max?
-    ddy <- predict(dtpf, roots, nderiv = 2) 
-    smax <- ddy < 0
-
-    shoulders <- data.frame(phi=roots,
-                           theta=approx(x=ph, y=th, xout=roots)$y,
-                           slope=ddy,
-                           max=smax)
-    shoulders <- shoulders[!is.na(shoulders$theta),]
-
-    ## SEGMENTS
+    maxima <- find_maxima(phi, theta-phi, ND=1, spar=spar, lim=c(-pi, pi))
+    shoulders <- maxima$roots
+    dtpf <- maxima$splinef
 
     ## classify phases by shoulder segments
-    segs <- cut(pca$rotation$phi, breaks=shoulders$phi, include.lowest = TRUE)
-    ## drop levels that are not present
-    segs <- as.numeric(segs)
-    segs <- segs-min(segs)+1
-    ## fuse first and last
-    segs[segs==max(segs)] <- min(segs)
-    ## TODO: classify by comparison with cohort phases in pca$x$phi
+    segs <- phase_segments(pca$rotation$phi,
+                           breaks=shoulders$phi)
+    
 
     ## INFLECTIONS
-    ## extrema of dtheta/dphi
-    ## roots of d^2theta/dphi^2 
-    dddtph <- predict(dtpi, phi, nderiv=2)
-    if ( win>0 ) # moving average
-        dddtph <- ma(dddtph, ceiling(length(phi)*win))
-
-    ## interpolate all roots
-    isign <- which(diff(sign(dddtph)) != 0)
-    iroots <- numeric(length(isign))  
-    for (i in seq_along(isign)) {
-        idx <- isign[i]
-        iroots[i] <- approx(x = dddtph[idx:(idx+1)],
-                            y = phi[idx:(idx+1)],
-                            xout = 0)$y
-    }
-    ## max or min?
-    ddy <- predict(dtpi, iroots, nderiv = 3) 
-    imax <- ddy < 0
-    
-    ## interpolate inflection points in original coordinates
-    ## TODO: skip, just return phi coors,
-    ## and include interpolation in plot functions?
-    inflections <- data.frame(phi=iroots,
-                              theta=approx(x=ph, y=th, xout=iroots)$y,
-                              slope=predict(dtpi, iroots, nderiv=1),
-                              max=imax)
-    inflections <- inflections[!is.na(inflections$theta),]
-
-    ## SEGMENTS
-
-    ## classify phases by max slope segments
-    isegs <- cut(pca$rotation$phi, breaks=inflections$phi[inflections$imax],
-                 include.lowest = TRUE)
-    ## drop levels that are not present
-    isegs <- as.numeric(isegs)
-    isegs <- isegs-min(isegs)+1
-    ## fuse first and last
-    isegs[isegs==max(isegs)] <- min(isegs)
-    
-    ## TODO: classify by comparison with cohort phases in pca$x$phi
-
-    if ( plot ) {
-
-        ## TODO: plot function for this from the returned results
-
-        ## theta-phi better shows the smoothing effect
-        ## TODO: also plot derivatives,
-        ##       plot both segmentations
-        plot(phi, dddtph, type='l', col=3,
-             xlim=c(-pi, pi), xlab='', ylab='', axes=FALSE) ## inflections
-        ##abline(v=iroots, lwd=.5, col=3)
-        lines(phi, ddtph, col=4) ## shoulders
-        ##abline(v=roots, lwd=.5, col=4)
-        abline(h=0, col=3, lwd=.5)
-        abline(h=0, col=4, lwd=.5, lty=2)
-        axis(4, col=4, col.axis=4)
-        mtext(expression(d*theta/d*phi-1~','~d^2*theta/d*phi^2),
-              4, par('mgp')[1], col=4)
-
-        ##par(new=TRUE)
-        ##plot(phi, theta-phi, pch=20, cex=.3, col="gray",
-        ##     xlim=c(-pi, pi), xlab='', ylab='', axes=FALSE)
-        ##lines(phi, thetah - phi, col=2, lwd=2) # smoothed
-        ##axis(4, col=2, col.axis=2)
-        ##mtext(expression(theta-phi), 4, par('mgp')[1], col=2)
-        par(new=TRUE)
-        plot(1, col=NA, axes=FALSE,
-             xlim=c(-pi, pi), ylim=c(-pi, pi),
-             xlab=expression(phase~phi), ylab=expression(angle~theta))
-        abline(a=0, b=1, lwd=.5, lty=2)
-        ## plot segmentations
-        x <-   pca$rotation$phi[pca$rotation$order] 
-        y <- pca$rotation$theta[pca$rotation$order]
-        cl <- segs[pca$rotation$order]
-        points(ph, remove_jumps(y, shift=TRUE, verb=FALSE),
-               col=cl, cex=.5, pch=1)
-        lines(phi, thetah, col=1, lwd=1) # smoothed
+    ## roots of second derivative
+    ## d^2(theta-phi)/dphi^2 = 0
+    infl <- find_maxima(phi, theta-phi, ND=2, spar=spari, lim=c(-pi, pi))
+    inflections <- infl$roots
+    dtpi <- infl$splinef
         
-        ##abline(v=roots, lwd=.5, col=2)
-        ## inflection points
-        ## TODO: size prop to abs(slope)
-        points(approx(phi, theta, inflections$phi),
-               col=ifelse(inflections$max,2,4),
-               cex=2*inflections$slope/max(inflections$slope), pch=1)
-        circ.axis(1:2)
-        ## NOTE: assuming prefix naming
-        ## TODO: add official cohort name vector to object, or
-        ## avoid long prefixes for separate PCA
-        for ( i in 1:nrow(pca$x) )
-            axis(3, at=pca$x$phi[i],
-                 labels=sub(".*_","",rownames(pca$x))[i], las=2)
-    } 
+    ## classify phases by max slope segments
+    isegs <-  phase_segments(pca$rotation$phi,
+                             breaks=inflections$phi[inflections$ddmax])
+    
+    ## TODO: classify segments by comparison with cohort phases in pca$x$phi
 
+ 
     ## ADD TO PHASES OBJECT
+    ## thetah  : smoothed theta, dtpf, deriv 0
+    ## dtheta  : dtheta/dphi -1, dtpf, deriv 1
+    ## ddtheta : d2theta/dphi2,  dtpi, deriv 2
     x <- pca$rotation$phi
     pca$rotation <- cbind(pca$rotation,
                           segments=segs, # shoulder segments
                           segmenti=isegs, # inflection segments
-                          theta.s=predict(dtpf, x, nderiv = 0), # smoothed theta
-                          slope  =predict(dtpi, x, nderiv = 1)) # slope
+                          theta.s=predict(dtpf, x, nderiv = 0) + x, 
+                          dtheta =predict(dtpf, x, nderiv = 1), 
+                          ddtheta=predict(dtpi, x, nderiv = 2))
     pca$shoulders <- shoulders   
     pca$inflections <- inflections
 
-    ## TODO: add roots or segment table
+    if ( plot )
+        plotDerivatives(pca, difference=TRUE, segments='segments')
+
     pca
     
-    ## 1. smoothed theta(phi)
-    ## 2. add dtheta/dphi and d(theta-phi)/dphi to pca$rotation
-    ## 3. define segments and add as extra table,
-    ##    TODO: correct segment coors when phase shifting
-    ## * (i) inflection segments d(theta-phi)/dphi,
-    ##   (ii) maximal slopes,
-    ##   (iii) fuse (i) and (ii), take max (ii) between segments from (i)
-    ## 4. classify segments by comparison with cohort phase angles
-
     ### extra functions, optionally already here:
     ## a) shift phases to max dtheta/dphi or max d(theta-phi)/dphi
     ## b) allow phase shifting, classification, etc. based on
     ##    segment means instead of just PC1/PC2
 
 }
+
+
+#' Plot the curve sketching of theta=f(phi).
+#' @param difference plot the difference theta-phi instead of
+#'     theta. This emphasizes the noise in the original data and the
+#'     smoothing effects.
+#' @export
+plotDerivatives <- function(pca, difference=FALSE, segments='segments') {
+
+    ord <- pca$rotation$order
+    phi <- pca$rotation$phi[ord]
+    theta <- pca$rotation$theta[ord]
+    thetah <- pca$rotation$theta.s[ord]
+    dtheta <- pca$rotation$dtheta[ord]
+    ddtheta <- pca$rotation$ddtheta[ord]
+
+    cl <- pca$rotation[,segments][pca$rotation$order]
+
+    theta <- remove_jumps(theta, shift=TRUE, verb=FALSE)
+
+    shoulders <- pca$shoulders
+    inflections <- pca$inflections
+    
+    plot(phi, ddtheta, type='l', col=3,
+         xlim=c(-pi, pi), xlab='', ylab='', axes=FALSE) ## inflections
+    lines(phi, dtheta, col=4) ## shoulders
+    abline(h=0, col=3, lwd=.5)
+    abline(h=0, col=4, lwd=.5, lty=2)
+    axis(4, col=4, col.axis=4)
+    mtext('derivatives', 4, par('mgp')[1], col=4)
+    legend('bottomright', c(expression(d*theta/d*phi-1),
+                            expression(d^2*theta/d*phi^2)),
+           col=c(4,3), lty=1)
+
+    par(new=TRUE)
+    ylab <- expression(angle~theta)
+    yaxis <- circ.axis
+    ylim <- c(-pi, pi)
+    if ( difference ) {
+        theta <- theta -phi
+        thetah <- thetah -phi
+        ylab <- expression(differene~theta-phi)
+        yaxis <- axis
+        ylim <- range(theta)
+    }
+
+    plot(1, col=NA, axes=FALSE,
+         xlim=c(-pi, pi), ylim=ylim,
+         xlab=expression(phase~phi), ylab=ylab)
+    
+    ## plot segmentations
+    points(phi, theta, col=cl, cex=.5, pch=1)
+    lines(phi, thetah, col=1, lwd=1) # smoothed
+       
+    ## TODO: size prop to abs(slope)
+    points(approx(phi, theta, inflections$phi),
+           col=3, lwd=2,
+           pch=ifelse(inflections$ddmax,19,1),
+           cex=2*inflections$dtheta/max(inflections$dtheta))
+    points(approx(phi, theta, shoulders$phi),
+           col=4, lwd=2,
+           pch=ifelse(shoulders$dmax,24,25),
+           cex=2*abs(shoulders$ddtheta)/max(abs(shoulders$ddtheta)))
+    circ.axis(1)
+    yaxis(2)
+    ## NOTE: assuming prefix naming
+    ## TODO: add official cohort name vector to object, or
+    ## avoid long prefixes for separate PCA
+    for ( i in 1:nrow(pca$x) )
+        axis(3, at=pca$x$phi[i],
+             labels=sub(".*_","",rownames(pca$x))[i], las=2)
+} 
 
 
 #' Add a phase segmentation to a phase object.
