@@ -108,7 +108,7 @@ revert <- function(phases,  verb=1) {
 
 shift <- function(phases, dphi, verb=1) {
     
-    phases <- attr(phases, 'pca')
+    pca <- attr(phases, 'pca')
 
     if ( verb>0 )
         cat(paste("\tshifting phases by", dphi, "\n"))
@@ -163,6 +163,22 @@ evaluate_order <- function(phases) {
     state_order_distance(reference=rownames(phases$x),
                          test=rownames(phases$x)[phases$x$order])
   
+}
+
+#' Calibrate phase to a period.
+#' @export
+calibrate <- function(phases, period, phase='phi') {
+
+    pca <- attr(phases, 'pca')
+
+    pca <- lapply(pca, function(x) {
+        if ( phase %in% names(x) ) 
+            x$time <- x[[phase]]/(2*pi) * period
+        x
+    })
+
+    attr(phases, 'pca') <- pca
+    phases
 }
 
 classify <- function(phases) {}
@@ -646,33 +662,34 @@ detect_jumps <- function(py, max=-pi, verb=0) {
 #' Remove a jump in phases by shift all phases.
 #' @param phi ordered list of phases
 #' @export
-remove_jumps <- function(phi, shift=TRUE, verb=1) {
+remove_jumps <- function(phi, idx, shift=TRUE, verb=1) {
 
  
     ## detect JUMPS in ANGLE and shift
-    dph <- detect_jumps(phi)
+    if ( missing(idx) )
+        idx <- detect_jumps(phi)
 
-    if ( length(dph)>1 ) warning("more than one jump")
+    if ( length(idx)>1 ) warning("more than one jump")
     
-    if ( length(dph)>0 ) {
+    if ( length(idx)>0 ) {
 
         
-        dph <- dph[1]
+        idx <- idx[1]
         
         ## shift phases before or after jump
         
-        if ( dph > length(phi)/2 ) # append phases after jump
-            phi[(dph+1):length(phi)] <- phi[(dph+1):length(phi)] + 2*pi
+        if ( idx > length(phi)/2 ) # append phases after jump
+            phi[(idx+1):length(phi)] <- phi[(idx+1):length(phi)] + 2*pi
         else # prepend phases 
-            phi[1:dph] <-  phi[1:dph] - 2*pi
+            phi[1:idx] <-  phi[1:idx] - 2*pi
 
         if ( verb>0 )
             cat(paste("shifting phase angles to remove the jump\n"))
 
         ## shift to -pi:pi
-        if ( shift & dph > length(phi)/2)
+        if ( shift & idx > length(phi)/2)
             phi <- phi + -pi - min(phi)
-        else if ( shift & dph <= length(phi)/2)
+        else if ( shift & idx <= length(phi)/2)
             phi <- phi + pi - max(phi)  
     }
     phi

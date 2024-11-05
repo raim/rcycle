@@ -111,6 +111,10 @@ segments <- function(phases,
     ## min slope, we need the second and third derivatives, and
     ## require a stronger smoothing to avoid to get too many points.
 
+    ## TODO: every segmentation yields different results to be
+    ## added to pca$rotation; make this function return those,
+    ## and only add in separate function; 
+
     ## SHOULDERS
     if ( 'shoulder' %in% method ) {
 
@@ -209,15 +213,11 @@ segments <- function(phases,
     if ( plot ) {
            if ( verb>0 )
                cat(paste('plotting segments\n'))
-           plotSegments(phases, difference=TRUE, method=method[1])
+           plotSegments(phases, difference=TRUE, shift=TRUE, method=method[1])
     }
     
-    phases
-    ### extra functions, optionally already here:
-    ## a) shift phases to max dtheta/dphi or max d(theta-phi)/dphi
-    ## b) allow phase shifting, classification, etc. based on
-    ##    segment means instead of just PC1/PC2
-
+    invisible(phases)
+    
 }
 
 
@@ -226,7 +226,7 @@ segments <- function(phases,
 #'     theta. This emphasizes the noise in the original data and the
 #'     smoothing effects.
 #' @export
-plotSegments <- function(phases, difference=FALSE, shift=FALSE,
+plotSegments <- function(phases, difference=FALSE, shift=TRUE,
                          method='shoulder') {
 
     pca <- attr(phases, 'pca') 
@@ -236,13 +236,21 @@ plotSegments <- function(phases, difference=FALSE, shift=FALSE,
     theta <- pca$rotation$theta[ord]
 
     cl <- pca$rotation[,method][pca$rotation$order]
-    theta <- remove_jumps(theta, shift=shift, verb=FALSE)
+
+    ## remove jumps from all theta
+    idx <- detect_jumps(theta)
+    dph <- theta[idx]
+    ## TODO: remove_jumps doesn't work for thetah in dpseg and shoulder
+    theta <- remove_jumps(theta, idx=idx, shift=shift, verb=FALSE)
 
     deriv <- thetah <- NULL
     
     if ( 'shoulder' %in% method ) {
-        thetah <- pca$rotation$theta.s[ord]
 
+        ## NOTE thetah is aligned with theta only if shift=TRUE
+        ## since that was used in segmentation
+        if ( shift ) thetah <- pca$rotation$theta.s[ord]
+                   
         deriv <- pca$rotation$dtheta[ord]
         breaks <- pca$shoulder
         ylab4 <- expression(d*theta/d*phi-1)
@@ -259,7 +267,11 @@ plotSegments <- function(phases, difference=FALSE, shift=FALSE,
         dcol <- 3
     }
     if ( 'dpseg' %in% method ) {
-        thetah <- pca$rotation$theta.d[ord] + phi
+
+        ## NOTE thetah is aligned with theta only if shift=TRUE
+        ## since that was used in segmentation
+        if ( shift ) thetah <- pca$rotation$theta.d[ord] + phi
+        
         breaks <- pca$dpseg
         ylab4 <- expression(piecewise~linear)
         magn <- "slope"
@@ -295,7 +307,7 @@ plotSegments <- function(phases, difference=FALSE, shift=FALSE,
 
     ## plot segments
     points(phi, theta, col=cl, cex=.5, pch=1)
-    if ( !is.null(thetah) )
+    if ( !is.null(thetah) ) 
         lines(phi, thetah, col=1, lwd=1) # smoothed
        
     ## plot break points
