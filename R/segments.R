@@ -126,10 +126,10 @@ segments <- function(phases,
                                breaks=shoulder$phi)
         
         x <- pca$rotation$phi
-        pca$rotation <- cbind(pca$rotation,
-                              shoulder=segs, # shoulder segments
-                              theta.s=predict(dtpf, x, nderiv = 0) + x, 
-                              dtheta =predict(dtpf, x, nderiv = 1))
+        pca$rotation$shoulder <- segs # shoulder segments
+        pca$rotation$theta.s  <- predict(dtpf, x, nderiv = 0) + x
+        pca$rotation$dtheta   <- predict(dtpf, x, nderiv = 1)
+    
         pca$shoulder <- shoulder   
     }
 
@@ -152,9 +152,9 @@ segments <- function(phases,
         ## dtheta  : dtheta/dphi -1, dtpf, deriv 1
         ## ddtheta : d2theta/dphi2,  dtpi, deriv 2
         x <- pca$rotation$phi
-        pca$rotation <- cbind(pca$rotation,
-                              inflection=isegs, # inflection segments
-                              ddtheta=predict(dtpf, x, nderiv = 2))
+        pca$rotation$inflection <- isegs # inflection segments
+        pca$rotation$ddtheta    <- predict(dtpf, x, nderiv = 2)
+    
         pca$inflection <- inflection
     }
 
@@ -171,7 +171,6 @@ segments <- function(phases,
         ## run dpseg
         dps <- dpseg::dpseg(x=phi[!rmp], y=theta[!rmp] - phi[!rmp],
                             jumps=jumps, P=P, minl=L, verb=verb, add.lm=TRUE)
-        if ( plot ) plot(dps)
 
         ## generate break table
         segs <- data.frame(phi  =dps$segments$x2,
@@ -195,13 +194,16 @@ segments <- function(phases,
         
         ## ADD PHASES
         x <- pca$rotation$phi
-        pca$rotation <- cbind(pca$rotation,
-                              dpseg=dsegs, 
-                              theta.d=predict(dps, xout=x)$y)
+        pca$rotation$dpseg   <- dsegs
+        pca$rotation$theta.d <- predict(dps, xout=x)$y
+    
         pca$dpseg <- segs
         pca$dpseg.object <- dps
     }
     
+    pca$processing <- c(pca$processing,
+                        paste0('segments:', paste0(method,collapse=';')))
+
     attr(phases, 'pca') <- pca
 
     if ( plot ) {
@@ -224,7 +226,8 @@ segments <- function(phases,
 #'     theta. This emphasizes the noise in the original data and the
 #'     smoothing effects.
 #' @export
-plotSegments <- function(phases, difference=FALSE, method='shoulder') {
+plotSegments <- function(phases, difference=FALSE, shift=FALSE,
+                         method='shoulder') {
 
     pca <- attr(phases, 'pca') 
     
@@ -233,7 +236,7 @@ plotSegments <- function(phases, difference=FALSE, method='shoulder') {
     theta <- pca$rotation$theta[ord]
 
     cl <- pca$rotation[,method][pca$rotation$order]
-    theta <- remove_jumps(theta, shift=TRUE, verb=FALSE)
+    theta <- remove_jumps(theta, shift=shift, verb=FALSE)
 
     deriv <- thetah <- NULL
     
@@ -277,6 +280,7 @@ plotSegments <- function(phases, difference=FALSE, method='shoulder') {
     ylab <- expression(angle~theta)
     yaxis <- circ.axis
     ylim <- c(-pi, pi)
+    if ( !shift ) ylim <- range(theta)
     if ( difference ) {
         theta <- theta -phi
         if ( !is.null(thetah) ) thetah <- thetah -phi

@@ -26,7 +26,8 @@ phase_rank <- function(theta, align=TRUE, shift=TRUE) {
     phi <- 2*pi* phi/max(phi) - pi
 
     ## align at phase 0
-    if ( align ) phi <- phase_align(phi, target=theta, shift=shift)
+    if ( align )
+        phi <- phase_align(phi, target=theta, shift=shift)
 
     phi
 }
@@ -62,39 +63,88 @@ approx_phase <- function(x, y, xout, ...) {
 #' @param phases
 #' @param verb
 #' @export
-revert <- function(phases, verb=1) {
+revert <- function(phases,  verb=1) {
 
     pca <- attr(phases, 'pca')
+
     
     rphase <- revert_phase(phi=pca$x$phi)
     
     if ( rphase ) {
         if ( verb>0 )
-            cat(paste("\treverting phases\n"))
+            cat(paste("\treverting all phases\n"))
 
-        ## cells
-        pca$rotation$phi <- -pca$rotation$phi
-        pca$rotation$theta <- -pca$rotation$theta
-        pca$rotation$order <- order(pca$rotation$phi)
-
-        ## cohorts
-        pca$x$theta <- -pca$x$theta
-        pca$x$phi <- -pca$x$phi
-        pca$x$order <- order(pca$x$phi)
+        ids <- c('phi', 'theta')
+        
+        pca <- lapply(pca, function(x) {
+            for ( id in ids ) {
+                ## NOTE: grepping phase angles with suffix, e.g. theta.s
+                idx <- grep(paste0('^',id), names(x), value=TRUE)
+                for ( i in idx )
+                    x[[i]] <- -x[[i]]
+            }
+            if ( all(c('phi','order') %in% names(x)) )
+                x$order <- order(x$phi)
+            x
+        })
 
         ## revert state order
-        pca$order <- rev(pca$order)
+        if ( 'order' %in% names(pca) )
+            pca$order <- rev(pca$order)
 
         ## distance to reference
-        pca$distance <- state_order_distance(reference=rownames(pca$x),
-                                             test=pca$order)
+        if ( 'distance' %in% names(pca) )
+            pca$distance <- state_order_distance(reference=rownames(pca$x),
+                                                 test=pca$order)
         
-        
+        pca$processing <- c(pca$processing, "reverted")
         attr(phases, 'pca') <- pca
-    }
+        
+    } else if ( verb>0 )
+        cat(paste("\tphases already in correct order\n"))
+    
     phases    
 }
 
+shift <- function(phases, dphi, verb=1) {
+    
+    phases <- attr(phases, 'pca')
+
+    if ( verb>0 )
+        cat(paste("\tshifting phases by", dphi, "\n"))
+
+    ## shift phi in all items, re-order and phase align theta if present
+    
+    pca <- lapply(pca, function(x) {
+        if ( 'phi' %in% names(x) ) {
+
+            ## shift rank phase
+            x$phi <- phase_shift(x$phi, dphi, shift=TRUE)
+
+            ## re-order
+            if ( 'order' %in% names(x) )
+                x$order <- order(x$phi)
+
+            ## align all theta at 0
+            idx <- grep('^theta', names(x), value=TRUE)
+            for ( id in idx ) {
+                x[[id]] <- phase_align(phi=x[[id]], target=x$phi, shift=TRUE)
+            }
+        }
+        x
+    })
+
+
+    ## re-order and re-calculate distance
+    pca$order <- rownames(pca$x)[pca$x$order]
+    pca$distance <- state_order_distance(reference=rownames(states),
+                                         test=pca$order)
+    
+    pca$processing <- c(pca$processing, paste0("shift:", dphi))
+    attr(phases, 'pca') <- pca
+
+    phases
+}
 
 
 #' Calculate the difference between input and calculated state order.
@@ -114,7 +164,7 @@ evaluate_order <- function(phases) {
                          test=rownames(phases$x)[phases$x$order])
   
 }
-shift <- function(phases, dphi) {}
+
 classify <- function(phases) {}
 
 ## TODO: * expancd prcomp class instead of defining an new class!  *
@@ -167,9 +217,10 @@ get_pseudophase <- function(states,
     ctheta <- atan2(cY, cX)
     camp <- sqrt(cY^2 + cX^2)
 
-    ## interpolate to cell rank phase
+    ## interpolate cohort phase to cell rank phase via angle
     cphi <- approx_phase(x=theta, y=phi, xout=ctheta)$y
     
+
     ## TODO: remove jumps in theta already here?
 
 
@@ -366,7 +417,7 @@ revert_phase <- function(phi, states, ...) {
 
     ## use state maxima-based approach
     if ( !missing(states) )
-        revert_phase_state(states=states, phi=phi, ...)
+        return(revert_phase_state(states=states, phi=phi, ...))
     
     
     ord <- order(phi)
