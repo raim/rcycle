@@ -278,7 +278,6 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
 
 
     ## remove jumps from all theta
-    dph <- theta.orig[idx]
     ## TODO: remove_jumps doesn't work for thetah in dpseg and shoulder
     ## and the current approach via approx_phase has errors
     idx <- detect_jumps(theta.orig)
@@ -391,6 +390,10 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
         if ( !is.null(thetah) ) 
             lines(phi, thetah, col=1, lwd=1) # smoothed
        
+        if ( method=='slope' & !shift ) {
+            abline(v=0, col=1, lwd=.25)
+            abline(h=0, col=1, lwd=.25)
+        }
         ## plot break points
         points(approx(phi, theta, breaks$phi),
                col=dcol, lwd=2,
