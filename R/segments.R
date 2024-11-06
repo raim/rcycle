@@ -273,14 +273,21 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     
     ord <- pca$rotation$order
     phi <- pca$rotation$phi[ord]
-    theta <- pca$rotation$theta[ord]
+    theta.orig <- pca$rotation$theta[ord]
+
 
 
     ## remove jumps from all theta
-    idx <- detect_jumps(theta)
-    dph <- theta[idx]
+    dph <- theta.orig[idx]
     ## TODO: remove_jumps doesn't work for thetah in dpseg and shoulder
-    theta <- remove_jumps(theta, idx=idx, shift=shift, verb=FALSE)
+    ## and the current approach via approx_phase has errors
+    idx <- detect_jumps(theta.orig)
+    theta <- remove_jumps(theta.orig, idx=idx, shift=shift, verb=FALSE)
+
+    ## shift cohort theta accordingly
+    thetac <- approx_phase(x=theta.orig, y=theta, xout=pca$x$theta)$y
+    phic <- approx_phase(x=theta, y=phi, xout=thetac)$y
+
 
     deriv <- thetah <- breaks <- brks <- cl <- NULL
     
@@ -340,9 +347,10 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     }
 
     ## align smoothed theta
+    ## TODO: is there a better solution?
     if ( !is.null(thetah) ) 
         thetah <- phase_align(thetah, target=theta, shift=shift)
-
+        ##thetah <- approx_phase(x=theta.orig, y=theta, xout=thetah)$y
     
     if ( !is.null(deriv) ) {
         
@@ -399,6 +407,12 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     for ( i in 1:nrow(pca$x) )
         axis(3, at=pca$x$phi[i],
              labels=sub(".*_","",rownames(pca$x))[i], las=2)
+    ## if right y-axis is available, plot cohort theta
+    if ( is.null(deriv) ) 
+        for ( i in 1:nrow(pca$x) )
+            axis(4, at=thetac[i] - ifelse(difference, phic[i], 0),
+                 labels=sub(".*_","",rownames(pca$x))[i], las=2)
+    
 } 
 
 
