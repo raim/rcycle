@@ -78,9 +78,10 @@ find_roots <- function(phi, dtheta) {
 #' @export
 segments <- function(phases, 
                      method=c('shoulder', 'inflection', 'dpseg'),
+                     names=method, 
                      spar=.001, #spari=100*spar,
-                     P, Pscale=100, L=10, jumps=FALSE,
-                     plot=TRUE, verb=0) {
+                     P, Pscale=.05, L=10, jumps=FALSE,
+                     plot=TRUE, verb=0, ...) {
 
     pca <- attr(phases, 'pca')
 
@@ -128,13 +129,24 @@ segments <- function(phases,
         ## classify phases by shoulder segments
         segs <- phase_segments(pca$rotation$phi,
                                breaks=shoulder$phi)
-        
+
         x <- pca$rotation$phi
-        pca$rotation$shoulder <- segs # shoulder segments
-        pca$rotation$theta.s  <- predict(dtpf, x, nderiv = 0) + x
-        pca$rotation$dtheta   <- predict(dtpf, x, nderiv = 1)
-    
-        pca$shoulder <- shoulder   
+        df <- data.frame(segment=segs,
+                         theta  = predict(dtpf, x, nderiv = 0) + x,
+                         dtheta = predict(dtpf, x, nderiv = 1),
+                         ddtheta= predict(dtpf, x, nderiv = 2))
+        nm <- names[method=='shoulder']
+        colnames(df) <- paste0(nm, "_", colnames(df))
+
+        ## replace previus
+        old <- which(colnames(pca$rotation)%in%colnames(df))
+        if ( length(old)>0 )
+            pca$rotation <-pca$rotation[,-old] 
+        pca$rotation <- cbind(pca$rotation,
+                              df)
+        
+        ## add breaks
+        pca[[names[method=='shoulder']]] <- shoulder   
     }
 
     ## INFLECTIONS
@@ -148,18 +160,31 @@ segments <- function(phases,
         dtpf <- infl$splinef
         
         ## classify phases by max slope segments
-        isegs <-  phase_segments(pca$rotation$phi,
-                                 breaks=inflection$phi[inflection$ddmax])
+        segs <-  phase_segments(pca$rotation$phi,
+                                breaks=inflection$phi[inflection$ddmax])
     
         ## ADD TO PHASES OBJECT
         ## thetah  : smoothed theta, dtpf, deriv 0
         ## dtheta  : dtheta/dphi -1, dtpf, deriv 1
         ## ddtheta : d2theta/dphi2,  dtpi, deriv 2
         x <- pca$rotation$phi
-        pca$rotation$inflection <- isegs # inflection segments
-        pca$rotation$ddtheta    <- predict(dtpf, x, nderiv = 2)
-    
-        pca$inflection <- inflection
+        df <- data.frame(segment= segs,
+                         theta  = predict(dtpf, x, nderiv = 0) + x,
+                         dtheta = predict(dtpf, x, nderiv = 1),
+                         ddtheta= predict(dtpf, x, nderiv = 2))
+        nm <- names[method=='inflection']
+        colnames(df) <- paste0(nm, "_", colnames(df))
+
+        ## replace previus
+        old <- which(colnames(pca$rotation)%in%colnames(df))
+        if ( length(old)>0 )
+            pca$rotation <-pca$rotation[,-old] 
+        pca$rotation <- cbind(pca$rotation,
+                              df)
+        
+        ## add breaks
+        pca[[names[method=='inflection']]] <- inflection 
+
     }
 
     ## DPSEG: piecewise linear
@@ -177,31 +202,45 @@ segments <- function(phases,
                             jumps=jumps, P=P, minl=L, verb=verb, add.lm=TRUE)
 
         ## generate break table
-        segs <- data.frame(phi  =dps$segments$x2,
+        brks <- data.frame(phi  =dps$segments$x2,
                            slope=dps$segments$slope,
                            smax =dps$segments$slope >0)
         lim <- c(-pi, pi)
-        rmc <- segs$phi <= lim[1] | segs$phi > lim[2]
-        segs <- segs[!rmc,,drop=FALSE]
+        rmc <- brks$phi <= lim[1] | brks$phi > lim[2]
+        brks <- brks[!rmc,,drop=FALSE]
 
         ## only 1 segment
-        if ( nrow(segs)==0 )
-            segs <- data.frame(phi=pi, slope=NA, smax=TRUE)
+        if ( nrow(brks)==0 )
+            brks <- data.frame(phi=pi, slope=NA, smax=TRUE)
         
         ## segment ID
-        segs$ID <- c(1:nrow(segs))
+        brks$ID <- c(1:nrow(brks))
 
         
         ## classify phases by max slope segments
-        dsegs <-  phase_segments(pca$rotation$phi, breaks=segs$phi)
+        dsegs <-  phase_segments(pca$rotation$phi, breaks=brks$phi)
         
-        
-        ## ADD PHASES
+        ## ADD TO PHASES OBJECT
+        ## thetah  : smoothed theta, dtpf, deriv 0
+        ## dtheta  : dtheta/dphi -1, dtpf, deriv 1
+        ## ddtheta : d2theta/dphi2,  dtpi, deriv 2
         x <- pca$rotation$phi
-        pca$rotation$dpseg   <- dsegs
-        pca$rotation$theta.d <- predict(dps, xout=x)$y
-    
-        pca$dpseg <- segs
+        df <- data.frame(segment= dsegs,
+                         theta  = predict(dps, xout=x)$y + x)
+        nm <- names[method=='dpseg']
+        colnames(df) <- paste0(nm, "_", colnames(df))
+
+        ## replace previus
+        old <- which(colnames(pca$rotation)%in%colnames(df))
+        if ( length(old)>0 )
+            pca$rotation <-pca$rotation[,-old] 
+        pca$rotation <- cbind(pca$rotation,
+                              df)
+        
+        ## add breaks
+        pca[[names[method=='dpseg']]] <- brks 
+
+        ## add full dpseg object; todo: required?
         pca$dpseg.object <- dps
     }
     
@@ -213,7 +252,8 @@ segments <- function(phases,
     if ( plot ) {
            if ( verb>0 )
                cat(paste('plotting segments\n'))
-           plotSegments(phases, difference=TRUE, shift=TRUE, method=method[1])
+           plotSegments(phases, 
+                        method=names[1], ...)
     }
     
     invisible(phases)
@@ -235,7 +275,6 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     phi <- pca$rotation$phi[ord]
     theta <- pca$rotation$theta[ord]
 
-    cl <- pca$rotation[,method][pca$rotation$order]
 
     ## remove jumps from all theta
     idx <- detect_jumps(theta)
@@ -243,47 +282,78 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     ## TODO: remove_jumps doesn't work for thetah in dpseg and shoulder
     theta <- remove_jumps(theta, idx=idx, shift=shift, verb=FALSE)
 
-    deriv <- thetah <- NULL
+    deriv <- thetah <- breaks <- brks <- cl <- NULL
     
-    if ( 'shoulder' %in% method ) {
+    ## get common structure 
+    if ( method %in% names(pca) ) {
+        
+        cln <- paste0(method,'_segment')
+        cl <- pca$rotation[,cln][pca$rotation$order]
+        base.cex <- 1
+        
+        thn <- paste0(method,'_theta')
+        thetah <- pca$rotation[[thn]][ord]
+        
+        breaks <- brks <- pca[[method]]
+    }
 
-        ## NOTE thetah is aligned with theta only if shift=TRUE
-        ## since that was used in segmentation
-        if ( shift ) thetah <- pca$rotation$theta.s[ord]
-                   
-        deriv <- pca$rotation$dtheta[ord]
-        breaks <- pca$shoulder
+    if (  method %in% c('shoulder','slope') ) {
+        
+        dthn <- paste0(method,'_dtheta')
+        deriv <- pca$rotation[[dthn]][ord]
         ylab4 <- expression(d*theta/d*phi-1)
+
+        if ( method=='slope' ) {
+            brks <- NULL
+            cl <- num2col(deriv)
+            base.cex <- 0
+        }
+        
         magn <- "dtheta"
         maxn <- 'dmax'
-        dcol <- 4
+        dcol <- bcol <- 4
     }
-    if ( 'inflection' %in% method ) {
-        deriv <- pca$rotation$ddtheta[ord]
-        breaks <- pca$inflection
+    if ( method %in% c('inflection') ) {
+
+
+        dthn <- paste0(method,'_ddtheta')
+        deriv <- pca$rotation[[dthn]][ord]
         ylab4 <- expression(d^2*theta/d*phi^2)
+           
+        brks <- breaks[breaks$ddmax,] ## TODO: handle upstream
+        if ( method=='slope' )
+            brks <- NULL
+        
         magn <- "ddtheta"
         maxn <- 'ddmax'
-        dcol <- 3
+        dcol <- bcol <- 3
     }
     if ( 'dpseg' %in% method ) {
 
-        ## NOTE thetah is aligned with theta only if shift=TRUE
-        ## since that was used in segmentation
-        if ( shift ) thetah <- pca$rotation$theta.d[ord] + phi
+        deriv <- rep(0, length(thetah))
         
-        breaks <- pca$dpseg
         ylab4 <- expression(piecewise~linear)
         magn <- "slope"
         maxn <- 'smax'
-        dcol <- 5
+        dcol <- NA
+        bcol <- 5
     }
 
+    ## align smoothed theta
+    if ( !is.null(thetah) ) 
+        thetah <- phase_align(thetah, target=theta, shift=shift)
 
+    
     if ( !is.null(deriv) ) {
+        
         plot(phi, deriv, type='l', col=dcol,
              xlim=c(-pi, pi), xlab='', ylab='', axes=FALSE) 
-        abline(h=0, col=dcol, lwd=.5)
+
+        abline(h=0, col=dcol, lwd=.25)
+        
+        if ( !is.null(brks) )
+            abline(v=brks$phi, lwd=.25, col=bcol) 
+
         axis(4, col=dcol, col.axis=dcol)
         mtext(ylab4, 4, par('mgp')[1], col=dcol)
         par(new=TRUE)
@@ -293,10 +363,11 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     yaxis <- circ.axis
     ylim <- c(-pi, pi)
     if ( !shift ) ylim <- range(theta)
+    
     if ( difference ) {
-        theta <- theta -phi
+        theta <- theta - phi
         if ( !is.null(thetah) ) thetah <- thetah -phi
-        ylab <- expression(differene~theta-phi)
+        ylab <- expression(difference~theta-phi)
         yaxis <- axis
         ylim <- range(theta)
     }
@@ -306,15 +377,18 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
          xlab=expression(phase~phi), ylab=ylab)
 
     ## plot segments
-    points(phi, theta, col=cl, cex=.5, pch=1)
-    if ( !is.null(thetah) ) 
-        lines(phi, thetah, col=1, lwd=1) # smoothed
+    if ( !is.null(cl) ) {
+        
+        points(phi, theta, col=cl, cex=.5, pch=1)
+        if ( !is.null(thetah) ) 
+            lines(phi, thetah, col=1, lwd=1) # smoothed
        
-    ## plot break points
-    points(approx(phi, theta, breaks$phi),
-           col=dcol, lwd=2,
-           pch=ifelse(breaks[,maxn],24,25),
-           cex=.5+1.5*abs(breaks[,magn])/max(abs(breaks[,magn])))
+        ## plot break points
+        points(approx(phi, theta, breaks$phi),
+               col=dcol, lwd=2,
+               pch=ifelse(breaks[,maxn],24,25),
+               cex=base.cex+1.5*abs(breaks[,magn])/max(abs(breaks[,magn])))
+    } else points(phi, theta, col=1, cex=.5, pch=1)
     circ.axis(1)
     yaxis(2)
 
