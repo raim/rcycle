@@ -92,7 +92,7 @@ segments <- function(phases,
     th <- pca$rotation$theta[pca$rotation$order]
 
     ## remove jumps from theta
-    theta <- remove_jumps(th, shift=TRUE, verb=verb)
+    theta <- remove_jumps(th, center=FALSE, verb=verb)
     
     ## circularize
     phi   <- c(   ph-2*pi,    ph,    ph+2*pi)
@@ -266,7 +266,7 @@ segments <- function(phases,
 #'     theta. This emphasizes the noise in the original data and the
 #'     smoothing effects.
 #' @export
-plotSegments <- function(phases, difference=FALSE, shift=TRUE,
+plotSegments <- function(phases, difference=FALSE, center=TRUE,
                          method='shoulder') {
 
     pca <- attr(phases, 'pca') 
@@ -275,18 +275,15 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     phi <- pca$rotation$phi[ord]
     theta.orig <- pca$rotation$theta[ord]
 
-
-
     ## remove jumps from all theta
     ## TODO: remove_jumps doesn't work for thetah in dpseg and shoulder
     ## and the current approach via approx_phase has errors
-    idx <- detect_jumps(theta.orig)
-    theta <- remove_jumps(theta.orig, idx=idx, shift=shift, verb=FALSE)
+    theta <- remove_jumps(theta.orig, center=center, verb=FALSE)
 
     ## shift cohort theta accordingly
+    ## TODO: is this correct?
     thetac <- approx_phase(x=theta.orig, y=theta, xout=pca$x$theta)$y
     phic <- approx_phase(x=theta, y=phi, xout=thetac)$y
-
 
     deriv <- thetah <- breaks <- brks <- cl <- NULL
     
@@ -348,7 +345,7 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     ## align smoothed theta
     ## TODO: is there a better solution?
     if ( !is.null(thetah) ) 
-        thetah <- phase_align(thetah, target=theta, shift=shift)
+        thetah <- align_phase(thetah, target=theta, center=center)
         ##thetah <- approx_phase(x=theta.orig, y=theta, xout=thetah)$y
     
     if ( !is.null(deriv) ) {
@@ -369,7 +366,7 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
     ylab <- expression(angle~theta)
     yaxis <- circ.axis
     ylim <- c(-pi, pi)
-    if ( !shift ) ylim <- range(theta)
+    if ( !center ) ylim <- range(theta)
     
     if ( difference ) {
         theta <- theta - phi
@@ -390,7 +387,7 @@ plotSegments <- function(phases, difference=FALSE, shift=TRUE,
         if ( !is.null(thetah) ) 
             lines(phi, thetah, col=1, lwd=1) # smoothed
        
-        if ( method=='slope' & !shift ) {
+        if ( method=='slope' & !center ) {
             abline(v=0, col=1, lwd=.25)
             abline(h=0, col=1, lwd=.25)
         }
@@ -480,7 +477,7 @@ get_segments <- function(phases, ma.win=ceiling(nrow(phases))*.02,
     phi <- phases$phase[phases$order]
 
     ## shift phases to remove circular jumps
-    theta <- remove_jumps(theta, shift=TRUE, verb=verb)
+    theta <- remove_jumps(theta, center=TRUE, verb=verb)
 
     if ( plot ) {
         plot(phi, theta, col="gray", axes=FALSE, xlab='', ylab='', type='l')
@@ -521,7 +518,7 @@ inflection <- function(x, y, ma.win=length(x)/20, spar=.1, n=1,
     
     ## shift phases to remove circular jumps
     ## NOTE: only theta shifted, so phi coors stay the same
-    theta <- remove_jumps(theta, shift=TRUE, verb=verb)
+    theta <- remove_jumps(theta, center=TRUE, verb=verb)
 
 
     ## circularize and later cut central portion
@@ -706,7 +703,7 @@ curves <- function(x, y, ma.win=length(x)/20, spar=.1, n=1,
     
     ## shift phases to remove circular jumps
     ## NOTE: only theta shifted, so phi coors stay the same
-    theta <- remove_jumps(theta, shift=TRUE, verb=verb)
+    theta <- remove_jumps(theta, center=TRUE, verb=verb)
 
 
     ## circularize and later cut central portion

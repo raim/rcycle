@@ -15,10 +15,10 @@
 #' Returns the rank of a phase angle in circular coordinates.
 #' @param align align the original phase angle and the rank phase
 #'     angle at phase 0.
-#' @param shift shift the aligned phase angle such that all phases are
-#'     in -pi:pi, using \link{phase_align}.
+#' @param center center the aligned phase angle such that all phases are
+#'     in -pi:pi, using \link{align_phase}.
 #' @export
-phase_rank <- function(theta, align=TRUE, shift=TRUE) {
+phase_rank <- function(theta, align=TRUE, center=TRUE) {
 
     phi <- rank(theta)
     
@@ -27,17 +27,17 @@ phase_rank <- function(theta, align=TRUE, shift=TRUE) {
 
     ## align at phase 0
     if ( align )
-        phi <- phase_align(phi, target=theta, shift=shift)
+        phi <- align_phase(phi, target=theta, center=center)
 
     phi
 }
 
 #' Align two phase vectors at 0.
 #' @export
-phase_align <- function(phi, target, shift=TRUE) {
+align_phase <- function(phi, target, center=TRUE) {
 
     dph <- approx(x=target, y=phi, xout=0)$y
-    phase_shift(phi, dph, shift=shift)
+    shift_phase(phi, dph, center=center)
 
 }
 
@@ -106,7 +106,9 @@ revert <- function(phases,  verb=1) {
     phases    
 }
 
-shift <- function(phases, dphi, verb=1) {
+#' Shift all phases and angles in a phase object.
+#' @export
+shift <- function(phases, dphi, align=TRUE, center=FALSE, verb=1) {
     
     pca <- attr(phases, 'pca')
 
@@ -114,21 +116,25 @@ shift <- function(phases, dphi, verb=1) {
         cat(paste("\tshifting phases by", dphi, "\n"))
 
     ## shift phi in all items, re-order and phase align theta if present
+
+    ## TODO: instead shift main theta and re-calculate rank phase?
     
     pca <- lapply(pca, function(x) {
         if ( 'phi' %in% names(x) ) {
 
             ## shift rank phase
-            x$phi <- phase_shift(x$phi, dphi, shift=TRUE)
+            x$phi <- shift_phase(x$phi, dphi, center=TRUE)
 
             ## re-order
             if ( 'order' %in% names(x) )
                 x$order <- order(x$phi)
 
             ## align all theta at 0
-            idx <- grep('^theta', names(x), value=TRUE)
-            for ( id in idx ) {
-                x[[id]] <- phase_align(phi=x[[id]], target=x$phi, shift=TRUE)
+            if ( align ){
+                idx <- grep('^theta', names(x), value=TRUE)
+                for ( id in idx ) 
+                    x[[id]] <- align_phase(phi=x[[id]],
+                                           target=x$phi, center=center)
             }
         }
         x
@@ -136,9 +142,11 @@ shift <- function(phases, dphi, verb=1) {
 
 
     ## re-order and re-calculate distance
-    pca$order <- rownames(pca$x)[pca$x$order]
-    pca$distance <- state_order_distance(reference=rownames(states),
-                                         test=pca$order)
+    if ( 'order' %in% names(pca) )
+        pca$order <- order(pca$x$phi)
+    if ( 'distance' %in% names(pca) )
+        pca$distance <- state_order_distance(reference=rownames(states),
+                                             test=pca$order)
     
     pca$processing <- c(pca$processing, paste0("shift:", dphi))
     attr(phases, 'pca') <- pca
@@ -222,7 +230,7 @@ get_pseudophase <- function(states,
 
     ## phase: rank(theta) in radian
     ## aligned at 0
-    phi <- phase_rank(theta, align=TRUE, shift=TRUE)
+    phi <- phase_rank(theta, align=TRUE, center=TRUE)
 
     
     ## COHORT PSEUDOPHASE
@@ -259,14 +267,14 @@ get_pseudophase <- function(states,
             cat(paste("phase shift by", round(dph,3), "\n"))
 
         ## cell phase shift
-        theta <- phase_shift(theta, dph, shift=TRUE)
+        theta <- shift_phase(theta, dph, center=TRUE)
 
         ## re-calculate rank phase
-        phi <- phase_rank(theta, align=TRUE, shift=TRUE)
+        phi <- phase_rank(theta, align=TRUE, center=TRUE)
 
         ## cohort phase shift
-        ctheta <- phase_shift(ctheta, dph, shift=TRUE)
-        cphi <- phase_shift(cphi, dph, shift=TRUE)
+        ctheta <- shift_phase(ctheta, dph, center=TRUE)
+        cphi <- shift_phase(cphi, dph, center=TRUE)
     }
 
     
@@ -364,7 +372,7 @@ get_pseudophase <- function(states,
     if ( TRUE ) {
 
         ## add default summary for pca
-        pca$summary <- summary(pca)
+        pca$summary <- summary(pca)$importance
         
         pca$rotation <- cbind.data.frame(order=order(phi),
                                          phi=phi,
@@ -377,8 +385,8 @@ get_pseudophase <- function(states,
                                   amp=camp,
                                   pca$x)
         ## add % var explained
-        eigenvalues <- pca$sdev^2
-        pca$variance <- eigenvalues/sum(eigenvalues)
+        ##eigenvalues <- pca$sdev^2
+        ##pca$variance <- eigenvalues/sum(eigenvalues)
 
         
         pca$order <- rownames(pca$x)[pca$x$order]
@@ -590,26 +598,26 @@ state_phase <- function(states, phase, center, window=0.05, verb=0) {
 
 #' Shift all phases in a phase object.
 #' @export
-shift_phase <- function(phases, dph, shift=TRUE, verb=0) {
+shift_phases <- function(phases, dph, center=TRUE, verb=0) {
 
     ## cell phases
     if ( verb>0 ) cat(paste("shift cell phases\n"))
 
     ## shift main phase
-    phases$phase <- phase_shift(phases$phase, dph, shift=shift)
+    phases$phase <- shift_phase(phases$phase, dph, center=center)
 
     ##dph2 <- approx(x=phases$phase, y=phases$angle, xout=0)$y
-    ##phases$angle <- phase_shift(phases$angle, dph2, shift=TRUE)
+    ##phases$angle <- shift_phase(phases$angle, dph2, shift=TRUE)
 
-    phases$angle <- phase_shift(phases$angle, dph, shift=shift)
+    phases$angle <- shift_phase(phases$angle, dph, center=center)
     phases$order <- order(phases$phase)
        
     ## cohort phases
     if ( "cohorts"%in%names(attributes(phases)) ) {
         if ( verb>0 ) cat(paste("shift cohort phases\n"))
         coh <- attr(phases, "cohorts")
-        coh$phase <- phase_shift(coh$phase, dph, shift=shift)
-        coh$angle <- phase_shift(coh$angle, dph, shift=shift)
+        coh$phase <- shift_phase(coh$phase, dph, center=center)
+        coh$angle <- shift_phase(coh$angle, dph, center=center)
         coh$order <- order(coh$phase)
         attr(phases, "cohorts") <- coh
     }
@@ -618,13 +626,13 @@ shift_phase <- function(phases, dph, shift=TRUE, verb=0) {
     if ( "segments"%in%names(attributes(phases)) ) {
         if ( verb>0 ) cat(paste("shift segment phases\n"))
         seg <- attr(phases, "segments")
-        seg$x <- phase_shift(seg$x, dph, shift=shift)
+        seg$x <- shift_phase(seg$x, dph, center=center)
         attr(phases, "segments") <- seg
     }
     if ( "inflections"%in%names(attributes(phases)) ) {
         if ( verb>0 ) cat(paste("shift inflection phases\n"))
         seg <- attr(phases, "inflections")
-        seg$x <- phase_shift(seg$x, dph, shift=shift)
+        seg$x <- shift_phase(seg$x, dph, center=center)
         attr(phases, "inflections") <- seg
     }
     
@@ -639,17 +647,24 @@ shift_phase <- function(phases, dph, shift=TRUE, verb=0) {
 
 #' Shift a phase vector by a certain phase.
 #' @export
-phase_shift <- function(phi, dphi, shift=TRUE) {
+shift_phase <- function(phi, dphi, center=TRUE) {
 
     phi <- phi - dphi
-    if ( shift ) {
-        phi[phi< pi] <- phi[phi< pi] + 2*pi
-        phi[phi>=pi] <- phi[phi>=pi] - 2*pi
-    }
+    if ( center )
+        phi <- center_phase(phi)
     phi
     
 }
 
+#' Center phases between -pi and pi.
+#' @param phi phase angle (radian).
+#' @export
+center_phase <- function(phi) {
+
+    phi[phi< pi] <- phi[phi< pi] + 2*pi
+    phi[phi>=pi] <- phi[phi>=pi] - 2*pi
+    phi
+}
 
 ## TODO: more general solution?
 
@@ -662,7 +677,7 @@ detect_jumps <- function(py, max=-pi, verb=0) {
 #' Remove a jump in phases by shift all phases.
 #' @param phi ordered list of phases
 #' @export
-remove_jumps <- function(phi, idx, shift=TRUE, verb=1) {
+remove_jumps <- function(phi, idx, center=TRUE, verb=1) {
 
  
     ## detect JUMPS in ANGLE and shift
@@ -687,9 +702,9 @@ remove_jumps <- function(phi, idx, shift=TRUE, verb=1) {
             cat(paste("shifting phase angles to remove the jump\n"))
 
         ## shift to -pi:pi
-        if ( shift & idx > length(phi)/2)
+        if ( center & idx > length(phi)/2)
             phi <- phi + -pi - min(phi)
-        else if ( shift & idx <= length(phi)/2)
+        else if ( center & idx <= length(phi)/2)
             phi <- phi + pi - max(phi)  
     }
     phi
