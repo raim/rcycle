@@ -143,9 +143,9 @@ shift <- function(phases, dphi, align=TRUE, center=FALSE, verb=1) {
 
     ## re-order and re-calculate distance
     if ( 'order' %in% names(pca) )
-        pca$order <- order(pca$x$phi)
+        pca$order <- rownames(pca$x)[pca$x$order]
     if ( 'distance' %in% names(pca) )
-        pca$distance <- state_order_distance(reference=rownames(states),
+        pca$distance <- state_order_distance(reference=rownames(pca$x),
                                              test=pca$order)
     
     pca$processing <- c(pca$processing, paste0("shift:", dphi))

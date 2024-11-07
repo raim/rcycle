@@ -50,7 +50,7 @@ plotGOI <- function(phases, counts, goi, names, col,
 plotStates <- function(phase, states, cls.srt, cls.col,
                        win=.01, norm=FALSE, lines=TRUE,
                        sid="", legend=TRUE, leg.nrow=1,
-                       xlab=expression(phase*phi),
+                       xtype='phase', xlab=expression(phase*phi),
                        ylab, ...) {
 
     ## order by x-value
