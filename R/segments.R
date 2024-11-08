@@ -100,7 +100,7 @@ segments <- function(phases,
 
     if ( verb>0 )
         cat(paste0('calculating segments for ', length(phi),  ' cells,\n',
-                   'using method(s):', paste(method,collapse=';'), '\n'))
+                   'using method(s): ', paste(method,collapse=';'), '\n'))
 
 
     ## SMOOTH SPLINE FITS

@@ -314,7 +314,7 @@ get_pseudophase <- function(states,
     ord <- order(phi)
 
     ## collect results
-    res <- data.frame(order=ord, phase=phi, amplitude=amp, angle=theta)
+    res <- "hallo" #data.frame(order=ord, phase=phi, amplitude=amp, angle=theta)
 
 
     ## add simple classification via max of log2 ratio
@@ -325,7 +325,7 @@ get_pseudophase <- function(states,
 
     ## add all eigenvectors (loadings of PCA)
     if ( add.loadings ) {
-        res <- cbind(res, pca$rotation)
+        ##res <- cbind(res, pca$rotation)
     }
 
 
@@ -358,13 +358,13 @@ get_pseudophase <- function(states,
     ## TODO: ends, currently dirty via rule=2; how can this be done better?
     ## use circular approx: approxfun.circular
     ##cphi <- approx(x=theta, y=phi, xout=ctheta, rule=2)$y
-    attr(res, "cohorts") <- data.frame(phase=cphi, amp=camp,
-                                       angle=ctheta, pca$x)
+    ##attr(res, "cohorts") <- data.frame(phase=cphi, amp=camp,
+    ##                                   angle=ctheta, pca$x)
 
     ## add order as attribute
     if ( !is.null(sord) ) {
-        attr(res, "order") <- sord    
-        attr(res, "distance") <- ldst
+        ##attr(res, "order") <- sord    
+        ##attr(res, "distance") <- ldst
     }
 
 
@@ -405,8 +405,8 @@ get_pseudophase <- function(states,
         ## temporary: use pca-based order if validate was false
         if ( is.null(sord) ) {
 
-            attr(res, "order") <- pca$order
-            attr(res, "distance") <- pca$distance
+            ##attr(res, "order") <- pca$order
+            ##attr(res, "distance") <- pca$distance
        }
         
     }
