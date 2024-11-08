@@ -108,7 +108,7 @@ revert <- function(phases,  verb=1) {
 
 #' Shift all phases and angles in a phase object.
 #' @export
-shift <- function(phases, dphi, align=TRUE, center=FALSE, verb=1) {
+shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
     
     pca <- attr(phases, 'pca')
 

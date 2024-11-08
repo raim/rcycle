@@ -125,7 +125,7 @@ plotPC <- function(phases, x=1, y=2, col,
     ylab <- ys
     
     ## proportion of variance
-    varp <- pca$summary['Proportion of Variance',]*100
+    varp <- round(pca$summary['Proportion of Variance',]*100,1)
     xlab <- paste0(xs, " (", varp[xs], "%)")
     ylab <- paste0(ys, " (", varp[ys], "%)")
 

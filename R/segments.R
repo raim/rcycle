@@ -344,8 +344,8 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
 
     ## align smoothed theta
     ## TODO: is there a better solution?
-    if ( !is.null(thetah) ) 
-        thetah <- align_phase(thetah, target=theta, center=center)
+    ##if ( !is.null(thetah) ) 
+    ##    thetah <- align_phase(thetah, target=theta, center=center)
         ##thetah <- approx_phase(x=theta.orig, y=theta, xout=thetah)$y
     
     if ( !is.null(deriv) ) {
