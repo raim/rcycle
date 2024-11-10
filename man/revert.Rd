@@ -8,8 +8,6 @@ revert(phases, verb = 1)
 }
 \arguments{
 \item{phases}{phases object as returned by \link{get_pseudophase}.}
-
-\item{verb}{output verbosity level.}
 }
 \description{
 This function compares the calculated order of states to the input

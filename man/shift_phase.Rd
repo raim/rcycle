@@ -6,6 +6,15 @@
 \usage{
 shift_phase(phi, dphi, center = TRUE)
 }
+\arguments{
+\item{phi}{phase angles to be shifted by dphi.}
+
+\item{dphi}{phase angle by which the phase phi in the phases object
+will be shifted.}
+
+\item{center}{re-center the shifted theta (align is true)
+between -pi:pi.}
+}
 \description{
 Shift a phase vector by a certain phase.
 }

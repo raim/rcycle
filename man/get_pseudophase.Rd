@@ -18,8 +18,11 @@ get_pseudophase(
 )
 }
 \arguments{
-\item{state}{a cohort expression state table, with cohort mean
-counts as rows and cells as columns.}
+\item{states}{a cohort expression state table, with cohort mean
+counts as rows and cells as columns, as provided by
+\link{get_states}.}
+
+\item{verb}{output verbosity level.}
 }
 \description{
 get the pseudophase from a cohort state matrix

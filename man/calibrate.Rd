@@ -6,6 +6,15 @@
 \usage{
 calibrate(phases, period, phase = "phi")
 }
+\arguments{
+\item{phases}{phases object as returned by \link{get_pseudophase}.}
+
+\item{period}{a period of the transcription cycle, in units of
+time.}
+
+\item{phase}{the phase ID in the phases object to use for calibration
+to the transcription cycle period.}
+}
 \description{
 Calibrate phase to a period.
 }

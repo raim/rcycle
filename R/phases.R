@@ -63,7 +63,6 @@ approx_phase <- function(x, y, xout, ...) {
 #' input order, all phases are reverted.
 #'
 #' @param phases phases object as returned by \link{get_pseudophase}.
-#' @param verb output verbosity level.
 #' @export
 revert <- function(phases,  verb=1) {
 
@@ -96,6 +95,9 @@ revert <- function(phases,  verb=1) {
 }
 
 #' Shift all phases and angles in a phase object.
+#' @inheritParams get_pseudophase
+#' @inheritParams shift_phase
+#' @inheritParams revert
 #' @export
 shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
     
@@ -139,7 +141,7 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
 #'
 #' The differences are calculated as Levenshtein distances, using a
 #' simple circular extension of the base R \link{adist} function.
-#' @param phases the phase object.
+#' @inheritParams revert
 #' @export
 evaluate_order <- function(phases) {
 
@@ -150,6 +152,11 @@ evaluate_order <- function(phases) {
 }
 
 #' Calibrate phase to a period.
+#' @param period a period of the transcription cycle, in units of
+#'     time.
+#' @param phase the phase ID in the phases object to use for calibration
+#'     to the transcription cycle period.
+#' @inheritParams revert
 #' @export
 calibrate <- function(phases, period, phase='phi') {
 
@@ -170,8 +177,10 @@ classify <- function(phases) {}
 ## order of state,
 
 #' get the pseudophase from a cohort state matrix
-#' @param state a cohort expression state table, with cohort mean
-#'     counts as rows and cells as columns.
+#' @param states a cohort expression state table, with cohort mean
+#'     counts as rows and cells as columns, as provided by
+#'     \link{get_states}.
+#' @param verb output verbosity level.
 #' @export
 get_pseudophase <- function(states,
                             center, revert.phase=FALSE, window=.05,
@@ -358,6 +367,9 @@ get_classes <- function(states) {
 }
 
 #' Establish whether the phases should be reverted wrt state order.
+#' @param phi a vector of phase angles (in radian).
+#' @param ... parameters passed to \link{revert_phase_state}.
+#' @inheritParams get_pseudophase
 #' @export
 revert_phase <- function(phi, states, ...) {
 
@@ -373,6 +385,9 @@ revert_phase <- function(phi, states, ...) {
 
 ## TODO: avoid states, only do on PC1/2 angles
 #' Establish whether the phases should be reverted wrt state order.
+#' @inheritParams get_pseudophase
+#' @inheritParams revert_phase
+#' @inheritParams get_state_order
 #' @export
 revert_phase_state <- function(states, phi, window=.05) {
 
@@ -389,13 +404,13 @@ revert_phase_state <- function(states, phi, window=.05) {
 
 #' calculate Levenshtein distance between state/test and a reference order
 #' @export
-state_order_distance <- function(state, test, reference,  ...) {
+state_order_distance <- function(states, test, reference,  ...) {
 
     ## NOTE: either test string or state matrix is required
     if ( missing(test) )
-        test <-  get_state_order(states=state, ...)
+        test <-  get_state_order(states=states, ...)
     if ( missing(reference) )
-        reference <- rownames(state)
+        reference <- rownames(states)
 
     ## ABC-econding of classes in test and reference
     abc <- c(letters, toupper(letters))
@@ -429,8 +444,18 @@ state_order_distance <- function(state, test, reference,  ...) {
     dst
 }
 
-## NOTE: CELLS (state columns) MUST BE ORDERED!
+
 #' Get the order of states (rows of the cohort state matrix).
+#'
+#' NOTE: cells (columns of the state matrix) must be ordered!
+#' @param states an ORDERED cohort expression state table, with cohort
+#'     mean counts as rows and cells as columns, as provided by
+#'     \link{get_states}. The columns must be ordered for the moving
+#'     average calculation.
+#' @param window fraction of cells to be used for the moving average
+#'     of states.
+#' @param circular treat the data as circular in the moving average
+#'     calculation.
 #' @export
 get_state_order <- function(states, window=.05,
                             sides=2, circular=TRUE, names=FALSE) {
@@ -499,6 +524,11 @@ state_phase <- function(states, phase, center, window=0.05, verb=0) {
 
 
 #' Shift a phase vector by a certain phase.
+#' @param phi phase angles to be shifted by dphi.
+#' @param dphi phase angle by which the phase phi in the phases object
+#'     will be shifted.
+#' @param center re-center the shifted theta (align is true)
+#'     between -pi:pi.
 #' @export
 shift_phase <- function(phi, dphi, center=TRUE) {
 

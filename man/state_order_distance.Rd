@@ -4,7 +4,7 @@
 \alias{state_order_distance}
 \title{calculate Levenshtein distance between state/test and a reference order}
 \usage{
-state_order_distance(state, test, reference, ...)
+state_order_distance(states, test, reference, ...)
 }
 \description{
 calculate Levenshtein distance between state/test and a reference order

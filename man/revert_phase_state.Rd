@@ -6,6 +6,16 @@
 \usage{
 revert_phase_state(states, phi, window = 0.05)
 }
+\arguments{
+\item{states}{a cohort expression state table, with cohort mean
+counts as rows and cells as columns, as provided by
+\link{get_states}.}
+
+\item{phi}{a vector of phase angles (in radian).}
+
+\item{window}{fraction of cells to be used for the moving average
+of states.}
+}
 \description{
 Establish whether the phases should be reverted wrt state order.
 }

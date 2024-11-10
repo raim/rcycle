@@ -12,6 +12,18 @@ get_state_order(
   names = FALSE
 )
 }
+\arguments{
+\item{states}{an ORDERED cohort expression state table, with cohort
+mean counts as rows and cells as columns, as provided by
+\link{get_states}. The columns must be ordered for the moving
+average calculation.}
+
+\item{window}{fraction of cells to be used for the moving average
+of states.}
+
+\item{circular}{treat the data as circular in the moving average
+calculation.}
+}
 \description{
-Get the order of states (rows of the cohort state matrix).
+NOTE: cells (columns of the state matrix) must be ordered!
 }

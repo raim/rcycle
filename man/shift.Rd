@@ -6,6 +6,17 @@
 \usage{
 shift(phases, dphi, align = FALSE, center = FALSE, verb = 1)
 }
+\arguments{
+\item{phases}{phases object as returned by \link{get_pseudophase}.}
+
+\item{dphi}{phase angle by which the phase phi in the phases object
+will be shifted.}
+
+\item{center}{re-center the shifted theta (align is true)
+between -pi:pi.}
+
+\item{verb}{output verbosity level.}
+}
 \description{
 Shift all phases and angles in a phase object.
 }

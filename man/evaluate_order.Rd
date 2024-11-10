@@ -7,7 +7,7 @@
 evaluate_order(phases)
 }
 \arguments{
-\item{phases}{the phase object.}
+\item{phases}{phases object as returned by \link{get_pseudophase}.}
 }
 \description{
 The differences are calculated as Levenshtein distances, using a
