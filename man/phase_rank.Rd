@@ -4,14 +4,14 @@
 \alias{phase_rank}
 \title{Returns the rank of a phase angle in circular coordinates.}
 \usage{
-phase_rank(theta, align = TRUE, shift = TRUE)
+phase_rank(theta, align = TRUE, center = TRUE)
 }
 \arguments{
 \item{align}{align the original phase angle and the rank phase
 angle at phase 0.}
 
-\item{shift}{shift the aligned phase angle such that all phases are
-in -pi:pi, using \link{phase_align}.}
+\item{center}{center the aligned phase angle such that all phases are
+in -pi:pi, using \link{align_phase}.}
 }
 \description{
 Returns the rank of a phase angle in circular coordinates.

@@ -5,9 +5,8 @@
 \title{Plot cohort state time series.}
 \usage{
 plotStates(
-  phases,
+  phase,
   states,
-  xtype = "phase",
   cls.srt,
   cls.col,
   win = 0.01,
@@ -16,7 +15,8 @@ plotStates(
   sid = "",
   legend = TRUE,
   leg.nrow = 1,
-  xlab = expression(pseudophase * phi),
+  xtype = "phase",
+  xlab = expression(phase * phi),
   ylab,
   ...
 )

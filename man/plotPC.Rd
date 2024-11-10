@@ -6,12 +6,9 @@
 \usage{
 plotPC(
   phases,
-  ptyp,
   x = 1,
   y = 2,
   col,
-  type = "PC",
-  eigenvalues,
   expand = TRUE,
   cohorts = TRUE,
   ccol,

@@ -13,7 +13,6 @@ get_pseudophase(
   spar = 0.001,
   classify = FALSE,
   validate = FALSE,
-  add.loadings = TRUE,
   row.center = TRUE,
   verb = 1
 )

@@ -111,11 +111,8 @@ plotPC <- function(phases, x=1, y=2, col,
                    expand=TRUE,
                    cohorts=TRUE, ccol, txt.cex=1, ...) {
 
-    ## TODO: untangle mixed phases object and ptyp
-    pca <- attr(phases, 'pca')
-
     if ( !inherits(phases, "phases") )
-        stop("phases must be an object of class 'phases', ",
+        warning("phases must be an object of class 'phases', ",
              "as returned by get_pseudophase")
 
     xs <- paste0('PC', x)
@@ -125,14 +122,14 @@ plotPC <- function(phases, x=1, y=2, col,
     ylab <- ys
     
     ## proportion of variance
-    varp <- round(pca$summary['Proportion of Variance',]*100,1)
+    varp <- round(phases$summary['Proportion of Variance',]*100,1)
     xlab <- paste0(xs, " (", varp[xs], "%)")
     ylab <- paste0(ys, " (", varp[ys], "%)")
 
 
         
-    xlim <- range(pca$rotation[,xs])
-    ylim <- range(pca$rotation[,ys])
+    xlim <- range(phases$rotation[,xs])
+    ylim <- range(phases$rotation[,ys])
 
     if ( expand ) {
         mx <- max(abs(c(ylim, xlim)))
@@ -140,102 +137,19 @@ plotPC <- function(phases, x=1, y=2, col,
     }
     
     if ( missing(col) ) 
-        dense2d(pca$rotation[,xs],
-                pca$rotation[,ys],
+        dense2d(phases$rotation[,xs],
+                phases$rotation[,ys],
                 xlim=xlim, ylim=ylim,
                 xlab=xlab, ylab=ylab, ...)
     else 
-        plot(pca$rotation[,xs], pca$rotation[,ys],
+        plot(phases$rotation[,xs], phases$rotation[,ys],
              xlim=xlim, ylim=ylim,
              xlab=xlab, ylab=ylab, col=col, ...)
 
     
     if ( cohorts ) {
 
-        cohorts <- pca$x
-
-        if ( missing(ccol) ) {
-            ccol <- rep('#000000', nrow(cohorts))
-            names(ccol) <- rownames(cohorts)
-        }
-            
-        xlim <- range(cohorts[,xs])
-        ylim <- range(cohorts[,ys])
-        
-        if ( expand ) {
-            mx <- max(abs(c(ylim, xlim)))
-            xlim <- ylim <- c(-mx, mx)
-        } else stop("expand=TRUE required for aligned cohort arrows")
-
-        par(new=TRUE)
-        plot(cohorts[,xs], cohorts[,ys],
-             xlim=xlim, ylim=ylim,
-             axes=FALSE, col=NA, xlab=NA, ylab=NA)
-        arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
-               col="white", lwd=4, length=.05)
-        arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
-               col=ccol[rownames(cohorts)], lwd=2, length=.05)
-        shadowtext(cohorts[,xs], cohorts[,ys],
-                   labels=sub(".*_","",rownames(cohorts)),
-                   col=ccol[rownames(cohorts)],
-                   cex=txt.cex, font=2, xpd=TRUE, r=.1)
-    }
-    
-}
-
-## simple plot of two eigenvectors from PCA
-## TODO: * this is biplot-like but shows arrows for
-## for pca$x instead of pca$rotation
-
-## Plot PCA-based circle and state vectors.
-## OLD
-plotPC.old <- function(phases, ptyp, x=1, y=2, col, type="PC",
-                   eigenvalues, expand=TRUE,
-                   cohorts=TRUE, ccol, txt.cex=1, ...) {
-
-    ## TODO: untangle mixed phases object and ptyp
-    if ( FALSE ) pca <- attr(phases, 'pca')
-
-    if ( !inherits(phases, "phases") )
-        stop("phases must be an object of class 'phases', ",
-             "as returned by get_pseudophase")
-
-    xs <- paste0(type, x)
-    ys <- paste0(type, y)
-
-    xlab <- xs
-    ylab <- ys
-    
-    if ( missing(eigenvalues) & "eigenvalues"%in%names(attributes(phases)) )
-        eigenvalues <- attr(phases, "eigenvalues")
-    if ( !missing(eigenvalues) ) {
-        varp <- round(eigenvalues/sum(eigenvalues)*100)
-        xlab <- paste0(xs, " (", varp[xs], "%)")
-        ylab <- paste0(ys, " (", varp[ys], "%)")
-    }
-
-    xlim <- range(phases[,xs])
-    ylim <- range(phases[,ys])
-
-    if ( expand ) {
-        mx <- max(abs(c(ylim, xlim)))
-        xlim <- ylim <- c(-mx, mx)
-    }
-    
-    if ( missing(col) ) 
-        dense2d(phases[,xs],
-                phases[,ys],
-                xlim=xlim, ylim=ylim,
-                xlab=xlab, ylab=ylab, ...)
-    else 
-        plot(phases[,xs], phases[,ys],
-             xlim=xlim, ylim=ylim,
-             xlab=xlab, ylab=ylab, col=col, ...)
-
-    
-    if ( cohorts ) {
-
-        cohorts <- attr(phases, "cohorts")
+        cohorts <- phases$x
 
         if ( missing(ccol) ) {
             ccol <- rep('#000000', nrow(cohorts))

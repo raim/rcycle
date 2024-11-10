@@ -4,7 +4,7 @@
 \alias{remove_jumps}
 \title{Remove a jump in phases by shift all phases.}
 \usage{
-remove_jumps(phi, shift = TRUE, verb = 1)
+remove_jumps(phi, idx, center = TRUE, verb = 1)
 }
 \arguments{
 \item{phi}{ordered list of phases}

@@ -54,21 +54,20 @@ approx_phase <- function(x, y, xout, ...) {
 }
 
 
+### PHASES OBJECT FUNCTIONS 
+
 #' Revert all phases if order is wrong.
 #'
 #' This function compares the calculated order of states to the input
 #' order of the state matrix. If the reverse order better matches the
 #' input order, all phases are reverted.
 #'
-#' @param phases
-#' @param verb
+#' @param phases phases object as returned by \link{get_pseudophase}.
+#' @param verb output verbosity level.
 #' @export
 revert <- function(phases,  verb=1) {
 
-    pca <- attr(phases, 'pca')
-
-    
-    rphase <- revert_phase(phi=pca$x$phi)
+    rphase <- revert_phase(phi=phases$x$phi)
     
     if ( rphase ) {
         if ( verb>0 )
@@ -76,7 +75,7 @@ revert <- function(phases,  verb=1) {
 
         ids <- c('phi', 'theta')
         
-        pca <- lapply(pca, function(x) {
+        phases <- lapply(phases, function(x) {
             for ( id in ids ) {
                 ## NOTE: grepping phase angles with suffix, e.g. theta.s
                 idx <- grep(paste0('^',id), names(x), value=TRUE)
@@ -88,29 +87,18 @@ revert <- function(phases,  verb=1) {
             x
         })
 
-        ## revert state order
-        if ( 'order' %in% names(pca) )
-            pca$order <- rev(pca$order)
-
-        ## distance to reference
-        if ( 'distance' %in% names(pca) )
-            pca$distance <- state_order_distance(reference=rownames(pca$x),
-                                                 test=pca$order)
-        
-        pca$processing <- c(pca$processing, "reverted")
-        attr(phases, 'pca') <- pca
+        phases$processing <- c(phases$processing, "reverted")
         
     } else if ( verb>0 )
         cat(paste("\tphases already in correct order\n"))
     
-    phases    
+    phases
 }
 
 #' Shift all phases and angles in a phase object.
 #' @export
 shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
     
-    pca <- attr(phases, 'pca')
 
     if ( verb>0 )
         cat(paste("\tshifting phases by", dphi, "\n"))
@@ -119,7 +107,7 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
 
     ## TODO: instead shift main theta and re-calculate rank phase?
     
-    pca <- lapply(pca, function(x) {
+    phases <- lapply(phases, function(x) {
         if ( 'phi' %in% names(x) ) {
 
             ## shift rank phase
@@ -140,18 +128,10 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
         x
     })
 
-
-    ## re-order and re-calculate distance
-    if ( 'order' %in% names(pca) )
-        pca$order <- rownames(pca$x)[pca$x$order]
-    if ( 'distance' %in% names(pca) )
-        pca$distance <- state_order_distance(reference=rownames(pca$x),
-                                             test=pca$order)
     
-    pca$processing <- c(pca$processing, paste0("shift:", dphi))
-    attr(phases, 'pca') <- pca
+    phases$processing <- c(phases$processing, paste0("shift:", dphi))
 
-    phases
+    phases 
 }
 
 
@@ -163,29 +143,23 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
 #' @export
 evaluate_order <- function(phases) {
 
-    phases <- attr(phases, 'pca')
-
     ## simply compare the order of cohort phases with the input order
     ## of the state matrix, reflect in row order of cohort phases in pca$x
-    
     state_order_distance(reference=rownames(phases$x),
                          test=rownames(phases$x)[phases$x$order])
-  
 }
 
 #' Calibrate phase to a period.
 #' @export
 calibrate <- function(phases, period, phase='phi') {
 
-    pca <- attr(phases, 'pca')
-
-    pca <- lapply(pca, function(x) {
+    ## convert phase to time
+    phases <- lapply(phases, function(x) {
         if ( phase %in% names(x) ) 
             x$time <- x[[phase]]/(2*pi) * period
         x
     })
 
-    attr(phases, 'pca') <- pca
     phases
 }
 
@@ -204,7 +178,6 @@ get_pseudophase <- function(states,
                             segments=FALSE, spar=1e-3,
                             classify=FALSE, validate=FALSE,
                             ##use.states=FALSE,
-                            add.loadings=TRUE, # required for PCA plots
                             row.center=TRUE,  # required: rm option?
                             verb=1) {
 
@@ -217,12 +190,12 @@ get_pseudophase <- function(states,
     ## PCA of cells
     ## scale: bring to unit variance and do COLUMN-CENTERING
     ## equiv to eigen(cor(cstates))
-    pca <- prcomp(cstates, scale.=TRUE) 
+    phases <- prcomp(cstates, scale.=TRUE) 
     
 
     ## CELL PSEUDOPHASE from loadings of PC1 vs. PC2
-    X <- pca$rotation[,1]
-    Y <- pca$rotation[,2]
+    X <- phases$rotation[,1]
+    Y <- phases$rotation[,2]
 
     ## get cell phase angle
     theta <- atan2(Y, X)
@@ -234,8 +207,8 @@ get_pseudophase <- function(states,
 
     
     ## COHORT PSEUDOPHASE
-    cX <- pca$x[,1]
-    cY <- pca$x[,2]
+    cX <- phases$x[,1]
+    cY <- phases$x[,2]
 
     ## get cohort phase angle
     ctheta <- atan2(cY, cX)
@@ -299,6 +272,7 @@ get_pseudophase <- function(states,
 
    
     ## validate if state order (rows) is reproduced by phase order
+    ## TODO: remove or generalize use, using PCA or state order
     sord <- NULL
     if ( validate ) {
 
@@ -313,109 +287,57 @@ get_pseudophase <- function(states,
     ## cohort ordering
     ord <- order(phi)
 
-    ## collect results
-    res <- "hallo" #data.frame(order=ord, phase=phi, amplitude=amp, angle=theta)
-
-
-    ## add simple classification via max of log2 ratio
-    if ( classify ) {
-        cls <- get_classes(states=states)
-        res <- cbind(res, class=cls)
-    }
-
-    ## add all eigenvectors (loadings of PCA)
-    if ( add.loadings ) {
-        ##res <- cbind(res, pca$rotation)
-    }
-
+ 
 
     ## SEGMENTS
     ## TODO: separate params for inflection and segments,
     ## TODO: skip inflections, just use segments and expand, add slopes etc.
     ## TODO: use these as alignment points for phase shifts
     if ( segments ) {
-        ## extrema of d(y-x)/dx
-        segs <- get_segments(res, plot=FALSE,
-                             ma.win=ceiling(nrow(res)*window),
-                             spar=spar)
-        attr(res, "segments") <- segs
-
-        ## inflection points of y=f(x)
-        infl <- get_inflections(res, plot=FALSE,
-                                ma.win=ceiling(nrow(res)*window),
-                                spar=spar)
-        attr(res, "inflections") <- infl
-    }
-
-    ## add eigenvalues as attributes
-    ## NOTE: "% variance explained" is eigenvalues/sum(eigenvalues)
-    evals <- pca$sdev
-    names(evals) <- paste0("PC",1:length(evals))
-    attr(res, "eigenvalues") <- evals^2
-
-    ## add cohorts
-    ## get order phase via approx!
-    ## TODO: ends, currently dirty via rule=2; how can this be done better?
-    ## use circular approx: approxfun.circular
-    ##cphi <- approx(x=theta, y=phi, xout=ctheta, rule=2)$y
-    ##attr(res, "cohorts") <- data.frame(phase=cphi, amp=camp,
-    ##                                   angle=ctheta, pca$x)
-
-    ## add order as attribute
-    if ( !is.null(sord) ) {
-        ##attr(res, "order") <- sord    
-        ##attr(res, "distance") <- ldst
+        stop('not implemented')
     }
 
 
-   ## TODO: extent PCA class instead of defining new class
-    if ( TRUE ) {
+    ## EXTENT PCA CLASS
 
-        ## add default summary for pca
-        pca$summary <- summary(pca)$importance
-        
-        pca$rotation <- cbind.data.frame(order=order(phi),
-                                         phi=phi,
-                                         theta=theta,
-                                         amplitude=amp, 
-                                         pca$rotation)
-        pca$x <- cbind.data.frame(order=order(cphi),
-                                  phi=cphi,
-                                  theta=ctheta,
-                                  amp=camp,
-                                  pca$x)
-        ## add % var explained
-        ##eigenvalues <- pca$sdev^2
-        ##pca$variance <- eigenvalues/sum(eigenvalues)
+    ## add default summary for pca
+    ## add % var explained
+    ##eigenvalues <- pca$sdev^2
+    ##phases$variance <- eigenvalues/sum(eigenvalues)
+    phases$summary <- summary(phases)$importance
 
-        
-        pca$order <- rownames(pca$x)[pca$x$order]
-        pca$distance <- state_order_distance(reference=rownames(states),
-                                             test=pca$order)
+    ## add cell phases to cell eigenvalues
+    phases$rotation <- cbind.data.frame(order=order(phi),
+                                     phi=phi,
+                                     theta=theta,
+                                     amplitude=amp, 
+                                     phases$rotation)
+    ## add cohort phases to cohort ?values?
+    phases$x <- cbind.data.frame(order=order(cphi),
+                              phi=cphi,
+                              theta=ctheta,
+                              amp=camp,
+                              phases$x)
+
+    ## simple order vector and distance
+    ## TODO: instead add order vectors to phases$x
+    ##phases$order <- rownames(phases$x)[phases$x$order]
+    ##phases$distance <- state_order_distance(reference=rownames(states),
+    ##                                     test=phases$order)
  
-        
-        ## extent PCA class
-        class(pca) <- append("phases", class(pca))
-
-        ## TEMPORARY
-        
-        ## temporary: add as attribute until everything works
-        attr(res, 'pca') <- pca
-
-        ## temporary: use pca-based order if validate was false
-        if ( is.null(sord) ) {
-
-            ##attr(res, "order") <- pca$order
-            ##attr(res, "distance") <- pca$distance
-       }
-        
+    ## add simple classification via max of log2 ratio
+    ## TODO: PCA-based classification?
+    if ( classify ) {
+        cls <- get_classes(states=states)
+        phases$rotation <- cbind(phases$rotation, class=cls)
     }
-
-    ## DEFINE A CLASS 
-    class(res) <- append("phases", class(res))
-    
-    res
+      
+    ## extent PCA class
+    class(phases) <- append("phases", class(phases))
+    phases
 }
+
+
 
 #' Classify cells by maximal state log2 fold change.
 #' @export
@@ -454,31 +376,12 @@ revert_phase <- function(phi, states, ...) {
 #' @export
 revert_phase_state <- function(states, phi, window=.05) {
 
-    ## reverse order if most are negative
-    ## NOTE: this relies on state matrix row order reflecting actual order!
-    ##       it should be optional and in a function, taking alternative orders
-    ##       as argument.
-    ## TODO: better way to compare orders, currently fails for proline data,
-    ## NOTE: the problem is related to validation by order, however,
-    ##       to fully validate we need to account for circular data
-    ##idx <- order(nord)
-
     idx <- get_state_order(states=states[, order(phi)], window=window)
 
 
     ## return IF phases should be reverted
     return(sum(diff(rev(idx))<0) <= sum(diff(idx)<0))
 
-    ## TODO: do this in an external function on the phases object/class!
-    ## reverse phases if the reverse order is equally good
-    ## TODO: convert order to circular coordinates and use circular diff,
-    ## and simply include first as last
-    ##if ( sum(diff(rev(idx))<0) <= sum(diff(idx)<0) ) {
-    ##    if ( verb>0 )
-    ##        cat(paste("reversing phases\n"))
-    ##    phi <- -phi
-    ##}
-    ##phi
 }
 
 
@@ -593,57 +496,7 @@ state_phase <- function(states, phase, center, window=0.05, verb=0) {
     return(ph0)
 }
 
-## TODO: fix this, do not shift both phase and angle by the same
-## delta, but shift one and then interpolate the others to 0 alignment
 
-#' Shift all phases in a phase object.
-#' @export
-shift_phases <- function(phases, dph, center=TRUE, verb=0) {
-
-    ## cell phases
-    if ( verb>0 ) cat(paste("shift cell phases\n"))
-
-    ## shift main phase
-    phases$phase <- shift_phase(phases$phase, dph, center=center)
-
-    ##dph2 <- approx(x=phases$phase, y=phases$angle, xout=0)$y
-    ##phases$angle <- shift_phase(phases$angle, dph2, shift=TRUE)
-
-    phases$angle <- shift_phase(phases$angle, dph, center=center)
-    phases$order <- order(phases$phase)
-       
-    ## cohort phases
-    if ( "cohorts"%in%names(attributes(phases)) ) {
-        if ( verb>0 ) cat(paste("shift cohort phases\n"))
-        coh <- attr(phases, "cohorts")
-        coh$phase <- shift_phase(coh$phase, dph, center=center)
-        coh$angle <- shift_phase(coh$angle, dph, center=center)
-        coh$order <- order(coh$phase)
-        attr(phases, "cohorts") <- coh
-    }
-    
-    ## phases in segments and inflections
-    if ( "segments"%in%names(attributes(phases)) ) {
-        if ( verb>0 ) cat(paste("shift segment phases\n"))
-        seg <- attr(phases, "segments")
-        seg$x <- shift_phase(seg$x, dph, center=center)
-        attr(phases, "segments") <- seg
-    }
-    if ( "inflections"%in%names(attributes(phases)) ) {
-        if ( verb>0 ) cat(paste("shift inflection phases\n"))
-        seg <- attr(phases, "inflections")
-        seg$x <- shift_phase(seg$x, dph, center=center)
-        attr(phases, "inflections") <- seg
-    }
-    
-    if ( "time" %in% colnames(phases) ) {
-        warning("recalculating time based on maximal range")
-        phases$time <- (phases$phase)/(2*pi) * diff(range(phases$time))
-    }
-    
-    ## return modified object
-    phases
-}
 
 #' Shift a phase vector by a certain phase.
 #' @export
