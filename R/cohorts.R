@@ -1,7 +1,7 @@
 
 ## GENERATE COHORT LISTS AND MATRIXES
 
-#' convert a gene cohort list or matrix to a clustering vector
+#' Convert a gene cohort list or matrix to a vector of unique gene classes.
 #' @export
 cohort2clustering <- function(cohorts, n, na="na") {
 
@@ -42,7 +42,7 @@ clustering2cohorts <- function(cls, cls.srt) {
 ## * optional cohorts: use row names to find cohorts in predefined lists,
 #' Convert a gene cohort list to a boolean or size-normalized cohort matrix
 #' @param cohorts a list of integer vectors, each providing the row indices
-#' of the genes in the count table
+#' of the genes in the count table.
 #' @param n the number of rows (genes) in the count table, if not provided
 #' the maximal index will be used
 #' @param normalize divide each boolean entry (1) by the cohort size
