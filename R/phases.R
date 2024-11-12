@@ -317,16 +317,18 @@ get_pseudophase <- function(states,
 
     ## add cell phases to cell eigenvalues
     phases$rotation <- cbind.data.frame(order=order(phi),
-                                     phi=phi,
-                                     theta=theta,
-                                     amplitude=amp, 
-                                     phases$rotation)
-    ## add cohort phases to cohort ?values?
-    phases$x <- cbind.data.frame(order=order(cphi),
-                              phi=cphi,
-                              theta=ctheta,
-                              amp=camp,
-                              phases$x)
+                                        phi=phi,
+                                        theta=theta,
+                                        amplitude=amp, 
+                                        phases$rotation)
+    ## add cohort phases, IDs, colors, etc. to cohort ?values?
+    phases$x <- cbind.data.frame(ID=rownames(phases$x),
+                                 col=1:nrow(phases$x),
+                                 order=order(cphi),
+                                 phi=cphi,
+                                 theta=ctheta,
+                                 amp=camp,
+                                 phases$x)
 
     ## simple order vector and distance
     ## TODO: instead add order vectors to phases$x
