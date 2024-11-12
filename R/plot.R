@@ -1,5 +1,48 @@
 ## PLOT FUNCTIONS
 
+
+
+#' Add arrows for segments in the phases object.
+#' @export
+arrows.phases <- function(x, types='shoulder', phase='phi',
+                          y0, dy, col, ticks=FALSE, verb=0, ...) {
+
+    if ( missing(y0) ) y0 <- mean(par('usr')[3:4])
+    if ( missing(dy) ) dy <- diff(par('usr')[3:4])/10 #length(types)
+
+    miss <- which(!types%in%names(x))
+    if ( length(miss) ) {
+        warning('omitting types not found in data: ',
+                paste(types[miss], sep=';'))
+        types <- types[-miss]
+    }
+
+    for ( i in seq_along(types) ) {
+
+        type <- types[i]
+    
+        segs <- x[[type]]
+        
+        n <- nrow(segs)
+        starts <- ends <- segs[,phase]
+        starts <- c(starts[n]-2*pi, starts)
+        ends <- c(ends, ends[1]+2*pi)
+
+        ## arrow colors
+        ids <- segs$ID
+        scol <- setNames(1:nrow(segs), ids)
+        if ( !missing(col) )
+            if ( col%in%colnames(segs) )
+                scol <- setNames(segs[[col]], ids)
+        
+        arrows(x0=starts, x1=ends, y0=y0, code=3, length=.05, col=scol, ...)
+        if ( ticks ) axis(4, at=y0, labels=type, las=2)
+        y0 <- y0 + dy
+    
+    }
+}
+
+
 ## plot state time series along phase
 ## TODO: why is the moving average in some cases, Urea, below the curve?
 
@@ -52,6 +95,8 @@ plotStates <- function(phase, states, cls.srt, cls.col,
                        sid="", legend=TRUE, leg.nrow=1,
                        xtype='phase', xlab=expression(phase*phi),
                        ylab, ...) {
+
+    ## TODO: allow phases object
 
     ## order by x-value
     ord <- order(phase)

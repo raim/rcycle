@@ -491,6 +491,7 @@ get_state_order <- function(states, window=.05,
 ## * return all state phases, if center is not provided.
 ## * BETTER PHASE REVERSAL, fuse with general order validation.
 
+
 #' Get the phase of a cohort state.
 #' @export
 state_phase <- function(states, phase, center, window=0.05, verb=0) {
@@ -500,8 +501,9 @@ state_phase <- function(states, phase, center, window=0.05, verb=0) {
     ord <- order(phase) 
     
     ## get state to center 0: the peak of this state
-    if ( is.character(center) )
-        center <- which(rownames(states)==center)
+    if ( !missing(center) )
+        if ( is.character(center) )
+            center <- which(rownames(states)==center)
     
     ## get peak cell of expression for each cohort
     ## of a moving average over phase-sorted cells
@@ -516,7 +518,11 @@ state_phase <- function(states, phase, center, window=0.05, verb=0) {
     }
     
     ## get phase where cohort `center` has it's moving average peak
-    ph0 <-  phase[ord][nord[center]]
+    ph0 <-  phase[ord][nord]
+    names(ph0) <- rownames(states)
+
+    if ( !missing(center) )
+        pho0 <- phase[ord][nord[center]]
 
     return(ph0)
 }
@@ -593,3 +599,43 @@ remove_jumps <- function(phi, idx, center=TRUE, verb=1) {
     phi
 }
 
+
+
+### CIRCULAR STATS
+
+## from package circular, testing why we get NA for some
+## circular correlations
+CorCircularRad <- function(x, y, test=FALSE) {
+   n <- length(x)
+   x.bar <- mean.circular(x)
+   y.bar <- mean.circular(y)
+   num <- sum(sin(x - x.bar) * sin(y - y.bar))
+   den <- sqrt(sum(sin(x - x.bar)^2) * sum(sin(y - y.bar)^2))
+   result <- num/den
+   if (test) {
+       l20 <- mean.default(sin(x - x.bar)^2)
+       l02 <- mean.default(sin(y - y.bar)^2)
+       l22 <- mean.default((sin(x - x.bar)^2) * (sin(y - y.bar)^2))
+       test.stat <- sqrt((n * l20 * l02)/l22) * result
+       p.value <- 2 * (1 - pnorm(abs(test.stat)))
+       result <- c(result, test.stat, p.value)
+   }
+   return(result)
+}
+
+ccor <- function(x, y) {
+
+    x <- circular::as.circular(CDC$rotation$theta,
+                               units="radians", type="angles")
+
+    y <- circular::as.circular(jitter(CDC$rotation$phi),
+                               units="radians", type="angles")
+
+    ## NOTE: mean(phi) is NA, since it's equispaced
+    ## along the circle
+
+    mean(x)
+    mean(y)
+
+   
+}

@@ -20,8 +20,10 @@ phase_segments <- function(phi, breaks, lim=c(-pi, pi)) {
 }
 
 ## get derivatives from smoothed spline
-find_maxima <- function(phi, theta, ND=1, spar=spar, lim=c(-pi,pi)) {
-    
+find_maxima <- function(phi, theta, ND=1, spar=spar, lim=c(-pi,pi),
+                        col, colf=segmenTools::arno) {
+
+    ## calculate penalized spline 
     dtpf <- pspline::sm.spline(phi, theta, spar=spar)  
 
     ## get roots of requested derivatives
@@ -31,7 +33,7 @@ find_maxima <- function(phi, theta, ND=1, spar=spar, lim=c(-pi,pi)) {
     roots <- find_roots(phi, dtheta)
 
     ## add all derivatives at roots
-    dtheta   <- predict(dtpf, roots, nderiv = 1)
+    dtheta   <- predict(dtpf, roots, nderiv = 1) 
     ddtheta  <- predict(dtpf, roots, nderiv = 2)
     dddtheta <- predict(dtpf, roots, nderiv = 3)
     
@@ -40,12 +42,17 @@ find_maxima <- function(phi, theta, ND=1, spar=spar, lim=c(-pi,pi)) {
     ## add min/max classification
     ddmax <- dddtheta < 0
  
+    ## color by min/max derivative
+    colv <- predict(dtpf, roots, nderiv = ND+1)
+    dcol <- segmenTools::num2col(colv, colf=colf)
+
     roots <- data.frame(phi=roots,
                         dtheta  =  dtheta,
                         ddtheta = ddtheta,
                         dddtheta=dddtheta,
                         dmax = dmax,
-                        ddmax=ddmax)
+                        ddmax=ddmax,
+                        dcol=dcol)
 
     ## remove roots from cyclization
     ## NOTE: include -pi and exclude pi
@@ -54,6 +61,10 @@ find_maxima <- function(phi, theta, ND=1, spar=spar, lim=c(-pi,pi)) {
 
     ## segment ID
     roots$ID <- c(1:nrow(roots))
+
+    ## colors
+    roots$col <- 1:nrow(roots)
+
    
     list(breaks=roots, splinef=dtpf)
 }
@@ -121,6 +132,9 @@ segments <- function(phases,
         ## d(theta-phi)/dphi = dtheta/dphi -1 = 0
         maxima <- find_maxima(phi, theta-phi, ND=1, spar=spar, lim=c(-pi, pi))
 
+        ## TODO: correct derivative for theta-phi!
+        ##maxima$breaks$dtheta <- maxima$breaks$dtheta 
+
         shoulder <- maxima$breaks
         dtpf <- maxima$splinef
         
@@ -141,7 +155,7 @@ segments <- function(phases,
         if ( length(old)>0 )
             phases$rotation <-phases$rotation[,-old] 
         phases$rotation <- cbind(phases$rotation,
-                              df)
+                                 df)
         
         ## add breaks
         phases[[names[method=='shoulder']]] <- shoulder   
@@ -154,12 +168,17 @@ segments <- function(phases,
         ## d^2(theta-phi)/dphi^2 = 0
         infl <- find_maxima(phi, theta-phi, ND=2, spar=spar, lim=c(-pi, pi))
 
+        
         inflection <- infl$breaks
         dtpf <- infl$splinef
         
+        ## only take maxima! segments: max-to-max
+        inflection <- inflection[inflection$ddmax,]
+        inflection$ID <- inflection$col <- 1:nrow(inflection)
+     
         ## classify phases by max slope segments
         segs <-  phase_segments(phases$rotation$phi,
-                                breaks=inflection$phi[inflection$ddmax])
+                                breaks=inflection$phi)
     
         ## ADD TO PHASES OBJECT
         ## thetah  : smoothed theta, dtpf, deriv 0
@@ -178,7 +197,7 @@ segments <- function(phases,
         if ( length(old)>0 )
             phases$rotation <-phases$rotation[,-old] 
         phases$rotation <- cbind(phases$rotation,
-                              df)
+                                 df)
         
         ## add breaks
         phases[[names[method=='inflection']]] <- inflection 
