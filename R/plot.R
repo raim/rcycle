@@ -10,7 +10,7 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
     if ( missing(y0) ) y0 <- mean(par('usr')[3:4])
     if ( missing(dy) ) dy <- diff(par('usr')[3:4])/10 #length(types)
 
-    miss <- which(!types%in%names(x))
+    miss <- which(!types%in%names(x) & !types%in%names(x$x))
     if ( length(miss) ) {
         warning('omitting types not found in data: ',
                 paste(types[miss], sep=';'))
@@ -20,23 +20,40 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
     for ( i in seq_along(types) ) {
 
         type <- types[i]
-    
-        segs <- x[[type]]
-        
-        n <- nrow(segs)
-        starts <- ends <- segs[,phase]
-        starts <- c(starts[n]-2*pi, starts)
-        ends <- c(ends, ends[1]+2*pi)
 
-        ## arrow colors
-        ids <- segs$ID
-        scol <- setNames(1:nrow(segs), ids)
-        if ( !missing(col) )
-            if ( col%in%colnames(segs) )
-                scol <- setNames(segs[[col]], ids)
+        if ( type %in% names(x) ) {
+    
+            segs <- x[[type]]
         
-        arrows(x0=starts, x1=ends, y0=y0, code=3, length=.05, col=scol, ...)
+            n <- nrow(segs)
+            starts <- ends <- segs[,phase]
+            starts <- c(starts[n]-2*pi, starts)
+            ends <- c(ends, ends[1]+2*pi)
+
+            ## arrow colors
+            ids <- segs$ID
+            scol <- setNames(1:nrow(segs), ids)
+            if ( !missing(col) )
+                if ( col%in%colnames(segs) )
+                    scol <- setNames(segs[[col]], ids)
+
+            arrows(x0=starts, x1=ends, y0=y0, code=3, length=.05, col=scol, ...)
+
+
+        } else if ( type %in% colnames(x$x) ) {
+
+            ## arrow colors
+            ids <- x$x$ID
+            scol <- setNames(1:nrow(x$x), ids)
+            if ( !missing(col) )
+                if ( col%in%colnames(x$x) )
+                    scol <- setNames(x$x[,col], ids)
+
+            shadowtext(x=x$x[,type], y=rep(y0, nrow(x$x)),
+                       labels=ids, col=scol, ...)
+        } 
         if ( ticks ) axis(4, at=y0, labels=type, las=2)
+        
         y0 <- y0 + dy
     
     }
