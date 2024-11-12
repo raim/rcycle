@@ -8,7 +8,15 @@
 ##     - external pseudophase,
 ##     - external phase classes.
 
+## utils
 
+## lapply wrapper that doesn't loose the class!
+alapply <- function(X, FUN, ...) {
+    cls <- class(X)
+    X <- lapply(X, FUN, ...)
+    class(X) <- cls
+    X
+}
 
 ## return the rank of an angle in radian
 
@@ -74,7 +82,7 @@ revert <- function(phases,  verb=1) {
 
         ids <- c('phi', 'theta')
         
-        phases <- lapply(phases, function(x) {
+        phases <- alapply(phases, function(x) {
             for ( id in ids ) {
                 ## NOTE: grepping phase angles with suffix, e.g. theta.s
                 idx <- grep(paste0('^',id), names(x), value=TRUE)
@@ -109,7 +117,7 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
 
     ## TODO: instead shift main theta and re-calculate rank phase?
     
-    phases <- lapply(phases, function(x) {
+    phases <- alapply(phases, function(x) {
         if ( 'phi' %in% names(x) ) {
 
             ## shift rank phase
@@ -161,7 +169,7 @@ evaluate_order <- function(phases) {
 calibrate <- function(phases, period, phase='phi') {
 
     ## convert phase to time
-    phases <- lapply(phases, function(x) {
+    phases <- alapply(phases, function(x) {
         if ( phase %in% names(x) ) 
             x$time <- x[[phase]]/(2*pi) * period
         x
