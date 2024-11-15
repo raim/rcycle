@@ -174,6 +174,8 @@ segments <- function(phases,
         
         ## only take maxima! segments: max-to-max
         inflection <- inflection[inflection$ddmax,]
+
+        ## ADD ID AND COLORS
         inflection$ID <- inflection$col <- 1:nrow(inflection)
      
         ## classify phases by max slope segments

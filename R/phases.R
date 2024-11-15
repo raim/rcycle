@@ -207,6 +207,28 @@ center <- function(phases, method='slope', params=list(spar=.001), ...) {
 
 classify <- function(phases) {}
 
+#' Add colors to cohorts or segments.
+#' @export
+add_colors <- function(phases, col, type='x', ID, colid='col') {
+
+    tab <- phases[[type]]
+    
+    if ( !missing(ID) ) ids <- tab[,ID]
+    else ids <- rownames(tab)
+
+    if ( colid %in% colnames(tab) )
+        warning('overwriting existing colors')
+    
+    tab[[colid]] <- col[ids]
+
+    phases[[type]] <- tab
+
+    phases$processing <- c(phases$processing,
+                           paste0('added colors for: ', type))
+    
+    phases    
+}
+
 ## TODO: * expancd prcomp class instead of defining an new class!  *
 ## better way to reverse, * validate directly by comparing to row
 ## order of state,
@@ -364,7 +386,7 @@ segment_state <- function(phases,
 
 
     ## add new segment element to segment object
-    segments <- phases[[method]]
+    segments <- phases[[segment]]
     segments$class <- segs[as.character(segments$ID)]
     if ( !missing(col) )
         segments$ccol <- col[segments$class]
