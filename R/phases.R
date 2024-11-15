@@ -102,13 +102,15 @@ revert <- function(phases,  verb=1) {
     phases
 }
 
-#' Shift all phases and angles in a phase object.
+#' Shift all phases in a phase object.
 #' @inheritParams get_pseudophase
 #' @inheritParams shift_phase
 #' @inheritParams revert
 #' @export
 shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
-    
+
+    ## TODO: select which phase to shift, and adjust other
+    ## OR never touch an original theta that is aligned with PCs
 
     if ( verb>0 )
         cat(paste("\tshifting phases by", dphi, "\n"))
@@ -209,15 +211,19 @@ classify <- function(phases) {}
 
 #' Add colors to cohorts or segments.
 #' @export
-add_colors <- function(phases, col, type='x', ID, colid='col') {
+add_colors <- function(phases, col, type='x', ID, colid='col', warn=TRUE) {
 
     tab <- phases[[type]]
     
-    if ( !missing(ID) ) ids <- tab[,ID]
+    if ( !missing(ID) ) ids <- as.character(tab[,ID])
     else ids <- rownames(tab)
 
-    if ( colid %in% colnames(tab) )
-        warning('overwriting existing colors')
+    if ( warn )
+        if ( colid %in% colnames(tab) )
+            warning('overwriting existing colors')
+
+    if ( !all(ids%in%names(col)) )
+        stop('missing names in the passed color vector')
     
     tab[[colid]] <- col[ids]
 
