@@ -5,7 +5,7 @@
 #' Add arrows for segments in the phases object.
 #' @export
 arrows.phases <- function(x, types='shoulder', phase='phi',
-                          y0, dy, col, ticks=FALSE, verb=0, ...) {
+                          y0, dy, col, labels, ticks=FALSE, verb=0, ...) {
 
     if ( missing(y0) ) y0 <- mean(par('usr')[3:4])
     if ( missing(dy) ) dy <- diff(par('usr')[3:4])/10 #length(types)
@@ -37,8 +37,13 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
                 if ( col%in%colnames(segs) )
                     scol <- setNames(segs[[col]], ids)
 
+            ## TODO: shadow.arrows
             arrows(x0=starts, x1=ends, y0=y0, code=3, length=.05, col=scol, ...)
-
+            ## add names
+            if ( !missing(labels) )
+                shadowtext(x=(starts+ends)/2, y=rep(y0, length(starts)),
+                           labels=segs[[labels]],
+                           col=scol)
 
         } else if ( type %in% colnames(x$x) ) {
 

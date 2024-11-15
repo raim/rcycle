@@ -178,6 +178,33 @@ calibrate <- function(phases, period, phase='phi') {
     phases
 }
 
+#' Center phases at anchor points.
+#'
+#' High-level interface for the \link{shift} function that allows to
+#' specify how to select the anchor point.
+#' @export
+center <- function(phases, method='slope', params=list(spar=.001), ...) {
+
+    if ( method=='slope' ) {
+
+        ## TODO: do not add slopes?
+        phases <- segments(phases, method='inflection', names='slope', 
+                           spar=params$spar, plot=FALSE, difference=FALSE, ...)
+        jdx <- which.max(phases$slope$dtheta)
+        dph <- phases$slope$phi[jdx]
+        
+    } else if ( method=='cohort' ) {
+        ## TODO: option to center at cohort peak instead of PCA phase?
+        dph <- phases$x[params$cohort, params$phase]
+    }
+
+    ## shift all phases by dphi
+    phases <- shift(phases, dphi=dph, align=FALSE, center=FALSE, verb=0)
+        
+    phases
+    
+}
+
 classify <- function(phases) {}
 
 ## TODO: * expancd prcomp class instead of defining an new class!  *
@@ -191,7 +218,7 @@ classify <- function(phases) {}
 #' @param verb output verbosity level.
 #' @export
 get_pseudophase <- function(states,
-                            center, revert.phase=FALSE, window=.05,
+                            revert.phase=FALSE, 
                             segments=FALSE, spar=1e-3,
                             classify=FALSE, validate=FALSE,
                             ##use.states=FALSE,
@@ -202,7 +229,7 @@ get_pseudophase <- function(states,
     
     ## ROW-CENTERING cohorts
     if ( row.center )
-        cstates <- cstates - apply(cstates,1,mean) 
+        cstates <- cstates - apply(cstates, 1, mean) 
         
     ## PCA of cells
     ## scale: bring to unit variance and do COLUMN-CENTERING
@@ -218,8 +245,7 @@ get_pseudophase <- function(states,
     theta <- atan2(Y, X)
     amp <- sqrt(Y^2 + X^2)
 
-    ## phase: rank(theta) in radian
-    ## aligned at 0
+    ## phase: rank(theta) in radian, aligned at theta=phi=0
     phi <- phase_rank(theta, align=TRUE, center=TRUE)
 
     
@@ -235,46 +261,13 @@ get_pseudophase <- function(states,
     cphi <- approx_phase(x=theta, y=phi, xout=ctheta)$y
     
 
-    ## TODO: remove jumps in theta already here?
-
-
     ## FURTHER PROCESS PHASES
-    
-    ## phase shift to center at a selected cohort
-    if ( !missing(center) ) {
-
-        ## centering based on center cohort maximal expression
-        dph <- state_phase(states=cstates, phase=theta, center=center,
-                           window=window, verb=verb)
-    
-        ## centering based on cohort phase angle
-        ## appears to work WORSE than centering based on cohort expression;
-        ## TODO: test different centerings/sortings in comparison
-        if ( FALSE ) 
-            dph <- ctheta[which(rownames(cstates)==center)]
-        
-        if ( verb>0 )
-            cat(paste("phase shift by", round(dph,3), "\n"))
-
-        ## cell phase shift
-        theta <- shift_phase(theta, dph, center=TRUE)
-
-        ## re-calculate rank phase
-        phi <- phase_rank(theta, align=TRUE, center=TRUE)
-
-        ## cohort phase shift
-        ctheta <- shift_phase(ctheta, dph, center=TRUE)
-        cphi <- shift_phase(cphi, dph, center=TRUE)
-    }
 
     
     ## reverse phases if necessary
     if ( revert.phase ) {
         
-        ##rphase2 <- revert_phase_state(phi=phi, states=state,  window=window)
-        rphase <- revert_phase(phi=cphi)#, states=state,  window=window)
-
-        ##if ( rphase!=rphase2 ) warning('orderings differ', rphase, rphase2)
+        rphase <- revert_phase(phi=cphi)
         
         if ( rphase ) {
             if ( verb>0 )
@@ -285,33 +278,6 @@ get_pseudophase <- function(states,
             ctheta <- -ctheta
             cphi <- -cphi
         }
-    }
-
-   
-    ## validate if state order (rows) is reproduced by phase order
-    ## TODO: remove or generalize use, using PCA or state order
-    sord <- NULL
-    if ( validate ) {
-
-        sord <- get_state_order(states=states[, order(phi)],
-                                window=window, names=TRUE)
-        ldst <- state_order_distance(reference=rownames(states),
-                                     test=sord)
-        if ( verb>0 )
-            cat(paste("Levensthein order distance:", ldst, "\n"))
-    }
-
-    ## cohort ordering
-    ord <- order(phi)
-
- 
-
-    ## SEGMENTS
-    ## TODO: separate params for inflection and segments,
-    ## TODO: skip inflections, just use segments and expand, add slopes etc.
-    ## TODO: use these as alignment points for phase shifts
-    if ( segments ) {
-        stop('not implemented')
     }
 
 
@@ -329,6 +295,7 @@ get_pseudophase <- function(states,
                                         theta=theta,
                                         amplitude=amp, 
                                         phases$rotation)
+
     ## add cohort phases, IDs, colors, etc. to cohort ?values?
     phases$x <- cbind.data.frame(ID=rownames(phases$x),
                                  col=1:nrow(phases$x),
@@ -338,14 +305,9 @@ get_pseudophase <- function(states,
                                  amp=camp,
                                  phases$x)
 
-    ## simple order vector and distance
-    ## TODO: instead add order vectors to phases$x
-    ##phases$order <- rownames(phases$x)[phases$x$order]
-    ##phases$distance <- state_order_distance(reference=rownames(states),
-    ##                                     test=phases$order)
  
     ## add simple classification via max of log2 ratio
-    ## TODO: PCA-based classification?
+    ## TODO: PCA-/segment-based classification?
     if ( classify ) {
         cls <- get_classes(states=states)
         phases$rotation <- cbind(phases$rotation, class=cls)
@@ -374,6 +336,41 @@ get_classes <- function(states) {
         idx})
     
     cls[ccls]
+}
+#' Classify segments by their overlap with cell classes.
+#' @export
+segment_state <- function(phases, 
+                          segment='inflection',
+                          class='class', col, plot=FALSE) {
+
+    cls.srt <- rownames(phases$x) ##unique(phases$rotation[,class])
+
+    sid <- paste0(segment, "_segment")
+    
+    seg.srt <- phases$rotation[,sid]
+    if ( is.factor(seg.srt) )
+        seg.srt <- levels(seg.srt)
+    else seg.srt <- sort(unique(phases$rotation[,sid]))
+    
+    
+    ## calculate overlaps between state based and segment-based classes
+    ovl <- clusterCluster(cl1=phases$rotation[,sid], cl1.srt=seg.srt,
+                          cl2=phases$rotation[,class], cl2.srt=cls.srt)
+    ## assign to cohort with minimal overlap p.value
+    if ( plot )
+        plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, xlab=class, ylab=sid)
+
+    segs <- apply(ovl$p.value, 1, function(x) names(which.min(x)))
+
+
+    ## add new segment element to segment object
+    segments <- phases[[method]]
+    segments$class <- segs[as.character(segments$ID)]
+    if ( !missing(col) )
+        segments$ccol <- col[segments$class]
+
+    phases[[paste0(segment,"_class")]] <- segments
+    phases
 }
 
 #' Establish whether the phases should be reverted wrt state order.
