@@ -4,7 +4,13 @@
 \alias{plotSegments}
 \title{Plot the curve sketching of theta=f(phi).}
 \usage{
-plotSegments(phases, difference = FALSE, center = TRUE, method = "shoulder")
+plotSegments(
+  phases,
+  difference = FALSE,
+  center = TRUE,
+  method = "shoulder",
+  show.cohorts = TRUE
+)
 }
 \arguments{
 \item{difference}{plot the difference theta-phi instead of

@@ -113,9 +113,9 @@ plotGOI <- function(phases, counts, goi, names, col,
 #' Plot cohort state time series.
 #' @export
 plotStates <- function(phase, states, cls.srt, cls.col,
-                       win=.01, norm=FALSE, lines=TRUE,
+                       win=.01, norm=FALSE, lines=TRUE, ma=TRUE,
                        sid="", legend=TRUE, leg.nrow=1,
-                       xtype='phase', xlab=expression(phase*phi),
+                       xtype='phase', xlab=expression(phase~phi),
                        ylab, ...) {
 
     ## TODO: allow phases object
@@ -153,9 +153,11 @@ plotStates <- function(phase, states, cls.srt, cls.col,
         for ( k in seq_along(cls.srt) ) 
             lines(phase[ord], states[cls.srt[k], ord],
                   col=paste0(cls.col[cls.srt[k]],77))
-    for ( k in seq_along(cls.srt) ) 
-        lines(phase[ord], ma(states[cls.srt[k], ord], n=Ncells, circular=TRUE),
-              col=paste0(cls.col[cls.srt[k]]), lwd=2)
+    if ( ma )
+        for ( k in seq_along(cls.srt) ) 
+            lines(phase[ord], ma(states[cls.srt[k], ord],
+                                 n=Ncells, circular=TRUE),
+                  col=paste0(cls.col[cls.srt[k]]), lwd=2)
 
     figlabel(paste0(sid), pos=ifelse(legend,"topleft","top"), cex=1.2, font=2)
     if ( legend )
@@ -180,7 +182,7 @@ plotPC <- function(phases, x=1, y=2, col,
 
     if ( !inherits(phases, "phases") )
         warning("phases must be an object of class 'phases', ",
-             "as returned by get_pseudophase")
+                "as returned by get_pseudophase")
 
     xs <- paste0('PC', x)
     ys <- paste0('PC', y)
@@ -288,6 +290,8 @@ phcol.legend <- function(leg.pos="topright",
            title=title, col=pcol, pch=19, ...)
 }
 
+#' generate circular plot axis in radian
+#' @export
 circ.axis <- function(x,
                       at=c(-2*pi,  -pi,
                            -pi/2,    0,

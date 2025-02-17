@@ -190,8 +190,9 @@ center <- function(phases, method='slope', params=list(spar=.001), ...) {
     if ( method=='slope' ) {
 
         ## TODO: do not add slopes?
-        phases <- segments(phases, method='inflection', names='slope', 
-                           spar=params$spar, plot=FALSE, difference=FALSE, ...)
+        phases <- get_segments(phases, method='inflection', names='slope', 
+                               spar=params$spar, plot=FALSE,
+                               difference=FALSE, ...)
         jdx <- which.max(phases$slope$dtheta)
         dph <- phases$slope$phi[jdx]
         

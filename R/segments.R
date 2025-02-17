@@ -87,12 +87,12 @@ find_roots <- function(phi, dtheta) {
 
 
 #' @export
-segments <- function(phases, 
-                     method=c('shoulder', 'inflection', 'dpseg'),
-                     names=method, 
-                     spar=.001, #spari=100*spar,
-                     P, Pscale=.05, L=10, jumps=FALSE,
-                     plot=TRUE, verb=0, ...) {
+get_segments <- function(phases, 
+                         method=c('shoulder', 'inflection', 'dpseg'),
+                         names=method, 
+                         spar=.001, #spari=100*spar,
+                         P, Pscale=.05, L=10, jumps=FALSE,
+                         plot=TRUE, verb=0, ...) {
 
     ## TODO: make sure phi is within -pi:pi or otherwise adjust lim below
     
@@ -284,7 +284,7 @@ segments <- function(phases,
 #'     smoothing effects.
 #' @export
 plotSegments <- function(phases, difference=FALSE, center=TRUE,
-                         method='shoulder') {
+                         method='shoulder', show.cohorts=TRUE) {
 
     
     ord <- phases$rotation$order
@@ -420,9 +420,10 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
     ## NOTE: assuming prefix naming
     ## TODO: add official cohort name vector to object, or
     ## avoid long prefixes for separate PCA
-    for ( i in 1:nrow(phases$x) )
-        axis(3, at=phases$x$phi[i],
-             labels=sub(".*_","",rownames(phases$x))[i], las=2)
+    if ( show.cohorts )
+        for ( i in 1:nrow(phases$x) )
+            axis(3, at=phases$x$phi[i],
+                 labels=sub(".*_","",rownames(phases$x))[i], las=2)
     ## if right y-axis is available, plot cohort theta
     if ( is.null(deriv) ) 
         for ( i in 1:nrow(phases$x) )

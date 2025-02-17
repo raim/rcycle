@@ -8,7 +8,7 @@ get_cohorts(cohorts, n, normalize = FALSE)
 }
 \arguments{
 \item{cohorts}{a list of integer vectors, each providing the row indices
-of the genes in the count table}
+of the genes in the count table.}
 
 \item{n}{the number of rows (genes) in the count table, if not provided
 the maximal index will be used}

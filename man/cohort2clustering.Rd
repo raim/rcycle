@@ -2,10 +2,10 @@
 % Please edit documentation in R/cohorts.R
 \name{cohort2clustering}
 \alias{cohort2clustering}
-\title{convert a gene cohort list or matrix to a clustering vector}
+\title{Convert a gene cohort list or matrix to a vector of unique gene classes.}
 \usage{
 cohort2clustering(cohorts, n, na = "na")
 }
 \description{
-convert a gene cohort list or matrix to a clustering vector
+Convert a gene cohort list or matrix to a vector of unique gene classes.
 }

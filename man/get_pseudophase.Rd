@@ -6,9 +6,7 @@
 \usage{
 get_pseudophase(
   states,
-  center,
   revert.phase = FALSE,
-  window = 0.05,
   segments = FALSE,
   spar = 0.001,
   classify = FALSE,

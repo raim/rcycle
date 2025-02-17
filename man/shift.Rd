@@ -2,7 +2,7 @@
 % Please edit documentation in R/phases.R
 \name{shift}
 \alias{shift}
-\title{Shift all phases and angles in a phase object.}
+\title{Shift all phases in a phase object.}
 \usage{
 shift(phases, dphi, align = FALSE, center = FALSE, verb = 1)
 }
@@ -18,5 +18,5 @@ between -pi:pi.}
 \item{verb}{output verbosity level.}
 }
 \description{
-Shift all phases and angles in a phase object.
+Shift all phases in a phase object.
 }
