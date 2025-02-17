@@ -260,7 +260,7 @@ get_pseudophase <- function(states,
         cstates <- cstates - apply(cstates, 1, mean) 
         
     ## PCA of cells
-    ## scale: bring to unit variance and do COLUMN-CENTERING
+    ## scale: bring COLUMNS to unit variance (x-mean(x))/std(x)
     ## equiv to eigen(cor(cstates))
     phases <- prcomp(cstates, scale.=TRUE) 
     
