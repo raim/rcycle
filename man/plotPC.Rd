@@ -10,6 +10,7 @@ plotPC(
   y = 2,
   col,
   expand = TRUE,
+  eigen.axis = TRUE,
   cohorts = TRUE,
   ccol,
   txt.cex = 1,

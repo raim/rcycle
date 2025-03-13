@@ -12,11 +12,12 @@ plotStates(
   win = 0.01,
   norm = FALSE,
   lines = TRUE,
+  ma = TRUE,
   sid = "",
   legend = TRUE,
   leg.nrow = 1,
   xtype = "phase",
-  xlab = expression(phase * phi),
+  xlab = expression(phase ~ phi),
   ylab,
   ...
 )

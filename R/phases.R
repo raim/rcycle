@@ -20,7 +20,8 @@ alapply <- function(X, FUN, ...) {
 
 ## return the rank of an angle in radian
 
-#' Returns the rank of a phase angle in circular coordinates.
+#' Returns the rank phase of a phase angle in circular coordinates.
+#' @param theta phase angle
 #' @param align align the original phase angle and the rank phase
 #'     angle at phase 0.
 #' @param center center the aligned phase angle such that all phases are
@@ -240,6 +241,11 @@ add_colors <- function(phases, col, type='x', ID, colid='col', warn=TRUE) {
 ## better way to reverse, * validate directly by comparing to row
 ## order of state,
 
+### NOTE: Here we use cohorts/genes as samples/rows, so compared to
+### other methods, we are calculating a trajectory for genes rather
+### than cells. This is similar to WGCNA (Weighted Gene Co-expression
+### Network Analysis).
+
 #' get the pseudophase from a cohort state matrix
 #' @param states a cohort expression state table, with cohort mean
 #'     counts as rows and cells as columns, as provided by
@@ -368,8 +374,7 @@ get_classes <- function(states) {
 }
 #' Classify segments by their overlap with cell classes.
 #' @export
-segment_state <- function(phases, 
-                          segment='inflection',
+segment_state <- function(phases, segment='inflection',
                           class='class', col, plot=FALSE) {
 
     cls.srt <- rownames(phases$x) ##unique(phases$rotation[,class])

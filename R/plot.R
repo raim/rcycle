@@ -172,12 +172,13 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 
 ## simple plot of two eigenvectors from PCA
 ## TODO: * this is biplot-like but shows arrows for
-## for pca$x instead of pca$rotation
+## for pca$x instead of pca$rotation; find proper description for this?
 
 #' Plot PCA-based circle and state vectors.
 #' @export
 plotPC <- function(phases, x=1, y=2, col, 
                    expand=TRUE,
+                   eigen.axis=FALSE,
                    cohorts=TRUE, ccol, txt.cex=1, ...) {
 
     if ( !inherits(phases, "phases") )
@@ -186,16 +187,21 @@ plotPC <- function(phases, x=1, y=2, col,
 
     xs <- paste0('PC', x)
     ys <- paste0('PC', y)
+    xv <- paste0('EV', x)
+    yv <- paste0('EV', y)
 
-    xlab <- xs
-    ylab <- ys
+    ##xlab <- xs
+    ##ylab <- ys
     
     ## proportion of variance
     if ( !'summary'%in%names(phases) )
         phases$summary <- summary(phases)$importance
     varp <- round(phases$summary['Proportion of Variance',]*100,1)
+
     xlab <- paste0(xs, " (", varp[xs], "%)")
     ylab <- paste0(ys, " (", varp[ys], "%)")
+    xvlab <- paste0(xv, " (", varp[xs], "%)")
+    yvlab <- paste0(yv, " (", varp[ys], "%)")
 
 
         
@@ -211,12 +217,16 @@ plotPC <- function(phases, x=1, y=2, col,
         dense2d(phases$rotation[,xs],
                 phases$rotation[,ys],
                 xlim=xlim, ylim=ylim,
-                xlab=xlab, ylab=ylab, ...)
+                xlab=NA, ylab=NA, axes=FALSE, ...)
     else 
         plot(phases$rotation[,xs], phases$rotation[,ys],
              xlim=xlim, ylim=ylim,
-             xlab=xlab, ylab=ylab, col=col, ...)
-
+             xlab=NA, ylab=NA, col=col, axes=FALSE, ...)
+    if ( eigen.axis ) {
+        axis(3);axis(4)
+        mtext(xvlab, 3, par('mgp')[1])
+        mtext(yvlab, 4, par('mgp')[1])
+    }
     
     if ( cohorts ) {
 
@@ -238,7 +248,7 @@ plotPC <- function(phases, x=1, y=2, col,
         par(new=TRUE)
         plot(cohorts[,xs], cohorts[,ys],
              xlim=xlim, ylim=ylim,
-             axes=FALSE, col=NA, xlab=NA, ylab=NA)
+             axes=FALSE, col=NA, xlab=xlab, ylab=ylab)
         arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
                col="white", lwd=4, length=.05)
         arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
@@ -247,6 +257,7 @@ plotPC <- function(phases, x=1, y=2, col,
                    labels=sub(".*_","",rownames(cohorts)),
                    col=ccol[rownames(cohorts)],
                    cex=txt.cex, font=2, xpd=TRUE, r=.1)
+        axis(1);axis(2)
     }
     
 }

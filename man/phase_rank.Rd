@@ -2,11 +2,13 @@
 % Please edit documentation in R/phases.R
 \name{phase_rank}
 \alias{phase_rank}
-\title{Returns the rank of a phase angle in circular coordinates.}
+\title{Returns the rank phase of a phase angle in circular coordinates.}
 \usage{
 phase_rank(theta, align = TRUE, center = TRUE)
 }
 \arguments{
+\item{theta}{phase angle}
+
 \item{align}{align the original phase angle and the rank phase
 angle at phase 0.}
 
@@ -14,5 +16,5 @@ angle at phase 0.}
 in -pi:pi, using \link{align_phase}.}
 }
 \description{
-Returns the rank of a phase angle in circular coordinates.
+Returns the rank phase of a phase angle in circular coordinates.
 }
