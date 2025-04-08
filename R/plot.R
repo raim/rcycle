@@ -177,17 +177,17 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 #' Plot PCA-based circle and state vectors.
 #' @export
 plotPC <- function(phases, x=1, y=2, col, 
-                   expand=TRUE,
-                   eigen.axis=FALSE,
-                   cohorts=TRUE, ccol, txt.cex=1, ...) {
+                   expand=TRUE, pc.ash=FALSE,
+                   data.axis=TRUE, eigen.axis=FALSE, time.line=FALSE,
+                   cohorts=TRUE, arrows=TRUE, ccol, txt.cex=1, ...) {
 
     if ( !inherits(phases, "phases") )
         warning("phases must be an object of class 'phases', ",
                 "as returned by get_pseudophase")
 
-    xs <- paste0('PC', x)
+    xs <- paste0('PC', x) # Rotated data
     ys <- paste0('PC', y)
-    xv <- paste0('EV', x)
+    xv <- paste0('EV', x) # Eigenvectors
     yv <- paste0('EV', y)
 
     ##xlab <- xs
@@ -198,12 +198,12 @@ plotPC <- function(phases, x=1, y=2, col,
         phases$summary <- summary(phases)$importance
     varp <- round(phases$summary['Proportion of Variance',]*100,1)
 
-    xlab <- paste0(xs, " (", varp[xs], "%)")
+    xlab <- paste0(xs, " (", varp[xs], "%)") # rotated data 
     ylab <- paste0(ys, " (", varp[ys], "%)")
-    xvlab <- paste0(xv, " (", varp[xs], "%)")
+    xvlab <- paste0(xv, " (", varp[xs], "%)") # eigenvector 
     yvlab <- paste0(yv, " (", varp[ys], "%)")
 
-
+    ## plot eigenvectors (rotation matrix)
         
     xlim <- range(phases$rotation[,xs])
     ylim <- range(phases$rotation[,ys])
@@ -222,12 +222,21 @@ plotPC <- function(phases, x=1, y=2, col,
         plot(phases$rotation[,xs], phases$rotation[,ys],
              xlim=xlim, ylim=ylim,
              xlab=NA, ylab=NA, col=col, axes=FALSE, ...)
+    ## time line?
+    if ( time.line )
+        lines(phases$rotation[,xs], phases$rotation[,ys])
+
     if ( eigen.axis ) {
         axis(3);axis(4)
         mtext(xvlab, 3, par('mgp')[1])
         mtext(yvlab, 4, par('mgp')[1])
+    } else if ( !cohorts ) {
+        axis(1);axis(2)
+        mtext(xvlab, 1, par('mgp')[1])
+        mtext(yvlab, 2, par('mgp')[1])
     }
     
+    ## plot rotated data
     if ( cohorts ) {
 
         cohorts <- phases$x
@@ -247,17 +256,26 @@ plotPC <- function(phases, x=1, y=2, col,
 
         par(new=TRUE)
         plot(cohorts[,xs], cohorts[,ys],
-             xlim=xlim, ylim=ylim,
-             axes=FALSE, col=NA, xlab=xlab, ylab=ylab)
-        arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
-               col="white", lwd=4, length=.05)
-        arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
-               col=ccol[rownames(cohorts)], lwd=2, length=.05)
-        shadowtext(cohorts[,xs], cohorts[,ys],
-                   labels=sub(".*_","",rownames(cohorts)),
-                   col=ccol[rownames(cohorts)],
-                   cex=txt.cex, font=2, xpd=TRUE, r=.1)
-        axis(1);axis(2)
+             xlim=xlim, ylim=ylim, axes=FALSE, col=NA, xlab=NA, ylab=NA)
+        if ( data.axis ) {
+            axis(1);axis(2)
+            mtext(xlab, 1, par('mgp')[1])
+            mtext(ylab, 2, par('mgp')[1])
+        }
+        if ( arrows ) {
+            arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
+                   col="white", lwd=4, length=.05)
+            arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
+                   col=ccol[rownames(cohorts)], lwd=2, length=.05)
+            shadowtext(cohorts[,xs], cohorts[,ys],
+                       labels=sub(".*_","",rownames(cohorts)),
+                       col=ccol[rownames(cohorts)],
+                       cex=txt.cex, font=2, xpd=TRUE, r=.1)
+        } else {
+            points(cohorts[,xs], cohorts[,ys],
+                   pch=1, cex=.5,
+                   col=ccol[rownames(cohorts)])
+        }
     }
     
 }
