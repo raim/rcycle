@@ -229,7 +229,7 @@ plotPC <- function(phases, x=1, y=2,
     ## colored points or density plot?
     if ( missing(col) )  {
         if ( missing(colf) )
-            colf <- function(n) grey.colors(n, start=0, end=.8)
+            colf <- function(n) grey.colors(n, start=0, end=1)
 
         dense2d(phases$rotation[,xs],
                 phases$rotation[,ys],
