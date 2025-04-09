@@ -177,7 +177,9 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 #' Plot PCA-based circle and state vectors.
 #' @param z use the zth PC component for coloring between quantiles given in z.q
 #' @export
-plotPC <- function(phases, x=1, y=2, z, z.q=c(.05,.95), z.legend=FALSE, col, 
+plotPC <- function(phases, x=1, y=2,
+                   z, z.q=c(.05,.95), z.legend=FALSE,
+                   col, colf, 
                    expand=TRUE, pc.ash=FALSE,
                    data.axis=TRUE, eigen.axis=FALSE, zero.axis=FALSE,
                    time.line=FALSE,
@@ -225,12 +227,15 @@ plotPC <- function(phases, x=1, y=2, z, z.q=c(.05,.95), z.legend=FALSE, col,
         
     
     ## colored points or density plot?
-    if ( missing(col) ) 
+    if ( missing(col) )  {
+        if ( missing(colf) )
+            colf <- function(n) grey.colors(n, start=0, end=.8)
+
         dense2d(phases$rotation[,xs],
                 phases$rotation[,ys],
-                xlim=xlim, ylim=ylim,
+                xlim=xlim, ylim=ylim, colf = colf,
                 xlab=NA, ylab=NA, axes=FALSE, ...)
-    else 
+    } else 
         plot(phases$rotation[,xs], phases$rotation[,ys],
              xlim=xlim, ylim=ylim,
              xlab=NA, ylab=NA, col=col, axes=FALSE, ...)
