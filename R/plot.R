@@ -175,10 +175,12 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 ## for pca$x instead of pca$rotation; find proper description for this?
 
 #' Plot PCA-based circle and state vectors.
+#' @param z use the zth PC component for coloring between quantiles given in z.q
 #' @export
-plotPC <- function(phases, x=1, y=2, col, 
+plotPC <- function(phases, x=1, y=2, z, z.q=c(.05,.95), z.legend=FALSE, col, 
                    expand=TRUE, pc.ash=FALSE,
-                   data.axis=TRUE, eigen.axis=FALSE, time.line=FALSE,
+                   data.axis=TRUE, eigen.axis=FALSE, zero.axis=FALSE,
+                   time.line=FALSE,
                    cohorts=TRUE, arrows=TRUE, ccol, txt.cex=1, ...) {
 
     if ( !inherits(phases, "phases") )
@@ -190,6 +192,13 @@ plotPC <- function(phases, x=1, y=2, col,
     xv <- paste0('EV', x) # Eigenvectors
     yv <- paste0('EV', y)
 
+    ## PC component coloring
+    if ( !missing(z) ) {
+        zs <- paste0('PC', z) # Rotated data
+        if ( missing(col) )
+            col <- num2col(phases$rotation[,zs], q=z.q)
+    } else z.legend <- FALSE
+    
     ##xlab <- xs
     ##ylab <- ys
     
@@ -212,7 +221,10 @@ plotPC <- function(phases, x=1, y=2, col,
         mx <- max(abs(c(ylim, xlim)))
         xlim <- ylim <- c(-mx, mx)
     }
+
+        
     
+    ## colored points or density plot?
     if ( missing(col) ) 
         dense2d(phases$rotation[,xs],
                 phases$rotation[,ys],
@@ -222,19 +234,28 @@ plotPC <- function(phases, x=1, y=2, col,
         plot(phases$rotation[,xs], phases$rotation[,ys],
              xlim=xlim, ylim=ylim,
              xlab=NA, ylab=NA, col=col, axes=FALSE, ...)
+
+    
     ## time line?
     if ( time.line )
         lines(phases$rotation[,xs], phases$rotation[,ys])
 
+    if ( zero.axis ) {
+        abline(h=0)
+        abline(v=0)
+    }
+    
     if ( eigen.axis ) {
-        axis(3);axis(4)
-        mtext(xvlab, 3, par('mgp')[1])
-        mtext(yvlab, 4, par('mgp')[1])
-    } else if ( !cohorts ) {
+        if ( !cohorts ) {
         axis(1);axis(2)
         mtext(xvlab, 1, par('mgp')[1])
         mtext(yvlab, 2, par('mgp')[1])
-    }
+        }  else {
+            axis(3);axis(4)
+            mtext(xvlab, 3, par('mgp')[1])
+            mtext(yvlab, 4, par('mgp')[1])
+        }
+    } 
     
     ## plot rotated data
     if ( cohorts ) {
@@ -242,10 +263,12 @@ plotPC <- function(phases, x=1, y=2, col,
         cohorts <- phases$x
 
         if ( missing(ccol) ) {
-            ccol <- rep('#000000', nrow(cohorts))
+            if ( 'col' %in% colnames(cohorts) ) ccol <- cohorts$col
+            else ccol <- rep('#000000', nrow(cohorts))
             names(ccol) <- rownames(cohorts)
-        }
-            
+        } else if ( length(ccol)==1 )
+            ccol <- setNames(rep(ccol, nrow(cohorts)), rownames(cohorts))
+        
         xlim <- range(cohorts[,xs])
         ylim <- range(cohorts[,ys])
         
@@ -277,7 +300,14 @@ plotPC <- function(phases, x=1, y=2, col,
                    col=ccol[rownames(cohorts)])
         }
     }
-    
+
+    ## legend for PC-based coloring
+    if ( z.legend ) 
+        phcol.legend(leg.pos="bottomright",
+                     legend=c("min","mid","max"), title=zs,
+                     ##inset=c(-0.1,0),
+                     xpd=TRUE, y.intersp=0.6, bg="#ffffffaa", box.col=NA)
+        
 }
 
 ## overlaid phase histograms of cell classes 
