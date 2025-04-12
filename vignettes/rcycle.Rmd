@@ -15,6 +15,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+<!-- compile with
+rmarkdown::render("vignettes/rcycle.Rmd", output_format = "html_document")
+-->
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, global.par=TRUE,
                       fig.path = ".", fig.pos = 'h',
@@ -51,9 +55,9 @@ TODO: FILL THIS WITH teaching/pca/pca.md, teaching/pseudophase/cohorts14.md and 
 
 # Time Series Reconstruction: `pseudophase`.
 
-@Alter2000,
+eigengenes @Alter2000,
 
-applied for single cell analysis: @Schwabe2020, @Macosco2015
+applied for single cell analysis: @Schwabe2020, @Macosko2015
 
 
 # R's `prcomp` explained
