@@ -176,23 +176,58 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 
 #' Plot PCA-based circle and state vectors.
 #' @param z use the zth PC component for coloring between quantiles given in z.q
+#' @param scale scale parameter, if provided it converts the plot to a true biplot 
 #' @export
 plotPC <- function(phases, x=1, y=2,
+                   scale, arcsinh=FALSE, 
                    z, z.q=c(.05,.95), z.legend=FALSE,
-                   col, colf, 
-                   expand=TRUE, pc.ash=FALSE,
+                   col, pch=19, cex=.5, colf, # eigenvector colors, cells
+                   ccol, cpch=1, ccex=1, txt.cex=1, # rotated data colors, cohorts/genes 
+                   cohorts=TRUE, arrows=TRUE, # draw rotated data, with lines?
+                   expand=TRUE, 
+                   pc.ash=FALSE, # TODO: useful for non-circular PCA, eg. gene-wise
                    data.axis=TRUE, eigen.axis=FALSE, zero.axis=FALSE,
-                   time.line=FALSE,
-                   cohorts=TRUE, arrows=TRUE, ccol, txt.cex=1, ...) {
+                   time.line=FALSE, show.var=TRUE,
+                   ...) {
 
     if ( !inherits(phases, "phases") )
         warning("phases must be an object of class 'phases', ",
                 "as returned by get_pseudophase")
 
-    xs <- paste0('PC', x) # Rotated data
+    ## PC names to interface data and for plot labels
+    xs <- paste0('PC', x) # Rotated data: cohorts
     ys <- paste0('PC', y)
-    xv <- paste0('EV', x) # Eigenvectors
+    xv <- paste0('EV', x) # Eigenvectors: cells
     yv <- paste0('EV', y)
+
+    ## scale data by eigenvalues as in biplot: matrices used for biplot
+    ## ... should, when multiplied together, approximate X (that's the
+    ## whole point).
+    ## https://stats.stackexchange.com/questions/66926/what-are-the-four-axes-on-pca-biplot
+    ## https://stats.stackexchange.com/questions/141085/positioning-the-arrows-on-a-pca-biplot
+    if ( !missing(scale) ) {
+        choices <- c(xs,ys)
+        scores <- phases$x
+        lam <- phases$sdev[c(x,y)]
+        n <- NROW(scores)
+        lam <- lam * sqrt(n)
+        lam <- lam^scale
+        phases$rotation <-t(t(phases$rotation[, choices]) * lam)
+        phases$x <- t(t(scores[, choices])/lam)
+    }
+    
+    ## transform data for better circular visibility?
+    if ( arcsinh ) {
+        ash <- function (x) 
+            log(x + sqrt(x^2 + 1))
+        phases$x[,grep("PC",colnames(phases$x))] <-
+            apply(phases$x[,grep("PC",colnames(phases$x))],
+                  2, ash)
+        phases$rotation[,grep("PC",colnames(phases$rotation))] <-
+            apply(phases$rotation[,grep("PC",colnames(phases$rotation))],
+                  2, ash)
+    } 
+
 
     ## PC component coloring
     if ( !missing(z) ) {
@@ -201,20 +236,32 @@ plotPC <- function(phases, x=1, y=2,
             col <- num2col(phases$rotation[,zs], q=z.q)
     } else z.legend <- FALSE
     
-    ##xlab <- xs
-    ##ylab <- ys
-    
     ## proportion of variance
     if ( !'summary'%in%names(phases) )
         phases$summary <- summary(phases)$importance
     varp <- round(phases$summary['Proportion of Variance',]*100,1)
 
-    xlab <- paste0(xs, " (", varp[xs], "%)") # rotated data 
-    ylab <- paste0(ys, " (", varp[ys], "%)")
-    xvlab <- paste0(xv, " (", varp[xs], "%)") # eigenvector 
-    yvlab <- paste0(yv, " (", varp[ys], "%)")
+    ## axis labels
+    xlab <- xs
+    ylab <- ys
+    xvlab <- xv
+    yvlab <- yv
 
-    ## plot eigenvectors (rotation matrix)
+    if ( arcsinh ) {
+        xlab <- paste0("asinh(",xlab,")") # rotated data 
+        ylab <- paste0("asinh(",ylab, ")")
+        xvlab <- paste0("asinh(",xvlab,")") # eigenvector 
+        yvlab <- paste0("asinh(",yvlab, ")")
+    }
+
+    if ( show.var ) {
+        xlab <- paste0(xlab, " (", varp[xs], "%)") # rotated data 
+        ylab <- paste0(ylab, " (", varp[ys], "%)")
+        xvlab <- paste0(xvlab, " (", varp[xs], "%)") # eigenvector 
+        yvlab <- paste0(yvlab, " (", varp[ys], "%)")
+    }
+    
+    ## PLOT EIGENVECTORS (rotation matrix)
         
     xlim <- range(phases$rotation[,xs])
     ylim <- range(phases$rotation[,ys])
@@ -233,12 +280,14 @@ plotPC <- function(phases, x=1, y=2,
 
         dense2d(phases$rotation[,xs],
                 phases$rotation[,ys],
-                xlim=xlim, ylim=ylim, colf = colf,
+                xlim=xlim, ylim=ylim,
+                colf = colf, pch=pch, cex=cex,
                 xlab=NA, ylab=NA, axes=FALSE, ...)
     } else 
         plot(phases$rotation[,xs], phases$rotation[,ys],
              xlim=xlim, ylim=ylim,
-             xlab=NA, ylab=NA, col=col, axes=FALSE, ...)
+             col=col, pch=pch, cex=cex, 
+             xlab=NA, ylab=NA, axes=FALSE, ...)
 
     
     ## time line?
@@ -248,6 +297,10 @@ plotPC <- function(phases, x=1, y=2,
     if ( zero.axis ) {
         abline(h=0)
         abline(v=0)
+        if ( !eigen.axis & !data.axis ) { 
+            axis(1, at=0, label=xlab)
+            axis(2, at=0, label=ylab)
+        }
     }
     
     if ( eigen.axis ) {
@@ -262,7 +315,7 @@ plotPC <- function(phases, x=1, y=2,
         }
     } 
     
-    ## plot rotated data
+    ## PLOT ROTATED DATA
     if ( cohorts ) {
 
         cohorts <- phases$x
@@ -301,7 +354,7 @@ plotPC <- function(phases, x=1, y=2,
                        cex=txt.cex, font=2, xpd=TRUE, r=.1)
         } else {
             points(cohorts[,xs], cohorts[,ys],
-                   pch=1, cex=.5,
+                   pch=cpch, cex=ccex,
                    col=ccol[rownames(cohorts)])
         }
     }
