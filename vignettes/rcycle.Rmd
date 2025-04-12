@@ -64,5 +64,14 @@ applied for single cell analysis: @Schwabe2020, @Macosko2015
 
 Show equivalence for prcomp, eigen and Rspectra::eigen.
 
+# just run li06_data.R for now
+
+using data by @li06
+
+```{r load-and-plot, echo=TRUE, include=TRUE}
+script_path <- system.file("scripts", "li06_pca.R", package = "yourpackage")
+script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_pca.R"
+source(script_path)
+```
 
 # References

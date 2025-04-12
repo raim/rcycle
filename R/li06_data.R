@@ -1,0 +1,15 @@
+#' Example Dataset for rcycle
+#'
+#' A list containing a gene expression (transcript) matrix, sampling time points and the experimental system's oscillation period. Data by Li & Klevecz (2006).
+#'
+#' @references
+#' Li CM, Klevecz RR (2006). A rapid genome-scale response of the transcriptional oscillator to perturbation reveals a period-doubling path to phenotypic change. *Proceedings of the National Academy of Sciences*, 103(44): 16254-59. \doi{10.1073/pnas.0604860103}
+#' @format A list with 3 elements:
+#' \describe{
+#'   \item{data}{Numeric matrix of size n × m: transcript expression values for all time points in time}
+#'   \item{time}{Numeric vector of length m: measurement time points}
+#'   \item{period}{A single numeric value: the known period of the system}
+#' }
+#' @usage data(li06_data)
+#' @keywords datasets
+"li06_data"

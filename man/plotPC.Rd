@@ -8,14 +8,37 @@ plotPC(
   phases,
   x = 1,
   y = 2,
+  scale,
+  arcsinh = FALSE,
+  z,
+  z.q = c(0.05, 0.95),
+  z.legend = FALSE,
+  vectors = TRUE,
   col,
-  expand = TRUE,
-  eigen.axis = TRUE,
-  cohorts = TRUE,
+  pch = 19,
+  cex = 0.5,
+  colf,
+  scores = TRUE,
+  arrows = TRUE,
+  cohorts,
   ccol,
+  cpch = 1,
+  ccex = 1,
   txt.cex = 1,
+  expand = TRUE,
+  pc.ash = FALSE,
+  data.axis = TRUE,
+  eigen.axis = FALSE,
+  zero.axis = FALSE,
+  time.line = FALSE,
+  show.var = TRUE,
   ...
 )
+}
+\arguments{
+\item{scale}{scale parameter, if provided it converts the plot to a true biplot}
+
+\item{z}{use the zth PC component for coloring between quantiles given in z.q}
 }
 \description{
 Plot PCA-based circle and state vectors.
