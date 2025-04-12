@@ -33,13 +33,6 @@ source("~/programs/rcycle/R/plot.R")
 
 
 
-```{r load, echo=TRUE, include=TRUE}
-## run pca in various versions, using data by Li and Klevecz (2006)
-script_path <- system.file("scripts", "li06_pca.R", package = "yourpackage")
-script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_pca.R"
-if ( !exists("cphase") )
-source(script_path)
-```
 
 
 $$
@@ -56,6 +49,40 @@ TODO: FILL THIS WITH teaching/pca/pca.md, teaching/pseudophase/cohorts14.md and 
 
 # Singular Value Decomposition and Principal Component Analysis
 
+```{r load, echo=FALSE, include=TRUE}
+## run pca in various versions, using data by Li and Klevecz (2006)
+script_path <- system.file("scripts", "li06_pca.R", package = "yourpackage")
+script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_pca.R"
+if ( !exists("cphase") )
+source(script_path)
+```
+
+```{r}
+### GENE-CENTERED
+## VARIABLES/COLUMNS are samples/cells, OBSERVATIONS/ROWS are genes
+## row-normalized and UNTRANSPOSED
+gdat <- pdat - apply(pdat, 1, mean)
+gphase <- prcomp(gdat, scale.=TRUE)
+
+### SAMPLE-CENTERED with genes as columns!
+## VARIABLES/COLUMNS are genes, OBSERVATIONS/ROWS are samples/cells
+
+## row-norm over cells
+sdat <- t(pdat) # transpose BEFORE row-norm 
+sdat <- sdat - apply(sdat, 1, mean)  # row-norm over cells!
+sphase <- prcomp(sdat, scale.=TRUE)
+
+## row-norm over genes: as in @Schwabe2000?
+cdat <- pdat - apply(pdat, 1, mean)  # row-norm over genes
+cdat <- t(cdat) # transpose AFTER row-norm 
+cphase <- prcomp(cdat, scale.=FALSE)  # NOTE: -> colnorm!
+
+## pseudophases for all approaches
+gtheta <- atan2(gphase$rotation[,2], gphase$rotation[,1])
+stheta <- atan2(sphase$x[,2], sphase$x[,1])
+ctheta <- atan2(cphase$x[,2], cphase$x[,1])
+```
+
 # The `biplot`
 
 * @Gabriel_1971
@@ -63,7 +90,7 @@ TODO: FILL THIS WITH teaching/pca/pca.md, teaching/pseudophase/cohorts14.md and 
 * (https://stats.stackexchange.com/questions/141085/positioning-the-arrows-on-a-pca-biplot)
 
 
-```{r, echo=FALSE, fig.width=7, fig.height=3.5}
+```{r, echo=TRUE, fig.width=7, fig.height=3.5}
 par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
 par(mfcol = c(1, 2))
 
@@ -86,7 +113,7 @@ figlabel('true biplot', pos='bottomleft', font=2)
 # Gene vs. Sample PCA
 
 
-```{r, echo=FALSE, fig.width=9, fig.height=3}
+```{r, echo=TRUE, fig.width=9, fig.height=3}
 par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
 par(mfcol = c(1, 3))
 
@@ -151,7 +178,8 @@ applied for single cell analysis: @Schwabe2020, @Macosko2015
 
 Show equivalence for prcomp, eigen and Rspectra::eigen.
 
-```{r plot, echo=TRUE, include=TRUE}
+```{r plot, echo=TRUE, include=TRUE, fig.width=9, fig.height=3}
+par(mfcol = c(1, 3))
 script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_plot.R"
 source(script_path)
 ```

@@ -51,11 +51,13 @@ gphase <- prcomp(gdat, scale.=TRUE)
 
 ### SAMPLE-CENTERED with genes as columns!
 ## VARIABLES/COLUMNS are genes, OBSERVATIONS/ROWS are samples/cells
+
 ## row-norm over cells
 cat(paste('Running PCA on samples:\t',did,'with prior row-norm over samples\n'))
 sdat <- t(pdat) # transpose BEFORE row-norm 
 sdat <- sdat - apply(sdat, 1, mean)  # row-norm over cells!
 sphase <- prcomp(sdat, scale.=TRUE)
+
 ## row-norm over genes: as in @Schwabe2000?
 cat(paste('Running PCA on samples:\t',did,'with prior row-norm over genes\n'))
 cdat <- pdat - apply(pdat, 1, mean)  # row-norm over genes
@@ -70,7 +72,7 @@ ctheta <- atan2(cphase$x[,2], cphase$x[,1])
 
 
 ## Calculate eigenvalues of the cor/cov matrices directly
-cat(paste('Running eigenvalue analysis:\t',did,' - TAKES LONG\n'))
+cat(paste('Running eigenvalue analysis:\t',did,' - TAKES LONGER\n'))
 
 ## eigen(cor(x)) == prcomp(x, scale=TRUE)
 gev <- eigen(cor(gdat), symmetric=TRUE) 
