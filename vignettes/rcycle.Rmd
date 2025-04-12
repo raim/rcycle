@@ -1,0 +1,64 @@
+---
+title: "Piecewise Linear Segmentation by Dynamic Programming"
+author: "Rainer Machn&eacute;"
+date: "`r format(Sys.time(), '%d %m %Y')`"
+output:
+    bookdown::html_document2:
+        base_format: rmarkdown::html_vignette
+        toc: true
+        toc_depth: 2
+        fig_caption: true
+bibliography: /home/raim/ref/tata.bib
+vignette: >
+  %\VignetteIndexEntry{Piecewise Linear Segmentation by Dynamic Programming}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, global.par=TRUE,
+                      fig.path = ".", fig.pos = 'h',
+                      fig.height = 2.7, fig.width = 4, fig.align = "center")
+knitr::opts_knit$set(global.par = TRUE)
+
+## redo benchmarking or use existing figure?
+REDOLONG <- FALSE
+times <- 100
+```
+
+```{r, include=FALSE}
+par(mai=c(.5,.5,.3,.5),mgp=c(1.2,.3,0),tcl=-.25, cex.main=.75)
+```
+
+$$
+\newcommand{\Ell}{\mathcal{L}}
+\newcommand{\jump}{\mathcal{J}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\lmax}{\ell_\text{max}}
+\newcommand{\lmin}{\ell_\text{min}}
+\newcommand{\def}{\stackrel{\mathrm{def}}{=}}
+$$
+
+TODO: FILL THIS WITH teaching/pwm/cohorts14.md and clusterTranscriptomes_understandPCA.R
+
+# Singular Value Decomposition and Principal Component Analysis
+
+# The `biplot`
+
+@Gabriel_1971
+
+
+# Time Series Reconstruction: `pseudophase`.
+
+@Alter2000,
+
+applied for single cell analysis: @Schwabe2020, @Macosco2015
+
+
+# R's `prcomp` explained
+
+Show equivalence for prcomp, eigen and Rspectra::eigen.
+
+
+# References
