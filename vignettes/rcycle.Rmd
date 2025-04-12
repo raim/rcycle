@@ -108,6 +108,30 @@ lines(cphase$x[,1], cphase$x[,2], col=2) # rotated data are samples
 figlabel('gene PCA, gene-norm', pos='bottomleft', font=2)
 ```
 
+```{r, echo=TRUE}
+## COMPARE PSEUDOPHASES
+## pseudophases are very similar between approaches
+gtheta <- atan2(gphase$rotation[,2], gphase$rotation[,1])
+stheta <- atan2(sphase$x[,2], sphase$x[,1])
+ctheta <- atan2(cphase$x[,2], cphase$x[,1])
+```
+
+```{r, echo=FALSE, fig.width=9, fig.height=3}
+par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
+par(mfcol = c(1, 3))
+plot(time, -gtheta, xlab='time/h', ylab=expression(-theta~'sample PCA'))
+plot(time, ctheta, xlab='time/h', ylab=expression(theta~'gene PCA, cell-norm'))
+plot(time, stheta, xlab='time/h', ylab=expression(theta~'gene PCA, gene-norm'))
+```
+
+```{r, echo=FALSE, fig.width=9, fig.height=3}
+par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
+par(mfcol = c(1, 3))
+plot(-gtheta, stheta, xlab=expression(-theta~'sample PCA'), ylab=expression(theta~'gene PCA, cell-norm'))
+plot(-gtheta, ctheta, xlab=expression(-theta~'sample PCA'), ylab=expression(theta~'gene PCA, gene-norm'))
+plot(stheta, ctheta, xlab=expression(theta~'gene PCA, cell-norm'), ylab=expression(theta~'gene PCA, gene-norm'))
+```
+
 TODO:
 
 * same on cohort level!

@@ -94,6 +94,9 @@ plot(gtheta, stheta)
 plot(gtheta, ctheta)
 plot(stheta, ctheta)
 
+plot(time, gtheta)
+plot(time, ctheta)
+plot(time, stheta)
 
 ## EQUIVALENCE BETWEEN eigen and eigs_sym?
 ## NOTE: while numerical differences exist,
