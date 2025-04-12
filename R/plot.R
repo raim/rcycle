@@ -179,20 +179,30 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 #' @param scale scale parameter, if provided it converts the plot to a true biplot 
 #' @export
 plotPC <- function(phases, x=1, y=2,
-                   scale, arcsinh=FALSE, 
-                   z, z.q=c(.05,.95), z.legend=FALSE,
+                   scale, # true biplot scaling as in biplot(scale=1)
+                   arcsinh=FALSE, 
+                   z, z.q=c(.05,.95), z.legend=FALSE, # color by PCz
+                   vectors=TRUE,
                    col, pch=19, cex=.5, colf, # eigenvector colors, cells
+                   scores=TRUE, arrows=TRUE, # draw rotated data, with lines?
+                   cohorts, # obsolete, replaced by scores!
                    ccol, cpch=1, ccex=1, txt.cex=1, # rotated data colors, cohorts/genes 
-                   cohorts=TRUE, arrows=TRUE, # draw rotated data, with lines?
                    expand=TRUE, 
                    pc.ash=FALSE, # TODO: useful for non-circular PCA, eg. gene-wise
                    data.axis=TRUE, eigen.axis=FALSE, zero.axis=FALSE,
                    time.line=FALSE, show.var=TRUE,
                    ...) {
 
-    if ( !inherits(phases, "phases") )
-        warning("phases must be an object of class 'phases', ",
-                "as returned by get_pseudophase")
+
+    if ( !missing(cohorts) ) {
+        warning("option cohorts obsolete, CHANGE to scores")
+        scores <- cohorts
+    }
+
+    ## obsolete: it should now work fully on prcomp alone!
+    ##if ( !inherits(phases, "phases") )
+    ##    warning("phases must be an object of class 'phases', ",
+    ##            "as returned by get_pseudophase")
 
     ## PC names to interface data and for plot labels
     xs <- paste0('PC', x) # Rotated data: cohorts
@@ -200,6 +210,7 @@ plotPC <- function(phases, x=1, y=2,
     xv <- paste0('EV', x) # Eigenvectors: cells
     yv <- paste0('EV', y)
 
+    ## TRUE biplot:
     ## scale data by eigenvalues as in biplot: matrices used for biplot
     ## ... should, when multiplied together, approximate X (that's the
     ## whole point).
@@ -207,13 +218,13 @@ plotPC <- function(phases, x=1, y=2,
     ## https://stats.stackexchange.com/questions/141085/positioning-the-arrows-on-a-pca-biplot
     if ( !missing(scale) ) {
         choices <- c(xs,ys)
-        scores <- phases$x
+        score <- phases$x
         lam <- phases$sdev[c(x,y)]
-        n <- NROW(scores)
+        n <- NROW(score)
         lam <- lam * sqrt(n)
         lam <- lam^scale
         phases$rotation <-t(t(phases$rotation[, choices]) * lam)
-        phases$x <- t(t(scores[, choices])/lam)
+        phases$x <- t(t(score[, choices])/lam)
     }
     
     ## transform data for better circular visibility?
@@ -262,110 +273,130 @@ plotPC <- function(phases, x=1, y=2,
     }
     
     ## PLOT EIGENVECTORS (rotation matrix)
+
+    if ( vectors ) {
+
+        vectorx <- phases$rotation       
         
-    xlim <- range(phases$rotation[,xs])
-    ylim <- range(phases$rotation[,ys])
-
-    if ( expand ) {
-        mx <- max(abs(c(ylim, xlim)))
-        xlim <- ylim <- c(-mx, mx)
-    }
-
+        xlim <- range(vectorx[,xs])
+        ylim <- range(vectorx[,ys])
         
+        if ( expand ) {
+            mx <- max(abs(c(ylim, xlim)))
+            xlim <- ylim <- c(-mx, mx)
+        }
+        
+        
+        
+        ## colored points or density plot?
+        if ( missing(col) )  {
+            if ( missing(colf) )
+                colf <- function(n) grey.colors(n, start=0, end=1)
+            
+            dense2d(vectorx[,xs],
+                    vectorx[,ys],
+                    xlim=xlim, ylim=ylim,
+                    colf = colf, pch=pch, cex=cex,
+                    xlab=NA, ylab=NA, axes=FALSE, ...)
+        } else 
+            plot(vectorx[,xs], vectorx[,ys],
+                 xlim=xlim, ylim=ylim,
+                 col=col, pch=pch, cex=cex, 
+                 xlab=NA, ylab=NA, axes=FALSE, ...)
+        
+        
+        ## time line?
+        if ( time.line )
+            lines(vectorx[,xs], vectorx[,ys])
+        
+        if ( zero.axis ) {
+            abline(h=0)
+            abline(v=0)
+            if ( !eigen.axis & !data.axis ) { 
+                if ( !scores ) {
+                    axis(1, at=0, label=xvlab)
+                    axis(2, at=0, label=yvlab)
+                } else {
+                    axis(3, at=0, label=xvlab)
+                    axis(4, at=0, label=yvlab)
+                }
+            }
+        }
     
-    ## colored points or density plot?
-    if ( missing(col) )  {
-        if ( missing(colf) )
-            colf <- function(n) grey.colors(n, start=0, end=1)
-
-        dense2d(phases$rotation[,xs],
-                phases$rotation[,ys],
-                xlim=xlim, ylim=ylim,
-                colf = colf, pch=pch, cex=cex,
-                xlab=NA, ylab=NA, axes=FALSE, ...)
-    } else 
-        plot(phases$rotation[,xs], phases$rotation[,ys],
-             xlim=xlim, ylim=ylim,
-             col=col, pch=pch, cex=cex, 
-             xlab=NA, ylab=NA, axes=FALSE, ...)
-
-    
-    ## time line?
-    if ( time.line )
-        lines(phases$rotation[,xs], phases$rotation[,ys])
-
-    if ( zero.axis ) {
-        abline(h=0)
-        abline(v=0)
-        if ( !eigen.axis & !data.axis ) { 
-            axis(1, at=0, label=xlab)
-            axis(2, at=0, label=ylab)
+        if ( eigen.axis ) {
+            if ( !scores ) {
+                axis(1);axis(2)
+                mtext(xvlab, 1, par('mgp')[1])
+                mtext(yvlab, 2, par('mgp')[1])
+            }  else {
+                axis(3);axis(4)
+                mtext(xvlab, 3, par('mgp')[1])
+                mtext(yvlab, 4, par('mgp')[1])
+            }
         }
     }
-    
-    if ( eigen.axis ) {
-        if ( !cohorts ) {
-        axis(1);axis(2)
-        mtext(xvlab, 1, par('mgp')[1])
-        mtext(yvlab, 2, par('mgp')[1])
-        }  else {
-            axis(3);axis(4)
-            mtext(xvlab, 3, par('mgp')[1])
-            mtext(yvlab, 4, par('mgp')[1])
-        }
-    } 
-    
+
     ## PLOT ROTATED DATA
-    if ( cohorts ) {
+    if ( scores ) {
 
-        cohorts <- phases$x
+        scorex <- phases$x
 
         if ( missing(ccol) ) {
-            if ( 'col' %in% colnames(cohorts) ) ccol <- cohorts$col
-            else ccol <- rep('#000000', nrow(cohorts))
-            names(ccol) <- rownames(cohorts)
+            if ( 'col' %in% colnames(scorex) ) ccol <- scorex$col
+            else ccol <- rep('#000000', nrow(scorex))
+            names(ccol) <- rownames(scorex)
         } else if ( length(ccol)==1 )
-            ccol <- setNames(rep(ccol, nrow(cohorts)), rownames(cohorts))
+            ccol <- setNames(rep(ccol, nrow(scorex)), rownames(scorex))
         
-        xlim <- range(cohorts[,xs])
-        ylim <- range(cohorts[,ys])
+        xlim <- range(scorex[,xs])
+        ylim <- range(scorex[,ys])
         
         if ( expand ) {
             mx <- max(abs(c(ylim, xlim)))
             xlim <- ylim <- c(-mx, mx)
         } else stop("expand=TRUE required for aligned cohort arrows")
 
-        par(new=TRUE)
-        plot(cohorts[,xs], cohorts[,ys],
+        if ( vectors )
+            par(new=TRUE)
+
+        plot(scorex[,xs], scorex[,ys],
              xlim=xlim, ylim=ylim, axes=FALSE, col=NA, xlab=NA, ylab=NA)
+        if ( arrows ) {
+            arrows(x0=0,y0=0, x1=scorex[,xs], y1=scorex[,ys],
+                   col="white", lwd=4, length=.05)
+            arrows(x0=0,y0=0, x1=scorex[,xs], y1=scorex[,ys],
+                   col=ccol[rownames(scorex)], lwd=2, length=.05)
+            shadowtext(scorex[,xs], scorex[,ys],
+                       labels=sub(".*_","",rownames(scorex)),
+                       col=ccol[rownames(scorex)],
+                       cex=txt.cex, font=2, xpd=TRUE, r=.1)
+        } else {
+            points(scorex[,xs], scorex[,ys],
+                   pch=cpch, cex=ccex,
+                   col=ccol[rownames(scorex)])
+        }
+        if ( zero.axis ) {
+            ##abline(h=0)
+            ##abline(v=0)
+            if ( !eigen.axis & !data.axis ) { 
+                axis(1, at=0, label=xlab)
+                axis(2, at=0, label=ylab)
+            }
+        }
         if ( data.axis ) {
             axis(1);axis(2)
             mtext(xlab, 1, par('mgp')[1])
             mtext(ylab, 2, par('mgp')[1])
         }
-        if ( arrows ) {
-            arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
-                   col="white", lwd=4, length=.05)
-            arrows(x0=0,y0=0, x1=cohorts[,xs], y1=cohorts[,ys],
-                   col=ccol[rownames(cohorts)], lwd=2, length=.05)
-            shadowtext(cohorts[,xs], cohorts[,ys],
-                       labels=sub(".*_","",rownames(cohorts)),
-                       col=ccol[rownames(cohorts)],
-                       cex=txt.cex, font=2, xpd=TRUE, r=.1)
-        } else {
-            points(cohorts[,xs], cohorts[,ys],
-                   pch=cpch, cex=ccex,
-                   col=ccol[rownames(cohorts)])
-        }
-    }
-
+   }
+    
     ## legend for PC-based coloring
     if ( z.legend ) 
         phcol.legend(leg.pos="bottomright",
                      legend=c("min","mid","max"), title=zs,
                      ##inset=c(-0.1,0),
                      xpd=TRUE, y.intersp=0.6, bg="#ffffffaa", box.col=NA)
-        
+    
 }
 
 ## overlaid phase histograms of cell classes 
