@@ -40,7 +40,7 @@ $$
 \newcommand{\def}{\stackrel{\mathrm{def}}{=}}
 $$
 
-TODO: FILL THIS WITH teaching/pca/cohorts14.md, teaching/pseudophase/cohorts14.md and clusterTranscriptomes_understandPCA.R
+TODO: FILL THIS WITH teaching/pca/pca.md, teaching/pseudophase/cohorts14.md and clusterTranscriptomes_understandPCA.R
 
 # Singular Value Decomposition and Principal Component Analysis
 
