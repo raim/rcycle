@@ -24,15 +24,13 @@ knitr::opts_chunk$set(echo = TRUE, global.par=TRUE,
                       fig.path = ".", fig.pos = 'h',
                       fig.height = 2.7, fig.width = 4, fig.align = "center")
 knitr::opts_knit$set(global.par = TRUE)
-
-## redo benchmarking or use existing figure?
-REDOLONG <- FALSE
-times <- 100
+par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25, cex.main=.75)
+require(rcycle)
+require(segmenTools)
+source("~/programs/rcycle/R/phases.R")
+source("~/programs/rcycle/R/plot.R")
 ```
 
-```{r, include=FALSE}
-par(mai=c(.5,.5,.3,.5),mgp=c(1.2,.3,0),tcl=-.25, cex.main=.75)
-```
 
 $$
 \newcommand{\Ell}{\mathcal{L}}
@@ -50,7 +48,55 @@ TODO: FILL THIS WITH teaching/pca/pca.md, teaching/pseudophase/cohorts14.md and 
 
 # The `biplot`
 
-@Gabriel_1971
+* @Gabriel_1971
+* (https://stats.stackexchange.com/questions/66926/what-are-the-four-axes-on-pca-biplot)
+* (https://stats.stackexchange.com/questions/141085/positioning-the-arrows-on-a-pca-biplot)
+
+
+```{r, echo=FALSE, fig.width=7, fig.height=3.5}
+par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
+par(mfcol = c(1, 2))
+
+## TODO: test biplot-like scaling more exactly!
+plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
+       arcsinh=FALSE) # eigenvectors/rotation matrix are samples
+par(new=TRUE)
+biplot(gphase, scale=0, xlabs = rep("x", nrow(gphase$x))) 
+figlabel('unscaled', pos='bottomleft', font=2)
+
+## WITH SCALING:
+plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
+       scale=1, arcsinh=FALSE, col=2, pch=19, cex=1)
+par(new=TRUE)
+biplot(gphase, scale=1, xlabs = rep("x", nrow(gphase$x)))
+figlabel('true biplot', pos='bottomleft', font=2)
+```
+
+# Gene vs. Sample PCA
+
+
+```{r, echo=FALSE, fig.width=9, fig.height=3}
+par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
+par(mfcol = c(1, 3))
+
+## sample PCA: with samples as variables/columns - most unconventional
+plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
+       col=2, pch=19, cex=1) # eigenvectors/rotation matrix are samples
+figlabel('sample PCA', pos='bottomleft', font=2)
+
+## gene PCA: with genes as variables/columns
+## but with row-norm over cells after transpose
+plotPC(sphase, arrows=FALSE, ccol=2, cpch=19, eigen.axis=TRUE)
+lines(sphase$x[,1], sphase$x[,2], col=2) # rotated data are samples
+figlabel('gene PCA, cell-norm', pos='bottomleft', font=2)
+
+## gene PCA: with genes as variables/columns - conventional
+## with row-norm over genes prior to transpose
+plotPC(cphase, arrows=FALSE, ccol=2, cpch=19, eigen.axis=TRUE)
+lines(cphase$x[,1], cphase$x[,2], col=2) # rotated data are samples
+figlabel('gene PCA, gene-norm', pos='bottomleft', font=2)
+```
+
 
 
 # Time Series Reconstruction: `pseudophase`.
@@ -68,10 +114,16 @@ Show equivalence for prcomp, eigen and Rspectra::eigen.
 
 using data by @li06
 
-```{r load-and-plot, echo=TRUE, include=TRUE}
+```{r load, echo=TRUE, include=TRUE}
 script_path <- system.file("scripts", "li06_pca.R", package = "yourpackage")
 script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_pca.R"
+if ( !exists("cphase") )
 source(script_path)
+```
+
+```{r plot, echo=TRUE, include=TRUE}
+##script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_plot.R"
+##source(script_path)
 ```
 
 # References

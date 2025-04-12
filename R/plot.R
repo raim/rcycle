@@ -307,7 +307,8 @@ plotPC <- function(phases, x=1, y=2,
         
         ## time line?
         if ( time.line )
-            lines(vectorx[,xs], vectorx[,ys])
+            lines(vectorx[,xs], vectorx[,ys],
+                  col=ifelse(missing(col), 1, col[1]))
         
         if ( zero.axis ) {
             abline(h=0)
