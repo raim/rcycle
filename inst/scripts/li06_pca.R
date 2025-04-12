@@ -22,9 +22,9 @@ source("~/programs/rcycle/R/phases.R")
 source("~/programs/rcycle/R/plot.R")
 
 did <- 'li06'
-##data('li06_data')
-ddid <- paste0(did,'_data')
-li06_data <- get(ddid)
+data('li06_data')
+##ddid <- paste0(did,'_data')
+##li06_data <- get(ddid)
 
 ##rcycle.datafile <- paste0('~/programs/rcycle/data/',did,'_data.rda')
 ##load(rcycle.datafile)

@@ -32,6 +32,16 @@ source("~/programs/rcycle/R/plot.R")
 ```
 
 
+
+```{r load, echo=TRUE, include=TRUE}
+## run pca in various versions, using data by Li and Klevecz (2006)
+script_path <- system.file("scripts", "li06_pca.R", package = "yourpackage")
+script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_pca.R"
+if ( !exists("cphase") )
+source(script_path)
+```
+
+
 $$
 \newcommand{\Ell}{\mathcal{L}}
 \newcommand{\jump}{\mathcal{J}}
@@ -58,13 +68,14 @@ par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
 par(mfcol = c(1, 2))
 
 ## TODO: test biplot-like scaling more exactly!
+## biplot w/o scaling
 plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
-       arcsinh=FALSE) # eigenvectors/rotation matrix are samples
+       arcsinh=FALSE, col=2, pch=19, cex=1)
 par(new=TRUE)
 biplot(gphase, scale=0, xlabs = rep("x", nrow(gphase$x))) 
 figlabel('unscaled', pos='bottomleft', font=2)
 
-## WITH SCALING:
+## biplot with scaling
 plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
        scale=1, arcsinh=FALSE, col=2, pch=19, cex=1)
 par(new=TRUE)
@@ -97,6 +108,12 @@ lines(cphase$x[,1], cphase$x[,2], col=2) # rotated data are samples
 figlabel('gene PCA, gene-norm', pos='bottomleft', font=2)
 ```
 
+TODO:
+
+* same on cohort level!
+* single cell data: are we using with or w/o rownorm?
+* take log of counts, esp. for single cell where arcsinh scaling
+  is required.
 
 
 # Time Series Reconstruction: `pseudophase`.
@@ -110,20 +127,9 @@ applied for single cell analysis: @Schwabe2020, @Macosko2015
 
 Show equivalence for prcomp, eigen and Rspectra::eigen.
 
-# just run li06_data.R for now
-
-using data by @li06
-
-```{r load, echo=TRUE, include=TRUE}
-script_path <- system.file("scripts", "li06_pca.R", package = "yourpackage")
-script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_pca.R"
-if ( !exists("cphase") )
-source(script_path)
-```
-
 ```{r plot, echo=TRUE, include=TRUE}
-##script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_plot.R"
-##source(script_path)
+script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_plot.R"
+source(script_path)
 ```
 
 # References
