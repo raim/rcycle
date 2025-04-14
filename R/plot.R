@@ -170,7 +170,8 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 
 }
 
-
+## plots both rotation and x of a PCA object, used from plotPC
+## TODO: revise color selection via named vectors
 monoplot <- function(x, type='rotation',
                      xs, ys, lines=FALSE, arrows=FALSE, labels=FALSE,
                      axis=FALSE,
@@ -210,7 +211,7 @@ monoplot <- function(x, type='rotation',
     } else 
         plot(xy[,xs], xy[,ys], # scatter plot
              xlim=xlim, ylim=ylim,
-             col=col, pch=pch, cex=cex, 
+             col=col[rownames(xy)], pch=pch, cex=cex, 
              xlab=NA, ylab=NA, axes=FALSE, ...)
     
     if ( arrows ) {

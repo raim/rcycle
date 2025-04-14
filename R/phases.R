@@ -124,12 +124,12 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
     for ( j in 1:length(phases) ) {
         x <- phases[[j]]
         if ( 'phi' %in% names(x) ) {
-            cat(paste('shifting phi in', names(phases)[j], 'by', dphi, '\n'))
+
+            if ( verb>0 )
+                cat(paste('shifting phi in', names(phases)[j], 'by', dphi, '\n'))
 
             ## shift rank phase
             x$phi <- shift_phase(x$phi, dphi, center=TRUE)
-
-            cat(paste('\tshifted phi\n'))
 
             ## re-order
             if ( 'order' %in% names(x) )
