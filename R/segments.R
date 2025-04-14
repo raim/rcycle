@@ -298,7 +298,7 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
 
     ## shift cohort theta accordingly
     ## TODO: is this correct?
-    thetac <- approx_phase(x=theta.orig, y=theta, xout=phases$x$theta)$y
+    thetac <- approx_phase(x=theta.orig, y=theta, xout=phases$x.phase$theta)$y
     phic <- approx_phase(x=theta, y=phi, xout=thetac)$y
 
     deriv <- thetah <- breaks <- brks <- cl <- NULL

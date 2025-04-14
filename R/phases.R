@@ -75,7 +75,7 @@ approx_phase <- function(x, y, xout, ...) {
 #' @export
 revert <- function(phases,  verb=1) {
 
-    rphase <- revert_phase(phi=phases$x$phi)
+    rphase <- revert_phase(phi=phases$x.phase$phi)
     
     if ( rphase ) {
         if ( verb>0 )
@@ -120,11 +120,16 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
 
     ## TODO: instead shift main theta and re-calculate rank phase?
     
-    phases <- alapply(phases, function(x) {
+    ##phases <- alapply(phases, function(x) {
+    for ( j in 1:length(phases) ) {
+        x <- phases[[j]]
         if ( 'phi' %in% names(x) ) {
+            cat(paste('shifting phi in', names(phases)[j], 'by', dphi, '\n'))
 
             ## shift rank phase
             x$phi <- shift_phase(x$phi, dphi, center=TRUE)
+
+            cat(paste('\tshifted phi\n'))
 
             ## re-order
             if ( 'order' %in% names(x) )
@@ -138,8 +143,9 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
                                            target=x$phi, center=center)
             }
         }
-        x
-    })
+        phases[[j]] <- x
+    }  
+    ##})
 
     
     phases$processing <- c(phases$processing, paste0("shift:", dphi))
@@ -199,7 +205,7 @@ center <- function(phases, method='slope', params=list(spar=.001), ...) {
         
     } else if ( method=='cohort' ) {
         ## TODO: option to center at cohort peak instead of PCA phase?
-        dph <- phases$x[params$cohort, params$phase]
+        dph <- phases$x.phase[params$cohort, params$phase]
     }
 
     ## shift all phases by dphi
