@@ -329,7 +329,7 @@ get_pseudophase <- function(states,
                                               phi=phi,
                                               theta=theta,
                                               amplitude=amp)
-
+    rownames(phases$rotation.phase) <- rownames(phases$rotation)
     
 
     ## old: add cell phases to cell eigenvalues
@@ -343,6 +343,8 @@ get_pseudophase <- function(states,
                                        phi=cphi,
                                        theta=ctheta,
                                        amp=camp)
+    rownames(phases$x.phase) <- rownames(phases$x)
+    
     ## old: add cohort phases, IDs, colors, etc. to cohort ?values?
     phases$x <- cbind.data.frame(phases$x.phase,
                                  phases$x)
@@ -386,19 +388,19 @@ get_classes <- function(states) {
 segment_state <- function(phases, segment='inflection',
                           class='class', col, plot=FALSE) {
 
-    cls.srt <- rownames(phases$x) ##unique(phases$rotation[,class])
+    cls.srt <- rownames(phases$x) ##unique(phases$rotation.phase[,class])
 
     sid <- paste0(segment, "_segment")
     
-    seg.srt <- phases$rotation[,sid]
+    seg.srt <- phases$rotation.phase[,sid]
     if ( is.factor(seg.srt) )
         seg.srt <- levels(seg.srt)
-    else seg.srt <- sort(unique(phases$rotation[,sid]))
+    else seg.srt <- sort(unique(phases$rotation.phase[,sid]))
     
     
     ## calculate overlaps between state based and segment-based classes
-    ovl <- clusterCluster(cl1=phases$rotation[,sid], cl1.srt=seg.srt,
-                          cl2=phases$rotation[,class], cl2.srt=cls.srt)
+    ovl <- clusterCluster(cl1=phases$rotation.phase[,sid], cl1.srt=seg.srt,
+                          cl2=phases$rotation.phase[,class], cl2.srt=cls.srt)
     ## assign to cohort with minimal overlap p.value
     if ( plot )
         plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, xlab=class, ylab=sid)
@@ -675,10 +677,10 @@ CorCircularRad <- function(x, y, test=FALSE) {
 
 ccor <- function(x, y) {
 
-    x <- circular::as.circular(CDC$rotation$theta,
+    x <- circular::as.circular(CDC$rotation.phase$theta,
                                units="radians", type="angles")
 
-    y <- circular::as.circular(jitter(CDC$rotation$phi),
+    y <- circular::as.circular(jitter(CDC$rotation.phase$phi),
                                units="radians", type="angles")
 
     ## NOTE: mean(phi) is NA, since it's equispaced

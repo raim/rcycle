@@ -97,8 +97,8 @@ get_segments <- function(phases,
     ## TODO: make sure phi is within -pi:pi or otherwise adjust lim below
     
     ## original phi and theta
-    ph <- phases$rotation$phi[phases$rotation$order]
-    th <- phases$rotation$theta[phases$rotation$order]
+    ph <- phases$rotation.phase$phi[phases$rotation.phase$order]
+    th <- phases$rotation.phase$theta[phases$rotation.phase$order]
 
     ## remove jumps from theta
     theta <- remove_jumps(th, center=FALSE, verb=verb)
@@ -139,10 +139,10 @@ get_segments <- function(phases,
         dtpf <- maxima$splinef
         
         ## classify phases by shoulder segments
-        segs <- phase_segments(phases$rotation$phi,
+        segs <- phase_segments(phases$rotation.phase$phi,
                                breaks=shoulder$phi)
 
-        x <- phases$rotation$phi
+        x <- phases$rotation.phase$phi
         df <- data.frame(segment=segs,
                          theta  = predict(dtpf, x, nderiv = 0) + x,
                          dtheta = predict(dtpf, x, nderiv = 1),
@@ -151,10 +151,10 @@ get_segments <- function(phases,
         colnames(df) <- paste0(nm, "_", colnames(df))
 
         ## replace previus
-        old <- which(colnames(phases$rotation)%in%colnames(df))
+        old <- which(colnames(phases$rotation.phase)%in%colnames(df))
         if ( length(old)>0 )
-            phases$rotation <-phases$rotation[,-old] 
-        phases$rotation <- cbind(phases$rotation,
+            phases$rotation.phase <-phases$rotation.phase[,-old] 
+        phases$rotation.phase <- cbind(phases$rotation.phase,
                                  df)
         
         ## add breaks
@@ -179,14 +179,14 @@ get_segments <- function(phases,
         inflection$ID <- inflection$col <- 1:nrow(inflection)
      
         ## classify phases by max slope segments
-        segs <-  phase_segments(phases$rotation$phi,
+        segs <-  phase_segments(phases$rotation.phase$phi,
                                 breaks=inflection$phi)
     
         ## ADD TO PHASES OBJECT
         ## thetah  : smoothed theta, dtpf, deriv 0
         ## dtheta  : dtheta/dphi -1, dtpf, deriv 1
         ## ddtheta : d2theta/dphi2,  dtpi, deriv 2
-        x <- phases$rotation$phi
+        x <- phases$rotation.phase$phi
         df <- data.frame(segment= segs,
                          theta  = predict(dtpf, x, nderiv = 0) + x,
                          dtheta = predict(dtpf, x, nderiv = 1),
@@ -195,10 +195,10 @@ get_segments <- function(phases,
         colnames(df) <- paste0(nm, "_", colnames(df))
 
         ## replace previus
-        old <- which(colnames(phases$rotation)%in%colnames(df))
+        old <- which(colnames(phases$rotation.phase)%in%colnames(df))
         if ( length(old)>0 )
-            phases$rotation <-phases$rotation[,-old] 
-        phases$rotation <- cbind(phases$rotation,
+            phases$rotation.phase <-phases$rotation.phase[,-old] 
+        phases$rotation.phase <- cbind(phases$rotation.phase,
                                  df)
         
         ## add breaks
@@ -237,23 +237,23 @@ get_segments <- function(phases,
 
         
         ## classify phases by max slope segments
-        dsegs <-  phase_segments(phases$rotation$phi, breaks=brks$phi)
+        dsegs <-  phase_segments(phases$rotation.phase$phi, breaks=brks$phi)
         
         ## ADD TO PHASES OBJECT
         ## thetah  : smoothed theta, dtpf, deriv 0
         ## dtheta  : dtheta/dphi -1, dtpf, deriv 1
         ## ddtheta : d2theta/dphi2,  dtpi, deriv 2
-        x <- phases$rotation$phi
+        x <- phases$rotation.phase$phi
         df <- data.frame(segment= dsegs,
                          theta  = predict(dps, xout=x)$y + x)
         nm <- names[method=='dpseg']
         colnames(df) <- paste0(nm, "_", colnames(df))
 
         ## replace previus
-        old <- which(colnames(phases$rotation)%in%colnames(df))
+        old <- which(colnames(phases$rotation.phase)%in%colnames(df))
         if ( length(old)>0 )
-            phases$rotation <-phases$rotation[,-old] 
-        phases$rotation <- cbind(phases$rotation,
+            phases$rotation.phase <-phases$rotation.phase[,-old] 
+        phases$rotation.phase <- cbind(phases$rotation.phase,
                               df)
         
         ## add breaks
@@ -287,9 +287,9 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
                          method='shoulder', show.cohorts=TRUE) {
 
     
-    ord <- phases$rotation$order
-    phi <- phases$rotation$phi[ord]
-    theta.orig <- phases$rotation$theta[ord]
+    ord <- phases$rotation.phase$order
+    phi <- phases$rotation.phase$phi[ord]
+    theta.orig <- phases$rotation.phase$theta[ord]
 
     ## remove jumps from all theta
     ## TODO: remove_jumps doesn't work for thetah in dpseg and shoulder
@@ -307,11 +307,11 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
     if ( method %in% names(phases) ) {
         
         cln <- paste0(method,'_segment')
-        cl <- phases$rotation[,cln][phases$rotation$order]
+        cl <- phases$rotation.phase[,cln][phases$rotation.phase$order]
         base.cex <- 1
         
         thn <- paste0(method,'_theta')
-        thetah <- phases$rotation[[thn]][ord]
+        thetah <- phases$rotation.phase[[thn]][ord]
         
         breaks <- brks <- phases[[method]]
     }
@@ -319,7 +319,7 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
     if (  method %in% c('shoulder','slope') ) {
         
         dthn <- paste0(method,'_dtheta')
-        deriv <- phases$rotation[[dthn]][ord]
+        deriv <- phases$rotation.phase[[dthn]][ord]
         ylab4 <- expression(d*theta/d*phi-1)
 
         if ( method=='slope' ) {
@@ -336,7 +336,7 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
 
 
         dthn <- paste0(method,'_ddtheta')
-        deriv <- phases$rotation[[dthn]][ord]
+        deriv <- phases$rotation.phase[[dthn]][ord]
         ylab4 <- expression(d^2*theta/d*phi^2)
            
         brks <- breaks[breaks$ddmax,] ## TODO: handle upstream
@@ -421,14 +421,14 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
     ## TODO: add official cohort name vector to object, or
     ## avoid long prefixes for separate PCA
     if ( show.cohorts )
-        for ( i in 1:nrow(phases$x) )
-            axis(3, at=phases$x$phi[i],
-                 labels=sub(".*_","",rownames(phases$x))[i], las=2)
+        for ( i in 1:nrow(phases$x.phase) )
+            axis(3, at=phases$x.phase$phi[i],
+                 labels=sub(".*_","",rownames(phases$x.phase))[i], las=2)
     ## if right y-axis is available, plot cohort theta
     if ( is.null(deriv) ) 
-        for ( i in 1:nrow(phases$x) )
+        for ( i in 1:nrow(phases$x.phase) )
             axis(4, at=thetac[i] - ifelse(difference, phic[i], 0),
-                 labels=sub(".*_","",rownames(phases$x))[i], las=2)
+                 labels=sub(".*_","",rownames(phases$x.phase))[i], las=2)
     
 } 
 

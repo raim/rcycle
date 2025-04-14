@@ -10,7 +10,7 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
     if ( missing(y0) ) y0 <- mean(par('usr')[3:4])
     if ( missing(dy) ) dy <- diff(par('usr')[3:4])/10 #length(types)
 
-    miss <- which(!types%in%names(x) & !types%in%names(x$x))
+    miss <- which(!types%in%names(x) & !types%in%names(x$x.phases))
     if ( length(miss) ) {
         warning('omitting types not found in data: ',
                 paste(types[miss], sep=';'))
@@ -45,16 +45,16 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
                            labels=segs[[labels]],
                            col=scol)
 
-        } else if ( type %in% colnames(x$x) ) {
+        } else if ( type %in% colnames(x$x.phases) ) {
 
             ## arrow colors
-            ids <- x$x$ID
-            scol <- setNames(1:nrow(x$x), ids)
+            ids <- x$x.phases$ID
+            scol <- setNames(1:nrow(x$x.phases), ids)
             if ( !missing(col) )
-                if ( col%in%colnames(x$x) )
-                    scol <- setNames(x$x[,col], ids)
+                if ( col%in%colnames(x$x.phases) )
+                    scol <- setNames(x$x.phases[,col], ids)
 
-            shadowtext(x=x$x[,type], y=rep(y0, nrow(x$x)),
+            shadowtext(x=x$x.phases[,type], y=rep(y0, nrow(x$x.phases)),
                        labels=ids, col=scol, ...)
         } 
         if ( ticks ) axis(4, at=y0, labels=type, las=2)
@@ -74,7 +74,7 @@ plotGOI <- function(phases, counts, goi, names, col,
                     win=.05,
                     xlab=expression(pseudophase*phi),
                     ylab="mov. avg. of counts/total") {
-
+stop('this needs to be udpated')
     ## phase
     phs <- phases[,"phase"]
     pord <- order(phs)
@@ -358,7 +358,7 @@ plotPC <- function(phases, x=1, y=2,
         ylimv <- ylim*ratio
     }
 
-    if ( vectors ) {
+    if ( vectors ) { # plot eigenvectors
         ax <- c(3,4)
         if ( !scores ) ax <- c(1,2)
         monoplot(x=phases, type='rotation', #xy=phases$rotation,
@@ -367,7 +367,7 @@ plotPC <- function(phases, x=1, y=2,
                  xlim=xlimv, ylim=ylimv, ax=ax, xlab=xvlab, ylab=yvlab,
                  axis=vaxis, ...)
     }
-    if ( scores ) {
+    if ( scores ) { # plot scores/PCs
         if ( vectors )  par(new=TRUE)
 
         monoplot(x=phases, type='x', #xy=phases$x,
@@ -377,143 +377,7 @@ plotPC <- function(phases, x=1, y=2,
                  axis=saxis, ...)
     }
 
-    
-    ## PLOT EIGENVECTORS (rotation matrix)
 
-    if ( FALSE  ) {
-
-        vectorx <- phases$rotation       
-       
-        if ( length(col)==1 )
-            col <- setNames(rep(col, nrow(vectorx)), rownames(vectorx))
-
-        ## take color from decorated PCA object
-        if ( missing(col) )  
-            if ( 'col' %in% colnames(vectorx) )
-                col <- vectorx$col
-        
-        ## colored points or density plot?
-        if ( missing(col) )  {
-            if ( missing(colf) )
-                colf <- function(n) grey.colors(n, start=0, end=1)
-            dense2d(vectorx[,xs],
-                    vectorx[,ys],
-                    xlim=xlimv, ylim=ylimv,
-                    colf = colf, pch=pch, cex=cex,
-                    xlab=NA, ylab=NA, axes=FALSE, ...)
-            col <- setNames(rep(1, nrow(vectorx)), rownames(vectorx))
-        } else 
-            plot(vectorx[,xs], vectorx[,ys],
-                 xlim=xlimv, ylim=ylimv,
-                 col=col, pch=pch, cex=cex, 
-                 xlab=NA, ylab=NA, axes=FALSE, ...)
-        
-        if ( varrows ) {
-            
-            arrows(x0=0,y0=0, x1=vectorx[,xs], y1=vectorx[,ys],
-                   col="white", lwd=4, length=.05)
-            arrows(x0=0,y0=0, x1=vectorx[,xs], y1=vectorx[,ys],
-                   col=col[rownames(vectorx)], lwd=2, length=.05)
-            shadowtext(vectorx[,xs], vectorx[,ys],
-                       labels=sub(".*_","",rownames(vectorx)),
-                       col=col[rownames(vectorx)],
-                       cex=txt.cex, font=2, xpd=TRUE, r=.1)
-        }
-        
-        ## time line?
-        if ( vlines )
-            lines(vectorx[,xs], vectorx[,ys], col=col[rownames(vectorx)])
-        
-        if ( zero.axis ) {
-          if ( !vaxis & !saxis ) { 
-                if ( !scores ) {
-                    axis(1, at=0, label=xvlab)
-                    axis(2, at=0, label=yvlab)
-                } else {
-                    axis(3, at=0, label=xvlab)
-                    axis(4, at=0, label=yvlab)
-                }
-            }
-        }
-    
-        if ( vaxis ) {
-            if ( !scores ) {
-                axis(1);axis(2)
-                mtext(xvlab, 1, par('mgp')[1])
-                mtext(yvlab, 2, par('mgp')[1])
-            }  else {
-                axis(3);axis(4)
-                mtext(xvlab, 3, par('mgp')[1])
-                mtext(yvlab, 4, par('mgp')[1])
-            }
-        }
-    }
-
-    ## PLOT ROTATED DATA
-    if ( FALSE ) {
-
-        scorex <- phases$x
-
-    
- 
-        if ( vectors )
-            par(new=TRUE)
-
-        if ( length(scol)==1 )
-            scol <- setNames(rep(scol, nrow(scorex)), rownames(scorex))
-
-        ## take color from decorated PCA object
-        if ( missing(scol) )  
-            if ( 'col' %in% colnames(scorex) )
-                scol <- scorex$col
-
-        if ( missing(scol) )  {
-            
-            if ( missing(scolf) )
-                scolf <- function(n) grey.colors(n, start=0, end=1)
-            
-            dense2d(scorex[,xs],
-                    scorex[,ys],
-                    xlim=xlim, ylim=ylim,
-                    colf = scolf, pch=spch, cex=scex,
-                    xlab=NA, ylab=NA, axes=FALSE, ...)
-            
-            scol <- setNames(rep(1, nrow(scorex)), rownames(scorex))
-        } else { 
-
-            plot(scorex[,xs], scorex[,ys],
-                 xlim=xlim, ylim=ylim, axes=FALSE, col=NA, xlab=NA, ylab=NA)
-            points(scorex[,xs], scorex[,ys],
-                   pch=spch, cex=scex, col=scol[rownames(scorex)])
-        }
-        if ( sarrows ) {
-
-            arrows(x0=0,y0=0, x1=scorex[,xs], y1=scorex[,ys],
-                   col="white", lwd=4, length=.05)
-            arrows(x0=0,y0=0, x1=scorex[,xs], y1=scorex[,ys],
-                   col=scol[rownames(scorex)], lwd=2, length=.05)
-            shadowtext(scorex[,xs], scorex[,ys],
-                       labels=sub(".*_","",rownames(scorex)),
-                       col=scol[rownames(scorex)],
-                       cex=txt.cex, font=2, xpd=TRUE, r=.1)
-        }
-        
-        ## time line?
-        if ( slines )
-            lines(scorex[,xs], scorex[,ys], col=scol[rownames(scorex)])
-
-        if ( zero.axis ) {
-            if ( !vaxis & !saxis ) { 
-                axis(1, at=0, label=xlab)
-                axis(2, at=0, label=ylab)
-            }
-        }
-        if ( saxis ) {
-            axis(1);axis(2)
-            mtext(xlab, 1, par('mgp')[1])
-            mtext(ylab, 2, par('mgp')[1])
-        }
-    }
     if ( zero.axis ) {
         abline(h=0)
         abline(v=0)
