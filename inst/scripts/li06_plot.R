@@ -11,7 +11,7 @@ source("~/programs/rcycle/R/plot.R")
 ## the same as biplot
 ## eigenvectors/rotation matrix are samples
 plotPC(gphase, sarrows=FALSE, scores=TRUE, vlines=TRUE, vlabels=FALSE,
-       vaxis=TRUE, scale=0)
+       vaxis=TRUE, scale=0, slabels=FALSE)
 par(new=TRUE)
 biplot(gphase, scale=0, xlabs = rep("x", nrow(gphase$x)), xlab=NA, ylab=NA) 
 
