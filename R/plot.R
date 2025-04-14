@@ -183,7 +183,7 @@ monoplot <- function(x, type='rotation',
     ## PCA phase object from rcycle
     phases <- NULL
     typep <- paste0(type,".phase")
-    if ( pid %in% names(x) )
+    if ( typep %in% names(x) )
         phases <- x[[typep]]
     
     ## expand single color
@@ -253,12 +253,14 @@ plotPC <- function(phases, x=1, y=2,
                    slines = FALSE, sarrows = FALSE, slabels = FALSE,
                    scolf = NULL, scol = NULL, spch=1, scex=1, saxis = scores, 
 
-                   txt.cex=1, 
-                   scale=0, # true biplot scaling as in biplot(scale=1)
-                   xlim, ylim, expand = 1, pc.biplot = FALSE, # as in biplot
+                   txt.cex = 1,
+                   
+                   scale = 0, # true biplot scaling as in biplot(scale=1)
+                   pc.biplot = FALSE, # as in biplot
+                   xlim, ylim, expand = 1, 
 
                    arcsinh = FALSE, # useful to emphasize crowded data, TODO: avoid
-                   zero.axis = FALSE,
+                   zero.axis = FALSE, zero.axis.label=zero.axis, 
                    show.var=TRUE,
                    ...) {
 
@@ -277,6 +279,8 @@ plotPC <- function(phases, x=1, y=2,
         phases$summary <- summary(phases)$importance
     varp <- round(phases$summary['Proportion of Variance',]*100,1)
 
+    phases$var_prct <- varp
+
     ## TRUE biplot:
     ## scale data by eigenvalues as in biplot: matrices used for biplot
     ## ... should, when multiplied together, approximate X.
@@ -292,7 +296,7 @@ plotPC <- function(phases, x=1, y=2,
     if(pc.biplot) lam <- lam / sqrt(n)
     
     phases$rotation[,allv] <- t(t(phases$rotation[,allv]) * lam)
-    phases$x[,alls] <- t(t(phases$x[,alls]/lam))
+    phases$x[,alls] <- t(t(phases$x[,alls])/lam)
 
     ## transform data for better circular visibility?
     if ( arcsinh ) {
@@ -345,6 +349,7 @@ plotPC <- function(phases, x=1, y=2,
     rangy1 <- unsigned.range(phases$rotation[, xs])
     rangy2 <- unsigned.range(phases$rotation[, ys])
 
+    ## NOTE: both PC dimensions are on the same scale!
     if(missing(xlim) && missing(ylim))
 	xlim <- ylim <- rangx1 <- rangx2 <- range(rangx1, rangx2)
     else if(missing(xlim)) xlim <- rangx1
@@ -379,6 +384,10 @@ plotPC <- function(phases, x=1, y=2,
 
 
     if ( zero.axis ) {
+        if ( zero.axis.label ) {
+            axis(1, at=0, label=xlab)
+            axis(2, at=0, label=ylab)
+        }
         abline(h=0)
         abline(v=0)
     }
@@ -389,6 +398,9 @@ plotPC <- function(phases, x=1, y=2,
                      legend=c("min","mid","max"), title=zs,
                      ##inset=c(-0.1,0),
                      xpd=TRUE, y.intersp=0.6, bg="#ffffffaa", box.col=NA)
+
+    ## return potentially transformed data
+    invisible(phases)
     
 }
 

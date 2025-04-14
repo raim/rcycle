@@ -17,7 +17,7 @@ biplot(gphase, scale=0, xlabs = rep("x", nrow(gphase$x)), xlab=NA, ylab=NA)
 
 ## WITH SCALING:
 plotPC(gphase, sarrows=FALSE, scores=TRUE, vlines=TRUE, vaxis=TRUE,
-       scale=1, arcsinh=FALSE, col=2, pch=19, cex=1)
+       scale=1, col=2, pch=19, cex=1)
 par(new=TRUE)
 bp <- biplot(gphase, scale=1, xlabs = rep("x", nrow(gphase$x)), col=5,
              var.axes=FALSE)

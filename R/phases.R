@@ -333,8 +333,8 @@ get_pseudophase <- function(states,
     
 
     ## old: add cell phases to cell eigenvalues
-    phases$rotation <- cbind.data.frame(phases$rotation.phase, 
-                                        phases$rotation)
+    ##phases$rotation <- cbind.data.frame(phases$rotation.phase, 
+    ##                                    phases$rotation)
 
     ## new: separate structure for phases
     phases$x.phase <- cbind.data.frame(ID=rownames(phases$x),
@@ -346,8 +346,8 @@ get_pseudophase <- function(states,
     rownames(phases$x.phase) <- rownames(phases$x)
     
     ## old: add cohort phases, IDs, colors, etc. to cohort ?values?
-    phases$x <- cbind.data.frame(phases$x.phase,
-                                 phases$x)
+    ##phases$x <- cbind.data.frame(phases$x.phase,
+    ##                             phases$x)
 
  
     ## add simple classification via max of log2 ratio
@@ -356,7 +356,7 @@ get_pseudophase <- function(states,
         cls <- get_classes(states=states)
         phases$rotation.phase <- cbind(phases$rotation.phase, class=cls)
         ## old
-        phases$rotation <- cbind(phases$rotation, class=cls)
+        ##phases$rotation <- cbind(phases$rotation, class=cls)
     }
       
     ## extent PCA class

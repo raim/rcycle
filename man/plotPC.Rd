@@ -31,12 +31,13 @@ plotPC(
   saxis = scores,
   txt.cex = 1,
   scale = 0,
+  pc.biplot = FALSE,
   xlim,
   ylim,
   expand = 1,
-  pc.biplot = FALSE,
   arcsinh = FALSE,
   zero.axis = FALSE,
+  zero.axis.label = zero.axis,
   show.var = TRUE,
   ...
 )
