@@ -170,39 +170,98 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 
 }
 
-## simple plot of two eigenvectors from PCA
-## TODO: * this is biplot-like but shows arrows for
-## for pca$x instead of pca$rotation; find proper description for this?
+
+monoplot <- function(x, type='rotation',
+                     xs, ys, lines=FALSE, arrows=FALSE, labels=FALSE,
+                     axis=FALSE,
+                     colf = NULL, col = NULL, pch=1, cex=1, txt.cex=1,
+                     xlim, ylim, ax=c(1,2), xlab, ylab, ...) {
+
+    ## get matrix from PCA object to plot
+    xy <- x[[type]]
+
+    ## PCA phase object from rcycle
+    phases <- NULL
+    typep <- paste0(type,".phase")
+    if ( pid %in% names(x) )
+        phases <- x[[typep]]
+    
+    ## expand single color
+    if ( length(col)==1 )
+        col <- setNames(rep(col, nrow(xy)), rownames(xy))
+
+    ## take color from PCA decoration
+    if ( is.null(col) & !is.null(phases) )  
+        if ( 'col' %in% colnames(phases) )
+            col <- phases$col
+        
+    ## colored points or density plot?
+    if ( is.null(col) )  { # density plot!
+        if ( is.null(colf) )
+            colf <- function(n) grey.colors(n, start=0, end=1)
+        dense2d(xy[,xs],
+                xy[,ys],
+                xlim=xlim, ylim=ylim,
+                colf = colf, pch=pch, cex=cex,
+                xlab=NA, ylab=NA, axes=FALSE, ...)
+        ## NOTE: black arrows with density function
+        ## TODO: provide explicit density argument, not just default!
+        col <- setNames(rep(1, nrow(xy)), rownames(xy))
+    } else 
+        plot(xy[,xs], xy[,ys], # scatter plot
+             xlim=xlim, ylim=ylim,
+             col=col, pch=pch, cex=cex, 
+             xlab=NA, ylab=NA, axes=FALSE, ...)
+    
+    if ( arrows ) {
+            
+        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
+               col="white", lwd=4, length=.05)
+        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
+               col=col[rownames(xy)], lwd=2, length=.05)
+    }
+    if ( labels ) 
+        shadowtext(xy[,xs], xy[,ys],
+                   labels=sub(".*_","",rownames(xy)),
+                   col=col[rownames(xy)],
+                   cex=txt.cex, font=2, xpd=TRUE, r=.1)
+    if ( lines )
+        lines(xy[,xs], xy[,ys], col=col[1], type='b', pch=NA)
+    
+    
+    if ( axis ) {
+        axis(ax[1])
+        axis(ax[2])
+        mtext(xlab, ax[1], par('mgp')[1])
+        mtext(ylab, ax[2], par('mgp')[1])
+    }
+}
+    
 
 #' Plot PCA-based circle and state vectors.
 #' @param z use the zth PC component for coloring between quantiles given in z.q
 #' @param scale scale parameter, if provided it converts the plot to a true biplot 
 #' @export
 plotPC <- function(phases, x=1, y=2,
-                   scale, # true biplot scaling as in biplot(scale=1)
-                   arcsinh=FALSE, 
-                   z, z.q=c(.05,.95), z.legend=FALSE, # color by PCz
-                   vectors=TRUE,
-                   col, pch=19, cex=.5, colf, # eigenvector colors, cells
-                   scores=TRUE, arrows=TRUE, # draw rotated data, with lines?
-                   cohorts, # obsolete, replaced by scores!
-                   ccol, cpch=1, ccex=1, txt.cex=1, # rotated data colors, cohorts/genes 
-                   expand=TRUE, 
-                   pc.ash=FALSE, # TODO: useful for non-circular PCA, eg. gene-wise
-                   data.axis=TRUE, eigen.axis=FALSE, zero.axis=FALSE,
-                   time.line=FALSE, show.var=TRUE,
+                   z, z.q = c(.05,.95), z.legend = FALSE, # color by PCz
+
+                   vectors = TRUE, # eigenvector colors, cells
+                   vlines=FALSE, varrows = FALSE, vlabels = FALSE,
+                   colf = NULL, col = NULL, pch=19, cex=.5, vaxis = vectors,
+                   
+                   scores = TRUE, # scores: rotated data/PCs
+                   slines = FALSE, sarrows = FALSE, slabels = FALSE,
+                   scolf = NULL, scol = NULL, spch=1, scex=1, saxis = scores, 
+
+                   txt.cex=1, 
+                   scale=0, # true biplot scaling as in biplot(scale=1)
+                   xlim, ylim, expand = 1, pc.biplot = FALSE, # as in biplot
+
+                   arcsinh = FALSE, # useful to emphasize crowded data, TODO: avoid
+                   zero.axis = FALSE,
+                   show.var=TRUE,
                    ...) {
 
-
-    if ( !missing(cohorts) ) {
-        warning("option cohorts obsolete, CHANGE to scores")
-        scores <- cohorts
-    }
-
-    ## obsolete: it should now work fully on prcomp alone!
-    ##if ( !inherits(phases, "phases") )
-    ##    warning("phases must be an object of class 'phases', ",
-    ##            "as returned by get_pseudophase")
 
     ## PC names to interface data and for plot labels
     xs <- paste0('PC', x) # Rotated data: cohorts
@@ -210,34 +269,39 @@ plotPC <- function(phases, x=1, y=2,
     xv <- paste0('EV', x) # Eigenvectors: cells
     yv <- paste0('EV', y)
 
+    alls <- grep("^PC",colnames(phases$x))
+    allv <- grep("^PC",colnames(phases$rotation))
+
+    ## proportion of variance
+    if ( !'summary'%in%names(phases) )
+        phases$summary <- summary(phases)$importance
+    varp <- round(phases$summary['Proportion of Variance',]*100,1)
+
     ## TRUE biplot:
     ## scale data by eigenvalues as in biplot: matrices used for biplot
-    ## ... should, when multiplied together, approximate X (that's the
-    ## whole point).
+    ## ... should, when multiplied together, approximate X.
     ## https://stats.stackexchange.com/questions/66926/what-are-the-four-axes-on-pca-biplot
     ## https://stats.stackexchange.com/questions/141085/positioning-the-arrows-on-a-pca-biplot
-    if ( !missing(scale) ) {
-        choices <- c(xs,ys)
-        score <- phases$x
-        lam <- phases$sdev[c(x,y)]
-        n <- NROW(score)
-        lam <- lam * sqrt(n)
-        lam <- lam^scale
-        phases$rotation <-t(t(phases$rotation[, choices]) * lam)
-        phases$x <- t(t(score[, choices])/lam)
-    }
+    ## see biplot.prcomp code: src/library/stats/R/biplot.R
     
+    lam <- phases$sdev
+    n <- NROW(phases$x)
+    lam <- lam * sqrt(n)
+    if(scale < 0 || scale > 1) warning("'scale' is outside [0, 1]")
+    if(scale != 0) lam <- lam^scale else lam <- 1
+    if(pc.biplot) lam <- lam / sqrt(n)
+    
+    phases$rotation[,allv] <- t(t(phases$rotation[,allv]) * lam)
+    phases$x[,alls] <- t(t(phases$x[,alls]/lam))
+
     ## transform data for better circular visibility?
     if ( arcsinh ) {
         ash <- function (x) 
             log(x + sqrt(x^2 + 1))
-        phases$x[,grep("PC",colnames(phases$x))] <-
-            apply(phases$x[,grep("PC",colnames(phases$x))],
-                  2, ash)
-        phases$rotation[,grep("PC",colnames(phases$rotation))] <-
-            apply(phases$rotation[,grep("PC",colnames(phases$rotation))],
-                  2, ash)
-    } 
+        phases$x[,alls] <-  apply(phases$x[,alls], 2, ash)
+        phases$rotation[,allv] <- apply(phases$rotation[,allv], 2, ash)
+    }  
+    
 
 
     ## PC component coloring
@@ -247,10 +311,6 @@ plotPC <- function(phases, x=1, y=2,
             col <- num2col(phases$rotation[,zs], q=z.q)
     } else z.legend <- FALSE
     
-    ## proportion of variance
-    if ( !'summary'%in%names(phases) )
-        phases$summary <- summary(phases)$importance
-    varp <- round(phases$summary['Proportion of Variance',]*100,1)
 
     ## axis labels
     xlab <- xs
@@ -271,49 +331,101 @@ plotPC <- function(phases, x=1, y=2,
         xvlab <- paste0(xvlab, " (", varp[xs], "%)") # eigenvector 
         yvlab <- paste0(yvlab, " (", varp[ys], "%)")
     }
+
+
+    ## align xlim and ylim such that origins overlap
+    ## copied from biplot.default
+
+    ## TODO: fix for eigen|vector cases
+    
+    unsigned.range <- function(x)
+        c(-abs(min(x, na.rm=TRUE)), abs(max(x, na.rm=TRUE)))
+    rangx1 <- unsigned.range(phases$x[, xs])
+    rangx2 <- unsigned.range(phases$x[, ys])
+    rangy1 <- unsigned.range(phases$rotation[, xs])
+    rangy2 <- unsigned.range(phases$rotation[, ys])
+
+    if(missing(xlim) && missing(ylim))
+	xlim <- ylim <- rangx1 <- rangx2 <- range(rangx1, rangx2)
+    else if(missing(xlim)) xlim <- rangx1
+    else if(missing(ylim)) ylim <- rangx2
+    ratio <- max(rangy1/rangx1, rangy2/rangx2)/expand
+
+    xlimv <- rangy1
+    ylimv <- rangy2
+    if ( scores ) {
+        xlimv <- xlim*ratio
+        ylimv <- ylim*ratio
+    }
+
+    if ( vectors ) {
+        ax <- c(3,4)
+        if ( !scores ) ax <- c(1,2)
+        monoplot(x=phases, type='rotation', #xy=phases$rotation,
+                 xs=xs, ys=ys, lines=vlines, arrows=varrows, labels=vlabels,
+                 colf=colf, col=col, pch=pch, cex=cex, txt.cex=txt.cex,
+                 xlim=xlimv, ylim=ylimv, ax=ax, xlab=xvlab, ylab=yvlab,
+                 axis=vaxis, ...)
+    }
+    if ( scores ) {
+        if ( vectors )  par(new=TRUE)
+
+        monoplot(x=phases, type='x', #xy=phases$x,
+                 xs=xs, ys=ys, lines=slines, arrows=sarrows, labels=slabels,
+                 colf=scolf, col=scol, pch=spch, cex=scex, txt.cex=txt.cex,
+                 xlim=xlim, ylim=ylim, ax=c(1,2), xlab=xlab, ylab=ylab,
+                 axis=saxis, ...)
+    }
+
     
     ## PLOT EIGENVECTORS (rotation matrix)
 
-    if ( vectors ) {
+    if ( FALSE  ) {
 
         vectorx <- phases$rotation       
-        
-        xlim <- range(vectorx[,xs])
-        ylim <- range(vectorx[,ys])
-        
-        if ( expand ) {
-            mx <- max(abs(c(ylim, xlim)))
-            xlim <- ylim <- c(-mx, mx)
-        }
-        
-        
+       
+        if ( length(col)==1 )
+            col <- setNames(rep(col, nrow(vectorx)), rownames(vectorx))
+
+        ## take color from decorated PCA object
+        if ( missing(col) )  
+            if ( 'col' %in% colnames(vectorx) )
+                col <- vectorx$col
         
         ## colored points or density plot?
         if ( missing(col) )  {
             if ( missing(colf) )
                 colf <- function(n) grey.colors(n, start=0, end=1)
-            
             dense2d(vectorx[,xs],
                     vectorx[,ys],
-                    xlim=xlim, ylim=ylim,
+                    xlim=xlimv, ylim=ylimv,
                     colf = colf, pch=pch, cex=cex,
                     xlab=NA, ylab=NA, axes=FALSE, ...)
+            col <- setNames(rep(1, nrow(vectorx)), rownames(vectorx))
         } else 
             plot(vectorx[,xs], vectorx[,ys],
-                 xlim=xlim, ylim=ylim,
+                 xlim=xlimv, ylim=ylimv,
                  col=col, pch=pch, cex=cex, 
                  xlab=NA, ylab=NA, axes=FALSE, ...)
         
+        if ( varrows ) {
+            
+            arrows(x0=0,y0=0, x1=vectorx[,xs], y1=vectorx[,ys],
+                   col="white", lwd=4, length=.05)
+            arrows(x0=0,y0=0, x1=vectorx[,xs], y1=vectorx[,ys],
+                   col=col[rownames(vectorx)], lwd=2, length=.05)
+            shadowtext(vectorx[,xs], vectorx[,ys],
+                       labels=sub(".*_","",rownames(vectorx)),
+                       col=col[rownames(vectorx)],
+                       cex=txt.cex, font=2, xpd=TRUE, r=.1)
+        }
         
         ## time line?
-        if ( time.line )
-            lines(vectorx[,xs], vectorx[,ys],
-                  col=ifelse(missing(col), 1, col[1]))
+        if ( vlines )
+            lines(vectorx[,xs], vectorx[,ys], col=col[rownames(vectorx)])
         
         if ( zero.axis ) {
-            abline(h=0)
-            abline(v=0)
-            if ( !eigen.axis & !data.axis ) { 
+          if ( !vaxis & !saxis ) { 
                 if ( !scores ) {
                     axis(1, at=0, label=xvlab)
                     axis(2, at=0, label=yvlab)
@@ -324,7 +436,7 @@ plotPC <- function(phases, x=1, y=2,
             }
         }
     
-        if ( eigen.axis ) {
+        if ( vaxis ) {
             if ( !scores ) {
                 axis(1);axis(2)
                 mtext(xvlab, 1, par('mgp')[1])
@@ -338,58 +450,74 @@ plotPC <- function(phases, x=1, y=2,
     }
 
     ## PLOT ROTATED DATA
-    if ( scores ) {
+    if ( FALSE ) {
 
         scorex <- phases$x
 
-        if ( missing(ccol) ) {
-            if ( 'col' %in% colnames(scorex) ) ccol <- scorex$col
-            else ccol <- rep('#000000', nrow(scorex))
-            names(ccol) <- rownames(scorex)
-        } else if ( length(ccol)==1 )
-            ccol <- setNames(rep(ccol, nrow(scorex)), rownames(scorex))
-        
-        xlim <- range(scorex[,xs])
-        ylim <- range(scorex[,ys])
-        
-        if ( expand ) {
-            mx <- max(abs(c(ylim, xlim)))
-            xlim <- ylim <- c(-mx, mx)
-        } else stop("expand=TRUE required for aligned cohort arrows")
-
+    
+ 
         if ( vectors )
             par(new=TRUE)
 
-        plot(scorex[,xs], scorex[,ys],
-             xlim=xlim, ylim=ylim, axes=FALSE, col=NA, xlab=NA, ylab=NA)
-        if ( arrows ) {
+        if ( length(scol)==1 )
+            scol <- setNames(rep(scol, nrow(scorex)), rownames(scorex))
+
+        ## take color from decorated PCA object
+        if ( missing(scol) )  
+            if ( 'col' %in% colnames(scorex) )
+                scol <- scorex$col
+
+        if ( missing(scol) )  {
+            
+            if ( missing(scolf) )
+                scolf <- function(n) grey.colors(n, start=0, end=1)
+            
+            dense2d(scorex[,xs],
+                    scorex[,ys],
+                    xlim=xlim, ylim=ylim,
+                    colf = scolf, pch=spch, cex=scex,
+                    xlab=NA, ylab=NA, axes=FALSE, ...)
+            
+            scol <- setNames(rep(1, nrow(scorex)), rownames(scorex))
+        } else { 
+
+            plot(scorex[,xs], scorex[,ys],
+                 xlim=xlim, ylim=ylim, axes=FALSE, col=NA, xlab=NA, ylab=NA)
+            points(scorex[,xs], scorex[,ys],
+                   pch=spch, cex=scex, col=scol[rownames(scorex)])
+        }
+        if ( sarrows ) {
+
             arrows(x0=0,y0=0, x1=scorex[,xs], y1=scorex[,ys],
                    col="white", lwd=4, length=.05)
             arrows(x0=0,y0=0, x1=scorex[,xs], y1=scorex[,ys],
-                   col=ccol[rownames(scorex)], lwd=2, length=.05)
+                   col=scol[rownames(scorex)], lwd=2, length=.05)
             shadowtext(scorex[,xs], scorex[,ys],
                        labels=sub(".*_","",rownames(scorex)),
-                       col=ccol[rownames(scorex)],
+                       col=scol[rownames(scorex)],
                        cex=txt.cex, font=2, xpd=TRUE, r=.1)
-        } else {
-            points(scorex[,xs], scorex[,ys],
-                   pch=cpch, cex=ccex,
-                   col=ccol[rownames(scorex)])
         }
+        
+        ## time line?
+        if ( slines )
+            lines(scorex[,xs], scorex[,ys], col=scol[rownames(scorex)])
+
         if ( zero.axis ) {
-            ##abline(h=0)
-            ##abline(v=0)
-            if ( !eigen.axis & !data.axis ) { 
+            if ( !vaxis & !saxis ) { 
                 axis(1, at=0, label=xlab)
                 axis(2, at=0, label=ylab)
             }
         }
-        if ( data.axis ) {
+        if ( saxis ) {
             axis(1);axis(2)
             mtext(xlab, 1, par('mgp')[1])
             mtext(ylab, 2, par('mgp')[1])
         }
-   }
+    }
+    if ( zero.axis ) {
+        abline(h=0)
+        abline(v=0)
+    }
     
     ## legend for PC-based coloring
     if ( z.legend ) 

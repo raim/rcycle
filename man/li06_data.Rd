@@ -19,6 +19,6 @@ data(li06_data)
 A list containing a gene expression (transcript) matrix, sampling time points and the experimental system's oscillation period. Data by Li & Klevecz (2006).
 }
 \references{
-Li CM, Klevecz RR (2006). A rapid genome-scale response of the transcriptional oscillator to perturbation reveals a period-doubling path to phenotypic change. \emph{Proceedings of the National Academy of Sciences}, 103(44), 16254-9. \doi{10.1073/pnas.0604860103}
+Li CM, Klevecz RR (2006). A rapid genome-scale response of the transcriptional oscillator to perturbation reveals a period-doubling path to phenotypic change. \emph{Proceedings of the National Academy of Sciences}, 103(44): 16254-59. \doi{10.1073/pnas.0604860103}
 }
 \keyword{datasets}

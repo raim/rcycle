@@ -1,5 +1,5 @@
 ---
-title: "Piecewise Linear Segmentation by Dynamic Programming"
+title: "rcycle: PCA of Transcriptome Time Series"
 author: "Rainer Machn&eacute;"
 date: "`r format(Sys.time(), '%d %m %Y')`"
 output:
@@ -45,9 +45,14 @@ $$
 \newcommand{\def}{\stackrel{\mathrm{def}}{=}}
 $$
 
-TODO: FILL THIS WITH teaching/pca/pca.md, teaching/pseudophase/cohorts14.md and clusterTranscriptomes_understandPCA.R
+TODO:
+
+* FILL THIS WITH teaching/pca/pca.md, teaching/pseudophase/cohorts14.md
+  and clusterTranscriptomes_understandPCA.R
+* use R's svd notation for matrices, or @Alter2000.
 
 # Singular Value Decomposition and Principal Component Analysis
+
 
 ```{r load, echo=FALSE, include=TRUE}
 ## run pca in various versions, using data by Li and Klevecz (2006)
@@ -90,48 +95,54 @@ ctheta <- atan2(cphase$x[,2], cphase$x[,1])
 * (https://stats.stackexchange.com/questions/141085/positioning-the-arrows-on-a-pca-biplot)
 
 
-```{r, echo=TRUE, fig.width=7, fig.height=3.5}
+```{r, echo=TRUE, fig.width=7, fig.height=3.5, fig.align='left', fig.cap='plotPC is equivalent to biplot'}
 par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
 par(mfcol = c(1, 2))
 
 ## TODO: test biplot-like scaling more exactly!
 ## biplot w/o scaling
-plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
-       arcsinh=FALSE, col=2, pch=19, cex=1)
+plotPC(gphase, sarrows=FALSE, scores=TRUE, vlines=TRUE, vaxis=TRUE,
+       scale=0, col=2, pch=19, cex=1)
 par(new=TRUE)
-biplot(gphase, scale=0, xlabs = rep("x", nrow(gphase$x))) 
+biplot(gphase, scale=0, xlabs = rep("x", nrow(gphase$x)),
+       ylabs = rep("-", ncol(gphase$x)), col=5, xlab=NA, ylab=NA,
+       var.axes=FALSE) 
 figlabel('unscaled', pos='bottomleft', font=2)
 
 ## biplot with scaling
-plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
+plotPC(gphase, sarrows=FALSE, scores=TRUE, vlines=TRUE, vaxis=TRUE,
        scale=1, arcsinh=FALSE, col=2, pch=19, cex=1)
 par(new=TRUE)
-biplot(gphase, scale=1, xlabs = rep("x", nrow(gphase$x)))
+biplot(gphase, scale=1, xlabs = rep("x", nrow(gphase$x)),
+       ylabs = rep("-", ncol(gphase$x)), col=5, xlab=NA, ylab=NA,
+       var.axes=FALSE)
 figlabel('true biplot', pos='bottomleft', font=2)
 ```
 
 # Gene vs. Sample PCA
 
 
-```{r, echo=TRUE, fig.width=9, fig.height=3}
+```{r, echo=TRUE, fig.width=9, fig.height=3, fig.align="left", fig.cap="PCA of a periodic transcriptome time series, either taken from the gene X sample (left) or the transposed sample X gene (middle and right) matrix; red: eigenvectors; black: PC scores. Lines connect samples in their temporal order to emphasize how PCA reconstructs the temporal order."}
 par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
 par(mfcol = c(1, 3))
 
 ## sample PCA: with samples as variables/columns - most unconventional
-plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
-       col=2, pch=19, cex=1) # eigenvectors/rotation matrix are samples
+plotPC(gphase, sarrows=FALSE, scores=TRUE, vlines=TRUE, vaxis=TRUE,
+       col=2, pch=19, cex=2) # eigenvectors/rotation matrix are samples
 figlabel('sample PCA', pos='bottomleft', font=2)
 
 ## gene PCA: with genes as variables/columns
 ## but with row-norm over cells after transpose
-plotPC(sphase, arrows=FALSE, ccol=2, cpch=19, eigen.axis=TRUE)
-lines(sphase$x[,1], sphase$x[,2], col=2) # rotated data are samples
+plotPC(sphase, sarrows=FALSE, scol=1, spch=19, scex=2, col=2, vaxis=TRUE)
+lines(sphase$x[,1], sphase$x[,2], col=1) # rotated data are samples
+text(sphase$x[,1], sphase$x[,2], labels=1:nrow(sphase$x), col='white', cex=.8)
 figlabel('gene PCA, cell-norm', pos='bottomleft', font=2)
 
 ## gene PCA: with genes as variables/columns - conventional
 ## with row-norm over genes prior to transpose
-plotPC(cphase, arrows=FALSE, ccol=2, cpch=19, eigen.axis=TRUE)
-lines(cphase$x[,1], cphase$x[,2], col=2) # rotated data are samples
+plotPC(cphase, sarrows=FALSE, scol=1, spch=19, scex=2, col=2, vaxis=TRUE)
+lines(cphase$x[,1], cphase$x[,2], col=1) # rotated data are samples
+text(cphase$x[,1], cphase$x[,2], labels=1:nrow(cphase$x), col='white', cex=.8)
 figlabel('gene PCA, gene-norm', pos='bottomleft', font=2)
 ```
 
@@ -146,7 +157,7 @@ ctheta <- atan2(cphase$x[,2], cphase$x[,1])
 ```{r, echo=FALSE, fig.width=9, fig.height=3}
 par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
 par(mfcol = c(1, 3))
-plot(time, -gtheta, xlab='time/h', ylab=expression(-theta~'sample PCA'))
+plot(time, gtheta, xlab='time/h', ylab=expression(theta~'sample PCA'))
 plot(time, ctheta, xlab='time/h', ylab=expression(theta~'gene PCA, cell-norm'))
 plot(time, stheta, xlab='time/h', ylab=expression(theta~'gene PCA, gene-norm'))
 ```
@@ -154,8 +165,8 @@ plot(time, stheta, xlab='time/h', ylab=expression(theta~'gene PCA, gene-norm'))
 ```{r, echo=FALSE, fig.width=9, fig.height=3}
 par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
 par(mfcol = c(1, 3))
-plot(-gtheta, stheta, xlab=expression(-theta~'sample PCA'), ylab=expression(theta~'gene PCA, cell-norm'))
-plot(-gtheta, ctheta, xlab=expression(-theta~'sample PCA'), ylab=expression(theta~'gene PCA, gene-norm'))
+plot(gtheta, stheta, xlab=expression(theta~'sample PCA'), ylab=expression(theta~'gene PCA, cell-norm'))
+plot(gtheta, ctheta, xlab=expression(theta~'sample PCA'), ylab=expression(theta~'gene PCA, gene-norm'))
 plot(stheta, ctheta, xlab=expression(theta~'gene PCA, cell-norm'), ylab=expression(theta~'gene PCA, gene-norm'))
 ```
 
@@ -163,8 +174,7 @@ TODO:
 
 * same on cohort level!
 * single cell data: are we using with or w/o rownorm?
-* take log of counts, esp. for single cell where arcsinh scaling
-  is required.
+* why does log(counts+1) appear to have no effect (tested in cohorts_cells.R)?
 
 
 # Time Series Reconstruction: `pseudophase`.
@@ -176,7 +186,10 @@ applied for single cell analysis: @Schwabe2020, @Macosko2015
 
 # R's `prcomp` explained
 
-Show equivalence for prcomp, eigen and Rspectra::eigen.
+* Show equivalence for prcomp, eigen and Rspectra::eigen.
+* stats::prcomp uses base::svd uses La.svd, based on LAPACK routines
+ ‘DGESDD’ and ‘ZGESDD’.
+
 
 ```{r plot, echo=TRUE, include=TRUE, fig.width=9, fig.height=3}
 par(mfcol = c(1, 3))

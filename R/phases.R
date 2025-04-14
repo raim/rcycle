@@ -324,20 +324,27 @@ get_pseudophase <- function(states,
     ##phases$variance <- eigenvalues/sum(eigenvalues)
     phases$summary <- summary(phases)$importance
 
-    ## add cell phases to cell eigenvalues
-    phases$rotation <- cbind.data.frame(order=order(phi),
-                                        phi=phi,
-                                        theta=theta,
-                                        amplitude=amp, 
+    ## new: separate matrix
+    phases$rotation.phase <- cbind.data.frame(order=order(phi),
+                                              phi=phi,
+                                              theta=theta,
+                                              amplitude=amp)
+
+    
+
+    ## old: add cell phases to cell eigenvalues
+    phases$rotation <- cbind.data.frame(phases$rotation.phase, 
                                         phases$rotation)
 
-    ## add cohort phases, IDs, colors, etc. to cohort ?values?
-    phases$x <- cbind.data.frame(ID=rownames(phases$x),
-                                 col=1:nrow(phases$x),
-                                 order=order(cphi),
-                                 phi=cphi,
-                                 theta=ctheta,
-                                 amp=camp,
+    ## new: separate structure for phases
+    phases$x.phase <- cbind.data.frame(ID=rownames(phases$x),
+                                       col=1:nrow(phases$x),
+                                       order=order(cphi),
+                                       phi=cphi,
+                                       theta=ctheta,
+                                       amp=camp)
+    ## old: add cohort phases, IDs, colors, etc. to cohort ?values?
+    phases$x <- cbind.data.frame(phases$x.phase,
                                  phases$x)
 
  
@@ -345,6 +352,8 @@ get_pseudophase <- function(states,
     ## TODO: PCA-/segment-based classification?
     if ( classify ) {
         cls <- get_classes(states=states)
+        phases$rotation.phase <- cbind(phases$rotation.phase, class=cls)
+        ## old
         phases$rotation <- cbind(phases$rotation, class=cls)
     }
       

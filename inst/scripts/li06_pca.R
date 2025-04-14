@@ -26,12 +26,20 @@ data('li06_data')
 ##ddid <- paste0(did,'_data')
 ##li06_data <- get(ddid)
 
-##rcycle.datafile <- paste0('~/programs/rcycle/data/',did,'_data.rda')
-##load(rcycle.datafile)
+rcycle.datafile <- paste0('~/programs/rcycle/data/',did,'_data.rda')
+load(rcycle.datafile)
 
 pdat <- li06_data$data
 time <- li06_data$time
 tosc <- li06_data$tosc
+
+states <- li06_data$states
+scol <- li06_data$col
+
+## TODO: separate script, comparing
+## genes and states
+use.states <- FALSE
+if ( use.states ) pdat <- states
 
 colnames(pdat) <- sub('li06_', '', colnames(pdat))
 
@@ -78,11 +86,11 @@ cat(paste('Running eigenvalue analysis:\t',did,' - TAKES LONGER\n'))
 gev <- eigen(cor(gdat), symmetric=TRUE) 
 
 ## eigen(cor(t(x))) == prcomp(t(x), scale=TRUE); row-norm BEFORE t()
-sev <- RSpectra::eigs_sym(cor(sdat), k = ncol(gdat))
+sev <- RSpectra::eigs_sym(cor(sdat), k = ncol(gphase$x))
 
 ## eigen(cor(t(x))) == prcomp(t(x), scale=TRUE); row-norm AFTER t()
 ## NOTE: cov required, see above scale=FALSE
-cev <-  RSpectra::eigs_sym(cov(cdat), k = ncol(gdat)) 
+cev <-  RSpectra::eigs_sym(cov(cdat), k = ncol(gphase$x)) 
 
 ## cov/cor vs. scale
 gevv <- eigen(cov(gdat), symmetric=TRUE)
@@ -92,3 +100,4 @@ gphasev <- prcomp(gdat, scale.=FALSE)
 gdatc <- t((t(gdat) - apply(gdat,2,mean))/apply(gdat,2,sd))
 gphasec <- prcomp(gdatc, scale.=FALSE)
 
+### COMPARE with pca of cohort states

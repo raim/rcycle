@@ -5,19 +5,31 @@
 ## whole point).
 ## https://stats.stackexchange.com/questions/66926/what-are-the-four-axes-on-pca-biplot
 ## https://stats.stackexchange.com/questions/141085/positioning-the-arrows-on-a-pca-biplot
+source("~/programs/rcycle/R/plot.R")
 
-## TODO: test scaling more exactly!
-plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
-       arcsinh=FALSE) # eigenvectors/rotation matrix are samples
+## TODO: this could become a unit test ensuring that plotPC produces
+## the same as biplot
+## eigenvectors/rotation matrix are samples
+plotPC(gphase, sarrows=FALSE, scores=TRUE, vlines=TRUE, vlabels=FALSE,
+       vaxis=TRUE, scale=0)
 par(new=TRUE)
-biplot(gphase, scale=0, xlabs = rep("x", nrow(gphase$x))) 
+biplot(gphase, scale=0, xlabs = rep("x", nrow(gphase$x)), xlab=NA, ylab=NA) 
 
 ## WITH SCALING:
-plotPC(gphase, arrows=FALSE, scores=TRUE, time.line=TRUE, eigen.axis=TRUE,
+plotPC(gphase, sarrows=FALSE, scores=TRUE, vlines=TRUE, vaxis=TRUE,
        scale=1, arcsinh=FALSE, col=2, pch=19, cex=1)
 par(new=TRUE)
-bp <- biplot(gphase, scale=1, xlabs = rep("x", nrow(gphase$x)))
+bp <- biplot(gphase, scale=1, xlabs = rep("x", nrow(gphase$x)), col=5,
+             var.axes=FALSE)
 
+## WITH SCALING and pc.biplot=TRUE
+plotPC(gphase, sarrows=FALSE, scores=TRUE, vlines=TRUE, vaxis=TRUE,
+       scale=1, arcsinh=FALSE, col=2, pch=19, cex=1, pc.biplot=TRUE)
+par(new=TRUE)
+bp <- biplot(gphase, scale=1, xlabs = rep("x", nrow(gphase$x)), pc.biplot=TRUE)
+
+
+## PHASE ANGLES FROM EIGENVECTORS vs. scaling
 ## scale eigenvectors!
 n <- nrow(gphase$x)
 lam <- gphase$sdev * sqrt(n)
@@ -39,13 +51,27 @@ plot(atan2(gphase$rotation[,2], gphase$rotation[,1]),
      atan2(gphase$scaled[,2], gphase$scaled[,1]))
 abline(a=0, b=1)
 
-## biplots for "conventional" PCA with genes as columns
-plotPC(sphase, arrows=FALSE, ccol=2, cpch=19)
-lines(sphase$x[,1], sphase$x[,2], col=2) # rotated data are samples
-##biplot(sphase) 
-plotPC(cphase, arrows=FALSE, ccol=2, cpch=19)
-lines(cphase$x[,1], cphase$x[,2], col=2) # rotated data are samples
-##biplot(cphase) 
+## sample PCA: with samples as variables/columns - most unconventional
+plotPC(gphase, sarrows=FALSE, varrows=TRUE,
+       scores=TRUE, vlines=TRUE, vaxis=TRUE,
+       col=2, pch=19, cex=2) # eigenvectors/rotation matrix are samples
+figlabel('sample PCA', pos='bottomleft', font=2)
+
+## gene PCA: with genes as variables/columns
+## but with row-norm over cells after transpose
+plotPC(sphase, sarrows=FALSE, scol=1, spch=19, scex=2, col=2, vaxis=TRUE)
+lines(sphase$x[,1], sphase$x[,2], col=1) # rotated data are samples
+text(sphase$x[,1], sphase$x[,2], labels=1:nrow(sphase$x), col='white', cex=.8)
+figlabel('gene PCA, cell-norm', pos='bottomleft', font=2)
+
+## gene PCA: with genes as variables/columns - conventional
+## with row-norm over genes prior to transpose
+plotPC(cphase, sarrows=FALSE, scol=1, spch=19, scex=2, col=2, vaxis=TRUE)
+lines(cphase$x[,1], cphase$x[,2], col=1) # rotated data are samples
+text(cphase$x[,1], cphase$x[,2], labels=1:nrow(cphase$x), col='white', cex=.8)
+figlabel('gene PCA, gene-norm', pos='bottomleft', font=2)
+
+
 
 ### DIRECT CALCULATION as the eigenvalues/vectors of the cor/cov matrix
 ## @Schwabe2000: Cov(N^T)=1/(n-1) N * N^T, where N is a row-centered
