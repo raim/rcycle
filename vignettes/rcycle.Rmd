@@ -177,14 +177,31 @@ TODO:
 
 * same on cohort level!
 * single cell data: are we using with or w/o rownorm?
-* why does log(counts+1) appear to have no effect (tested in cohorts_cells.R)?
+* log(counts+1) in cohorts_cells.R has no effect: too small numbers,
+  scale back ~to original transcript numbers.
 
+
+
+* Eigengenes (@Alter2000),
+* Weighted Gene Co-expression Network Analysis (WGCNA): genes X samples,
+    - eigengene (the first principal component of the module),
+* Single cell analysis, pseudotime (@Schwabe2020, @Macosko2015): cells X genes.
+
+1. Generate data genes X samples,
+2. Norm by total counts (single cells),
+3. Row-centering or standardization,
+4. "Eigengenes": do not transpose
+    - raw data: svd, eigen(cov()), prcomp(scale.=FALSE, center=FALSE),
+    - row-centered: same same,
+    - column centering: svd, eigen(cor), prcom(scale.=FALSE),
+    - column scaling: svd, eigen(cor), prcom(scale.=FALSE).
+5. single cell: transpose and do SVD=PCA.
 
 # Time Series Reconstruction: `pseudophase`.
 
-eigengenes @Alter2000,
-
-applied for single cell analysis: @Schwabe2020, @Macosko2015
+* why does cohort pca with cells X genes and prior row-centering
+  lead to perfect circular patterns or some max radius in PC1/PC2?
+* does it work better with eigenvectors?
 
 
 # PCA vs. SVD
@@ -258,9 +275,24 @@ TODO: fully explain how column scaling or centering alone makes
 SVD equivalent, and how eigen(cor) instead of eigen(cov) achieves
 the same thing!
 
+# Nomenclature: who projects and is projected?
+
+* **genes X samples**: PCA projects the rows - i.e., the genes
+    - The principal components (scores) represent genes in a
+      lower-dimensional space.
+    - You are analyzing variation across samples for each gene.
+      The PCs are combinations of samples, highlighting co-expression
+      patterns across them.
+* **samples X genes**: PCA projects the rows - i.e., the samples
+    - The principal components (scores) represent samples in a
+      reduced-dimensional space.
+    - You are analyzing how samples differ in
+      their gene expression profiles.
+
+
 # R's `prcomp` explained
 
-* Show equivalence for prcomp, eigen and Rspectra::eigen.
+* Show equivalences between math/SVD, prcomp, eigen and Rspectra::eigen.
 * stats::prcomp uses base::svd uses La.svd, based on LAPACK routines
  ‘DGESDD’ and ‘ZGESDD’.
 
@@ -278,7 +310,7 @@ where standardization is useful for heterogeneous data.
 ```{r plot, echo=TRUE, include=TRUE, fig.width=9, fig.height=3}
 par(mfcol = c(1, 3))
 script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_plot.R"
-#source(script_path)
+source(script_path)
 ```
 
 # References

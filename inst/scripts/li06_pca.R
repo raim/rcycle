@@ -88,7 +88,7 @@ gev <- eigen(cor(gdat), symmetric=TRUE)
 ## eigen(cor(t(x))) == prcomp(t(x), scale=TRUE); row-norm BEFORE t()
 sev <- RSpectra::eigs_sym(cor(sdat), k = ncol(gphase$x))
 
-## eigen(cor(t(x))) == prcomp(t(x), scale=TRUE); row-norm AFTER t()
+## eigen(cov(t(x))) == prcomp(t(x), scale=FALSE); 
 ## NOTE: cov required, see above scale=FALSE
 cev <-  RSpectra::eigs_sym(cov(cdat), k = ncol(gphase$x)) 
 
@@ -100,4 +100,15 @@ gphasev <- prcomp(gdat, scale.=FALSE)
 gdatc <- t((t(gdat) - apply(gdat,2,mean))/apply(gdat,2,sd))
 gphasec <- prcomp(gdatc, scale.=FALSE)
 
-### COMPARE with pca of cohort states
+## TODO: prcomp vs. svd vs. eigen and ALL vs. row-centering!
+## 1. svd, eigen(cov), prcomp(scale.=FALSE, center=FALSE),
+## 2. additional row-centering
+
+psv <- svd(pdat) # raw
+gsv <- svd(gdat) # row-norm over genes
+ssv <- svd(sdat) # transposed and row-norm over cells
+csv <- svd(cdat) # row-norm and transposed (i.e. col-norm)
+
+
+
+### TODO: COMPARE with pca of cohort states
