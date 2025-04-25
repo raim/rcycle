@@ -66,7 +66,7 @@ source(script_path)
 ### GENE-CENTERED
 ## VARIABLES/COLUMNS are samples/cells, OBSERVATIONS/ROWS are genes
 ## row-normalized and UNTRANSPOSED
-gdat <- pdat - apply(pdat, 1, mean)
+gdat <- pdat - apply(pdat, 1, mean) # NOTE: required for circular pattern!
 gphase <- prcomp(gdat, scale.=TRUE)
 
 ### SAMPLE-CENTERED with genes as columns!
@@ -79,8 +79,11 @@ sphase <- prcomp(sdat, scale.=TRUE)
 
 ## row-norm over genes: as in @Schwabe2000?
 cdat <- pdat - apply(pdat, 1, mean)  # row-norm over genes
-cdat <- t(cdat) # transpose AFTER row-norm 
-cphase <- prcomp(cdat, scale.=FALSE)  # NOTE: -> colnorm!
+cdat <- t(cdat) # transpose AFTER row-norm -> col-norm
+cphase <- prcomp(cdat, center=FALSE, scale.=FALSE)  # NOTE: -> colnorm!
+
+## NOTE: row-norm over genes before t() is equivalent to center=TRUE
+##cphase <- prcomp(t(pdat), center=TRUE, scale.=FALSE)
 
 ## pseudophases for all approaches
 gtheta <- atan2(gphase$rotation[,2], gphase$rotation[,1])
@@ -248,8 +251,12 @@ arrows(x0 = 0, y0 = 0, x1 = svd_out$v[,1], y1 = svd_out$v[,2], length = .1)
 TODO: find exact conditions to get circular data. Note: in single cell
 data with just two cohort means we get 180degree eigenvectors even if
 using co-expressed cohorts, with 3 60degree. Test this with sine wave
-simulation from cohorts_simulate.R.
+simulation from cohorts_simulate.R; where only different MEANS
+required row-centering for circular patterns!
 
+TODO: fully explain how column scaling or centering alone makes
+SVD equivalent, and how eigen(cor) instead of eigen(cov) achieves
+the same thing!
 
 # R's `prcomp` explained
 
