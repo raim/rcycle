@@ -184,17 +184,94 @@ eigengenes @Alter2000,
 applied for single cell analysis: @Schwabe2020, @Macosko2015
 
 
+# PCA vs. SVD
+
+Same thing, but in practice people perform PCA to look at the rotated data
+and view this as a dimensionality reduction. When using SVD people often
+focus on the eigenvectors They are equivalent, and e.g. R's `prcomp` internally used the `svd` function (based on LAPACK routines‘DGESDD’ and ‘ZGESDD’
+
+```{r, echo=TRUE, include=TRUE, fig.width=6, fig.height=3}
+
+# Simulate centered gene expression data
+set.seed(1)
+n <- 500 # genes
+m <- 12   # samples
+X <- matrix(rnorm(n*m), nrow = n, ncol = m) # 500 genes X 5 samples
+
+## TODO: understand the role of row-centering for getting circular patterns
+## here, with completely random it doesn't really do it
+##X <- X - apply(X, 1, mean) # ROW-CENTERING
+
+X_centered <- scale(X, center = TRUE, scale = TRUE)  # Centered samples (genes as rows)
+
+
+pca <- prcomp(X_centered, center = FALSE)  # PCA
+svd_out <- svd(X_centered) # SVD
+
+
+# Scores: projections of samples onto PCs
+head(pca$x, 2)
+# U * Sigma = same as PCA scores
+head(svd_out$u %*% diag(svd_out$d), 2)
+
+# Loadings: which genes define the PCs
+head(pca$rotation, 2)
+# V = right singular vectors = directions in sample space = PCA loadings
+head(svd_out$v, 2)
+
+# PCA scores ≈ U * Sigma
+all.equal(c(pca$x), c(svd_out$u %*% diag(svd_out$d)), tolerance = 1e-15)
+
+# PCA loadings ≈ V
+all.equal(c(pca$rotation), c(svd_out$v), tolerance = 1e-15)
+
+par(mai=c(.5,.5,.5,.5),mgp=c(1.3,.3,0),tcl=-.25)
+par(mfcol = c(1, 2))
+plot(pca$x[,1:2], main = "PCA: Sample Scores")
+plot(svd_out$u[,1:2] %*% diag(svd_out$d[1:2]),
+     main = expression("SVD:"~U * Sigma),
+     xlab = expression(U[1] * Sigma[1]),
+     ylab = expression(U[2] * Sigma[2]))
+
+plot(pca$rotation[,1:2], main = "PCA: Loadings")
+arrows(x0 = 0, y0 = 0, x1 = pca$rotation[,1], y1 = pca$rotation[,2],
+       length = .1)
+plot(svd_out$v[,1:2],
+     main = expression(vectors),
+     xlab = expression(V[1]),
+     ylab = expression(V[2]))
+arrows(x0 = 0, y0 = 0, x1 = svd_out$v[,1], y1 = svd_out$v[,2], length = .1)
+```
+
+# Circular Patterns in Rotated Data and Eigenvectors
+
+TODO: find exact conditions to get circular data. Note: in single cell
+data with just two cohort means we get 180degree eigenvectors even if
+using co-expressed cohorts, with 3 60degree. Test this with sine wave
+simulation from cohorts_simulate.R.
+
+
 # R's `prcomp` explained
 
 * Show equivalence for prcomp, eigen and Rspectra::eigen.
 * stats::prcomp uses base::svd uses La.svd, based on LAPACK routines
  ‘DGESDD’ and ‘ZGESDD’.
 
+In `prcomp`:
+
+```
+center = TRUE	Subtract mean from each column (variable)
+scale. = TRUE	Subtract mean and divide by standard deviation (standardize)
+```
+
+where standardization is useful for heterogeneous data.
+
+
 
 ```{r plot, echo=TRUE, include=TRUE, fig.width=9, fig.height=3}
 par(mfcol = c(1, 3))
 script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_plot.R"
-source(script_path)
+#source(script_path)
 ```
 
 # References
