@@ -190,12 +190,19 @@ monoplot <- function(x, type='rotation',
     ## expand single color
     if ( length(col)==1 )
         col <- setNames(rep(col, nrow(xy)), rownames(xy))
+    
 
     ## take color from PCA decoration
     if ( is.null(col) & !is.null(phases) )  
         if ( 'col' %in% colnames(phases) )
             col <- phases$col
-        
+
+    ## TODO: avoid this?
+    if ( !is.null(col) ) 
+        if ( !is.null(names(col)) )
+            if ( all(names(col)%in%rownames(xy)) )
+                col <- col[rownames(xy)]
+
     ## colored points or density plot?
     if ( is.null(col) )  { # density plot!
         if ( is.null(colf) )
@@ -211,7 +218,7 @@ monoplot <- function(x, type='rotation',
     } else 
         plot(xy[,xs], xy[,ys], # scatter plot
              xlim=xlim, ylim=ylim,
-             col=col[rownames(xy)], pch=pch, cex=cex, 
+             col=col, pch=pch, cex=cex, 
              xlab=NA, ylab=NA, axes=FALSE, ...)
     
     if ( arrows ) {
@@ -219,12 +226,12 @@ monoplot <- function(x, type='rotation',
         arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
                col="white", lwd=4, length=.05)
         arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
-               col=col[rownames(xy)], lwd=2, length=.05)
+               col=col, lwd=2, length=.05)
     }
     if ( labels ) 
         shadowtext(xy[,xs], xy[,ys],
                    labels=sub(".*_","",rownames(xy)),
-                   col=col[rownames(xy)],
+                   col=col,
                    cex=txt.cex, font=2, xpd=TRUE, r=.1)
     if ( lines )
         lines(xy[,xs], xy[,ys], col=col[1], type='b', pch=NA)
