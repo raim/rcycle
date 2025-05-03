@@ -116,7 +116,7 @@ plotStates <- function(phase, states, cls.srt, cls.col,
                        win=.01, norm=FALSE, lines=TRUE, ma=TRUE,
                        sid="", legend=TRUE, leg.nrow=1,
                        xtype='phase', xlab=expression(phase~phi),
-                       ylab, ...) {
+                       ylab, ylim, ...) {
 
     ## TODO: allow phases object
 
@@ -134,16 +134,18 @@ plotStates <- function(phase, states, cls.srt, cls.col,
     
     Ncells <- ncol(states)*win 
 
-    tlim <- c(states[cls.srt,])
-    tlim <- range(tlim[is.finite(tlim)],na.rm=TRUE)
-
+    if ( missing(ylim) ) {
+        ylim <- c(states[cls.srt,])
+        ylim <- range(ylim[is.finite(ylim)],na.rm=TRUE)
+    } 
+    
     if ( missing(ylab) )
         ylab <- ifelse(norm, expression(log[2](sample/mean)),
                        expression(mean~counts))
-
+    
     xlim <- range(phase)
     
-    plot(1, xlim=xlim, ylim=tlim, col=NA,
+    plot(1, xlim=xlim, ylim=ylim, col=NA,
          main=NA, axes=FALSE, xlab=xlab, ylab=ylab, ...)
     if ( xtype%in%c("angle","phase") ) 
         circ.axis(1)

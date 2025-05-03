@@ -41,14 +41,15 @@ normalize_counts <- function(counts, check=TRUE) {
 #'     cells as columns.
 #' @param cohorts cohort definition: a list where each list entry is a
 #'     vector of indices in the count table.
+#' @inheritParams get_cohorts
 #' @export
-get_states <- function(counts, cohorts) {
+get_states <- function(counts, cohorts, normalize=TRUE) {
 
     ## NOTE: cohorts is either already a normalized cohort matrix
     ## or a list of vectors with row indices of cohort genes in the count table
     
     if ( inherits(cohorts, "list" ) )
-        cohorts <- get_cohorts(cohorts, n=nrow(counts), normalize=TRUE)
+        cohorts <- get_cohorts(cohorts, n=nrow(counts), normalize=normalize)
     colnames(cohorts) <- rownames(counts)
 
     ## handle NA counts

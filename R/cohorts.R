@@ -45,7 +45,7 @@ clustering2cohorts <- function(cls, cls.srt) {
 #' of the genes in the count table.
 #' @param n the number of rows (genes) in the count table, if not provided
 #' the maximal index will be used
-#' @param normalize divide each boolean entry (1) by the cohort size
+#' @param normalize divide each boolean entry (1) by the cohort size; if true, _get_states will return the cohort means and if false, the total cohort counts.
 #' @export
 get_cohorts <- function(cohorts, n, normalize=FALSE) {
 
