@@ -73,11 +73,12 @@ approx_phase <- function(x, y, xout, ...) {
 #'
 #' @param phases phases object as returned by \link{get_pseudophase}.
 #' @export
-revert <- function(phases,  verb=1) {
+revert <- function(phases,  force=FALSE, verb=1) {
 
-    rphase <- revert_phase(phi=phases$x.phase$phi)
+    if ( !force )
+        force <- revert_phase(phi=phases$x.phase$phi)
     
-    if ( rphase ) {
+    if ( force ) {
         if ( verb>0 )
             cat(paste("\treverting all phases\n"))
 
@@ -437,7 +438,7 @@ revert_phase <- function(phi, states, ...) {
     
     
     ord <- order(phi)
-    return(sum(diff(rev(ord))<0) <= sum(diff(ord)<0))
+    return(sum(diff(rev(ord))<0) < sum(diff(ord)<0))
 
 }
 
@@ -453,7 +454,7 @@ revert_phase_state <- function(states, phi, window=.05) {
 
 
     ## return IF phases should be reverted
-    return(sum(diff(rev(idx))<0) <= sum(diff(idx)<0))
+    return(sum(diff(rev(idx))<0) < sum(diff(idx)<0))
 
 }
 
@@ -466,7 +467,7 @@ state_order_distance <- function(states, test, reference,  ...) {
 
     ## NOTE: either test string or state matrix is required
     if ( missing(test) )
-        test <-  get_state_order(states=states, ...)
+        test <-  get_state_order(states=states, names=TRUE, ...)
     if ( missing(reference) )
         reference <- rownames(states)
 

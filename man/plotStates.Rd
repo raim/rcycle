@@ -19,6 +19,7 @@ plotStates(
   xtype = "phase",
   xlab = expression(phase ~ phi),
   ylab,
+  ylim,
   ...
 )
 }

@@ -4,7 +4,7 @@
 \alias{get_states}
 \title{Generate a cohort expression state matrix.}
 \usage{
-get_states(counts, cohorts)
+get_states(counts, cohorts, normalize = TRUE)
 }
 \arguments{
 \item{counts}{a gene-wise read count table, with genes as rows and
@@ -12,6 +12,8 @@ cells as columns.}
 
 \item{cohorts}{cohort definition: a list where each list entry is a
 vector of indices in the count table.}
+
+\item{normalize}{divide each boolean entry (1) by the cohort size; if true, _get_states will return the cohort means and if false, the total cohort counts.}
 }
 \description{
 Generate a cohort expression state matrix.

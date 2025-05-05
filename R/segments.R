@@ -294,7 +294,7 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
     ## remove jumps from all theta
     ## TODO: remove_jumps doesn't work for thetah in dpseg and shoulder
     ## and the current approach via approx_phase has errors
-    theta <- remove_jumps(theta.orig, center=center, verb=FALSE)
+    theta <- remove_jumps(theta.orig, center=center, verb=0)
 
     ## shift cohort theta accordingly
     ## TODO: is this correct?

@@ -5,7 +5,9 @@
 #' Add arrows for segments in the phases object.
 #' @export
 arrows.phases <- function(x, types='shoulder', phase='phi',
-                          y0, dy, col, labels, ticks=FALSE, verb=0, ...) {
+                          y0, dy, col, labels, labels.top, lxpd=par('xpd'),
+                          pos=NULL,
+                          ticks=FALSE, verb=0, ...) {
 
     if ( missing(y0) ) y0 <- mean(par('usr')[3:4])
     if ( missing(dy) ) dy <- diff(par('usr')[3:4])/10 #length(types)
@@ -30,6 +32,18 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
             starts <- c(starts[n]-2*pi, starts)
             ends <- c(ends, ends[1]+2*pi)
 
+            ## TODO: fuse adjacent equal class labels!
+            if ( !missing(labels) ) {
+
+                labs <- segs[[labels]]
+
+                ## AMPLITUDE CUTOFF
+                ## only show labels for top X amplitudes 
+                if ( !missing(labels.top) ) 
+                    labs[rank(-segs$amp) > labels.top] <- ''
+                
+            }
+            
             ## arrow colors
             ids <- segs$ID
             scol <- setNames(1:nrow(segs), ids)
@@ -40,22 +54,42 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
             ## TODO: shadow.arrows
             arrows(x0=starts, x1=ends, y0=y0, code=3, length=.05, col=scol, ...)
             ## add names
-            if ( !missing(labels) )
+            if ( !missing(labels) ) {
+                if ( lxpd ) {
+                    oxpd <- par('xpd')
+                    par(xpd=TRUE)
+                }
                 shadowtext(x=(starts+ends)/2, y=rep(y0, length(starts)),
-                           labels=segs[[labels]],
-                           col=scol)
+                           labels=labs,
+                           col=scol, pos=pos, lxpd=lxpd)
+                if ( lxpd ) par(xpd=oxpd)
+            }
 
         } else if ( type %in% colnames(x$x.phases) ) {
 
-            ## arrow colors
+            ## labels
             ids <- x$x.phases$ID
+
+            ## AMPLITUDE CUTOFF
+            ## only show labels for top X amplitudes
+            labs <- ids
+            if ( !missing(labels.top) ) 
+                labs[rank(-x$amp) <= labels.top] <- ''
+
+            ## arrow colors
             scol <- setNames(1:nrow(x$x.phases), ids)
             if ( !missing(col) )
                 if ( col%in%colnames(x$x.phases) )
                     scol <- setNames(x$x.phases[,col], ids)
 
+            if ( lxpd ) {
+                oxpd <- par('xpd')
+                par(xpd=TRUE)
+            }
             shadowtext(x=x$x.phases[,type], y=rep(y0, nrow(x$x.phases)),
-                       labels=ids, col=scol, ...)
+                       labels=labs, col=scol, ...)
+            
+            if ( lxpd )par(xpd=oxpd)
         } 
         if ( ticks ) axis(4, at=y0, labels=type, las=2)
         
@@ -175,9 +209,10 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 ## plots both rotation and x of a PCA object, used from plotPC
 ## TODO: revise color selection via named vectors
 monoplot <- function(x, type='rotation',
-                     xs, ys, lines=FALSE, arrows=FALSE, labels=FALSE,
+                     xs, ys, lines=FALSE, arrows=FALSE,
+                     labels=FALSE, labels.top,
                      axis=FALSE,
-                     colf = NULL, col = NULL, pch=1, cex=1, txt.cex=1,
+                     colf = NULL, col = NULL, lwd=1, pch=1, cex=1, txt.cex=1,
                      xlim, ylim, ax=c(1,2), xlab, ylab, ...) {
 
     ## get matrix from PCA object to plot
@@ -226,15 +261,25 @@ monoplot <- function(x, type='rotation',
     if ( arrows ) {
             
         arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
-               col="white", lwd=4, length=.05)
+               col="white", lwd=lwd+2, length=.05)
         arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
-               col=col, lwd=2, length=.05)
+               col=col, lwd=lwd, length=.05)
     }
-    if ( labels ) 
+    if ( labels ) {
+
+        ## TODO: solve this cleaner and independent of _ convention
+        labs <- sub(".*_","",rownames(xy))
+
+        ## AMPLITUDE CUTOFF
+        ## only show labels for top X amplitudes 
+        if ( !missing(labels.top) & !is.null(phases) ) 
+            labs[rank(-phases$amp) > labels.top] <- ''
+                
         shadowtext(xy[,xs], xy[,ys],
-                   labels=sub(".*_","",rownames(xy)),
+                   labels=labs,
                    col=col,
                    cex=txt.cex, font=2, xpd=TRUE, r=.1)
+    }
     if ( lines )
         lines(xy[,xs], xy[,ys], col=col[1], type='b', pch=NA)
     
@@ -256,12 +301,16 @@ plotPC <- function(phases, x=1, y=2,
                    z, z.q = c(.05,.95), z.legend = FALSE, # color by PCz
 
                    vectors = TRUE, # eigenvector colors, cells
-                   vlines=FALSE, varrows = FALSE, vlabels = FALSE,
-                   colf = NULL, col = NULL, pch=19, cex=.5, vaxis = vectors,
+                   vlines=FALSE, varrows = FALSE,
+                   vlabels = FALSE, vlabels.top=Inf,
+                   colf = NULL, col = NULL, lwd = 1,
+                   pch=19, cex=.5, vaxis = vectors,
                    
                    scores = TRUE, # scores: rotated data/PCs
-                   slines = FALSE, sarrows = FALSE, slabels = FALSE,
-                   scolf = NULL, scol = NULL, spch=1, scex=1, saxis = scores, 
+                   slines = FALSE, sarrows = FALSE,
+                   slabels = FALSE, slabels.top, 
+                   scolf = NULL, scol = NULL, slwd=1,
+                   spch=1, scex=1, saxis = scores, 
 
                    txt.cex = 1,
                    
@@ -377,22 +426,13 @@ plotPC <- function(phases, x=1, y=2,
         ax <- c(3,4)
         if ( !scores ) ax <- c(1,2)
         monoplot(x=phases, type='rotation', #xy=phases$rotation,
-                 xs=xs, ys=ys, lines=vlines, arrows=varrows, labels=vlabels,
-                 colf=colf, col=col, pch=pch, cex=cex, txt.cex=txt.cex,
+                 xs=xs, ys=ys, lines=vlines, arrows=varrows,
+                 labels=vlabels, labels.top=vlabels.top,
+                 colf=colf, col=col, lwd=lwd, pch=pch, cex=cex,
+                 txt.cex=txt.cex,
                  xlim=xlimv, ylim=ylimv, ax=ax, xlab=xvlab, ylab=yvlab,
                  axis=vaxis, ...)
     }
-    if ( scores ) { # plot scores/PCs
-        if ( vectors )  par(new=TRUE)
-
-        monoplot(x=phases, type='x', #xy=phases$x,
-                 xs=xs, ys=ys, lines=slines, arrows=sarrows, labels=slabels,
-                 colf=scolf, col=scol, pch=spch, cex=scex, txt.cex=txt.cex,
-                 xlim=xlim, ylim=ylim, ax=c(1,2), xlab=xlab, ylab=ylab,
-                 axis=saxis, ...)
-    }
-
-
     if ( zero.axis ) {
         if ( zero.axis.label ) {
             axis(1, at=0, label=xlab)
@@ -401,6 +441,19 @@ plotPC <- function(phases, x=1, y=2,
         abline(h=0)
         abline(v=0)
     }
+    if ( scores ) { # plot scores/PCs
+        if ( vectors )  par(new=TRUE)
+
+        monoplot(x=phases, type='x', #xy=phases$x,
+                 xs=xs, ys=ys, lines=slines, arrows=sarrows,
+                 labels=slabels, labels.top=slabels.top,
+                 colf=scolf, col=scol, lwd=slwd, pch=spch, cex=scex,
+                 txt.cex=txt.cex,
+                 xlim=xlim, ylim=ylim, ax=c(1,2), xlab=xlab, ylab=ylab,
+                 axis=saxis, ...)
+    }
+
+
     
     ## legend for PC-based coloring
     if ( z.legend ) 
