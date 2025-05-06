@@ -12,6 +12,9 @@ arrows.phases(
   dy,
   col,
   labels,
+  labels.top,
+  lxpd = par("xpd"),
+  pos = NULL,
   ticks = FALSE,
   verb = 0,
   ...
