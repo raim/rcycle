@@ -150,6 +150,7 @@ plotStates <- function(phase, states, cls.srt, cls.col,
                        win=.01, norm=FALSE, lines=TRUE, ma=TRUE,
                        sid="", legend=TRUE, leg.nrow=1,
                        xtype='phase', xlab=expression(phase~phi),
+                       lwd=2,
                        ylab, ylim, ...) {
 
     ## TODO: allow phases object
@@ -193,7 +194,7 @@ plotStates <- function(phase, states, cls.srt, cls.col,
         for ( k in seq_along(cls.srt) ) 
             lines(phase[ord], ma(states[cls.srt[k], ord],
                                  n=Ncells, circular=TRUE),
-                  col=paste0(cls.col[cls.srt[k]]), lwd=2)
+                  col=paste0(cls.col[cls.srt[k]]), lwd=lwd)
 
     figlabel(paste0(sid), pos=ifelse(legend,"topleft","top"), cex=1.2, font=2)
     if ( legend )
@@ -258,13 +259,6 @@ monoplot <- function(x, type='rotation',
              col=col, pch=pch, cex=cex, 
              xlab=NA, ylab=NA, axes=FALSE, ...)
     
-    if ( arrows ) {
-            
-        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
-               col="white", lwd=lwd+2, length=.05)
-        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
-               col=col, lwd=lwd, length=.05)
-    }
     if ( labels ) {
 
         ## TODO: solve this cleaner and independent of _ convention
@@ -280,8 +274,24 @@ monoplot <- function(x, type='rotation',
                    col=col,
                    cex=txt.cex, font=2, xpd=TRUE, r=.1)
     }
+    if ( arrows ) {
+
+        ## background color: black or white? 
+        bgn <- rep(NA, length(col))
+        bg.thresh <- 0.75
+        for (i in 1:length(col)) {
+            crgb <- col2rgb(col[i])/255
+            L <- 0.2126 * crgb[1, 1] + 0.7152 * crgb[2, 1] + 
+                0.0722 * crgb[3, 1]
+            bgn[i] <- ifelse(L > bg.thresh, "#000000", "#FFFFFF")
+        }
+        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
+               col=bgn, lwd=lwd+2, length=.05)
+        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
+               col=col, lwd=lwd, length=.05)
+    }
     if ( lines )
-        lines(xy[,xs], xy[,ys], col=col[1], type='b', pch=NA)
+        lines(xy[,xs], xy[,ys], col=col[1], type='b', pch=NA, lwd=lwd)
     
     
     if ( axis ) {
@@ -319,7 +329,8 @@ plotPC <- function(phases, x=1, y=2,
                    xlim, ylim, expand = 1, 
 
                    arcsinh = FALSE, # useful to emphasize crowded data, TODO: avoid
-                   zero.axis = FALSE, zero.axis.label=zero.axis, 
+                   zero.axis = FALSE, zero.axis.label = zero.axis,
+                   pc.arrows = zero.axis, pc.lwd = 1,
                    show.var=TRUE,
                    ...) {
 
@@ -440,6 +451,26 @@ plotPC <- function(phases, x=1, y=2,
         }
         abline(h=0)
         abline(v=0)
+    }
+    ## draw arrows where length reflects % var
+    if ( pc.arrows ) { 
+        
+        vp <- phases$summary['Proportion of Variance',]
+        varx <- diff(par('usr')[1:2])*vp[x]
+        vary <- diff(par('usr')[3:4])*vp[y]
+
+        arrows(x0=par('usr')[1], y0=par('usr')[3],
+               x1=par('usr')[1] + varx, lwd=pc.lwd, length=.05, xpd=TRUE)
+        arrows(x0=par('usr')[1], y0=par('usr')[3],
+               y1=par('usr')[3] + vary, lwd=pc.lwd, length=.05, xpd=TRUE)
+        if ( FALSE ) { # TODO: plot at end of arrows
+            shadowtext(0, par('usr')[3],
+                       labels=paste(varp[1], '%'),
+                       xpd=TRUE, pos=4, col=1, font=2)
+            shadowtext(par('usr')[1], 0, 
+                       labels=paste(varp[2], '%'),
+                       xpd=TRUE, pos=4, srt=90, col=1, font=2)
+        }
     }
     if ( scores ) { # plot scores/PCs
         if ( vectors )  par(new=TRUE)
