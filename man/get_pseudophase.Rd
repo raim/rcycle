@@ -12,6 +12,8 @@ get_pseudophase(
   classify = FALSE,
   validate = FALSE,
   row.center = TRUE,
+  scale = TRUE,
+  center = TRUE,
   verb = 1
 )
 }

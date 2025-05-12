@@ -18,6 +18,8 @@ plotStates(
   leg.nrow = 1,
   xtype = "phase",
   xlab = expression(phase ~ phi),
+  lwd = 2,
+  axes = TRUE,
   ylab,
   ylim,
   ...

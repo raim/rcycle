@@ -206,9 +206,21 @@ TODO:
 
 # PCA vs. SVD
 
-Same thing, but in practice people perform PCA to look at the rotated data
-and view this as a dimensionality reduction. When using SVD people often
-focus on the eigenvectors They are equivalent, and e.g. R's `prcomp` internally used the `svd` function (based on LAPACK routines‘DGESDD’ and ‘ZGESDD’
+Same thing, but in practice people perform PCA to look at the rotated
+data and view this as a dimensionality reduction. When using SVD
+people often focus on the eigenvectors They are equivalent, and
+e.g. R's [`prcomp`
+internally](https://github.com/SurajGupta/r-source/blob/master/src/library/stats/R/prcomp.R)
+is just a wrapper around the [`svd`
+function](https://github.com/SurajGupta/r-source/blob/master/src/library/base/R/svd.R)
+(based on LAPACK routines‘DGESDD’ and ‘ZGESDD’.
+
+
+NOTE/TODO: scaling and row-centering enforces centered circles while
+differences between multiple cycles is better captured without
+scaling, and radius may encode period for microarray timeseries (li06,
+machne22pre)!
+
 
 ```{r, echo=TRUE, include=TRUE, fig.width=6, fig.height=3}
 
@@ -266,8 +278,8 @@ arrows(x0 = 0, y0 = 0, x1 = svd_out$v[,1], y1 = svd_out$v[,2], length = .1)
 # Circular Patterns in Rotated Data and Eigenvectors
 
 TODO: find exact conditions to get circular data. Note: in single cell
-data with just two cohort means we get 180degree eigenvectors even if
-using co-expressed cohorts, with 3 60degree. Test this with sine wave
+data with just two cohort means we get 180 degree eigenvectors even if
+using co-expressed cohorts, with 360 degree. Test this with sine wave
 simulation from cohorts_simulate.R; where only different MEANS
 required row-centering for circular patterns!
 
@@ -312,10 +324,13 @@ script_path <- "/home/raim/programs/rcycle/inst/scripts/simulate_pca.R"
 source(script_path)
 ```
 
+TODO: test whether PCA w/o row norm and/or scaling (i.e. SVD on raw data
+better reflects period, e.g. as radius (li06, machne22pre)
+
 ```{r dat, echo=TRUE, include=TRUE, fig.width=9, fig.height=3}
 par(mfcol = c(1, 3))
 script_path <- "/home/raim/programs/rcycle/inst/scripts/li06_plot.R"
-#source(script_path)
+source(script_path)
 ```
 
 # References

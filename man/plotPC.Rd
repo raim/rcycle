@@ -34,7 +34,7 @@ plotPC(
   scex = 1,
   saxis = scores,
   txt.cex = 1,
-  scale = 0,
+  scale = 1,
   pc.biplot = FALSE,
   xlim,
   ylim,
@@ -42,15 +42,20 @@ plotPC(
   arcsinh = FALSE,
   zero.axis = FALSE,
   zero.axis.label = zero.axis,
+  pc.arrows = FALSE,
+  pc.lwd = 1,
   show.var = TRUE,
   ...
 )
 }
 \arguments{
-\item{z}{use the zth PC component for coloring between quantiles given in z.q}
+\item{z}{use the zth PC component for coloring
+between quantiles given in z.q}
 
-\item{scale}{scale parameter, if provided it converts the plot to a true biplot}
+\item{scale}{scale parameter, if provided it converts the plot
+to a true biplot}
 }
 \description{
-Plot PCA-based circle and state vectors.
+NOTE: scale = 1, pc.biplot = FALSE is equivalent to the defaults
+of R's biplot.prcomp.
 }

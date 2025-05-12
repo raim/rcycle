@@ -150,8 +150,7 @@ plotStates <- function(phase, states, cls.srt, cls.col,
                        win=.01, norm=FALSE, lines=TRUE, ma=TRUE,
                        sid="", legend=TRUE, leg.nrow=1,
                        xtype='phase', xlab=expression(phase~phi),
-                       lwd=2,
-                       ylab, ylim, ...) {
+                       lwd=2, axes=TRUE, ylab, ylim, ...) {
 
     ## TODO: allow phases object
 
@@ -182,10 +181,12 @@ plotStates <- function(phase, states, cls.srt, cls.col,
     
     plot(1, xlim=xlim, ylim=ylim, col=NA,
          main=NA, axes=FALSE, xlab=xlab, ylab=ylab, ...)
-    if ( xtype%in%c("angle","phase") ) 
-        circ.axis(1)
-    else axis(1) 
-    axis(2)
+    if ( axes ) {
+        if ( xtype%in%c("angle","phase") ) 
+            circ.axis(1)
+        else axis(1) 
+        axis(2)
+    }
     if ( lines ) 
         for ( k in seq_along(cls.srt) ) 
             lines(phase[ord], states[cls.srt[k], ord],
@@ -304,8 +305,14 @@ monoplot <- function(x, type='rotation',
     
 
 #' Plot PCA-based circle and state vectors.
-#' @param z use the zth PC component for coloring between quantiles given in z.q
-#' @param scale scale parameter, if provided it converts the plot to a true biplot 
+#' 
+#' NOTE: scale = 1, pc.biplot = FALSE is equivalent to the defaults
+#' of R's biplot.prcomp.
+#' 
+#' @param z use the zth PC component for coloring
+#' between quantiles given in z.q
+#' @param scale scale parameter, if provided it converts the plot
+#' to a true biplot 
 #' @export
 plotPC <- function(phases, x=1, y=2,
                    z, z.q = c(.05,.95), z.legend = FALSE, # color by PCz
@@ -324,13 +331,13 @@ plotPC <- function(phases, x=1, y=2,
 
                    txt.cex = 1,
                    
-                   scale = 0, # true biplot scaling as in biplot(scale=1)
+                   scale = 1, # true biplot scaling as in biplot(scale=1)
                    pc.biplot = FALSE, # as in biplot
                    xlim, ylim, expand = 1, 
 
                    arcsinh = FALSE, # useful to emphasize crowded data, TODO: avoid
                    zero.axis = FALSE, zero.axis.label = zero.axis,
-                   pc.arrows = zero.axis, pc.lwd = 1,
+                   pc.arrows = FALSE, pc.lwd = 1,
                    show.var=TRUE,
                    ...) {
 
@@ -357,6 +364,16 @@ plotPC <- function(phases, x=1, y=2,
     ## https://stats.stackexchange.com/questions/66926/what-are-the-four-axes-on-pca-biplot
     ## https://stats.stackexchange.com/questions/141085/positioning-the-arrows-on-a-pca-biplot
     ## see biplot.prcomp code: src/library/stats/R/biplot.R
+
+    ## test if this object was already scaled and refuse plotting
+    ## until solved: put scaling into separate function and record!
+    is.scaled <- FALSE # were matrices already scaled by previous call?
+    if ( "SCALED" %in% names(phases) )
+        is.scaled <- phases$SCALED 
+    if ( is.scaled ) {
+        ## until this is cleanly solved
+        stop("the object returned by plotPC can not be used for replotting")
+    }
     
     lam <- phases$sdev
     n <- NROW(phases$x)
@@ -493,7 +510,11 @@ plotPC <- function(phases, x=1, y=2,
                      ##inset=c(-0.1,0),
                      xpd=TRUE, y.intersp=0.6, bg="#ffffffaa", box.col=NA)
 
-    ## return potentially transformed data
+    ## RETURN POTENTIALLY TRANSFORMED DATA!
+    ## note: this should only be used for adding data to the canvas!
+    ## indicate that this is scaled
+    ## TODO: add scale and plot settings, e.g. axis limits!
+    phases$SCALED <- TRUE 
     invisible(phases)
     
 }

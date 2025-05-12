@@ -263,8 +263,8 @@ get_pseudophase <- function(states,
                             revert.phase=FALSE, 
                             segments=FALSE, spar=1e-3,
                             classify=FALSE, validate=FALSE,
-                            ##use.states=FALSE,
-                            row.center=TRUE,  # required: rm option?
+                            row.center=TRUE,  # BEFORE column scaling!
+                            scale=TRUE, center=TRUE, # PCA vs. SVD
                             verb=1) {
 
     cstates <- states
@@ -272,11 +272,15 @@ get_pseudophase <- function(states,
     ## ROW-CENTERING cohorts
     if ( row.center )
         cstates <- cstates - apply(cstates, 1, mean) 
-        
+
+    ## scale as in prcomp prior to SVD
+    ## TODO: do externally and re-set in prcomp result structure? 
+    ##cstates <- scale(cstates, scale=scale, center=center)
+    
     ## PCA of cells
     ## scale: bring COLUMNS to unit variance (x-mean(x))/std(x)
     ## equiv to eigen(cor(cstates))
-    phases <- prcomp(cstates, scale.=TRUE) 
+    phases <- prcomp(cstates, scale.=scale, center=center) 
     
 
     ## CELL PSEUDOPHASE from loadings of PC1 vs. PC2

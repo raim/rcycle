@@ -136,16 +136,24 @@ for ( v in 1:nrow(sims)  ) {
     legend("topright", "transcript centering")
     matplot(xtime, t(yc), type="l", lty=1)
     legend("topright", "sample scaling")
-        
-    if ( FALSE ) {
-    
-        plot(ys[1,], yc[1,], col=NA, xlim=range(c(ys)), ylim=range(c(yc)),
-             xlab="simulated data", "normalized data")
-        for ( j in 1:nrow(ys) )
-            points(ys[j,], yc[j,], col=j, type='l')
-        legend("topright", rtyp)
-    }
 
+    ## different order: col-scale -> row-norm
+    ## column scaling as for prcomp(scale.=TRUE, center=TRUE)
+    yc <- apply(yn, 2, scale)
+    ##  row-norm
+    yr <- yc- apply(yc, 1, mean)
+
+    par(mfcol=c(1,4), mai=c(.5,.5,.05,.05), mgp=c(1.3,.3,0), tcl=-.25)
+    matplot(xtime, t(ys), type="l", lty=1)
+    legend("topright", rtyp)
+    matplot(xtime, t(yn), type="l", lty=1)
+    legend("topright", "fraction of total")
+    matplot(xtime, t(yr), type="l", lty=1)
+    legend("topright", "transcript centering")
+    matplot(xtime, t(yc), type="l", lty=1)
+    legend("topright", "sample scaling")
+
+    ### PCA
     for ( p in 1:nrow(proc)  ) {
 
         total <- 1 #proc[p,"total"] # randomize amplitudes
@@ -168,6 +176,8 @@ for ( v in 1:nrow(sims)  ) {
         ## column scaling as for prcomp(scale.=TRUE, center=TRUE)
         if ( cols==1 )
             yn <- apply(yn, 2, scale)
+        ## PCA without scaling and centering: SVD
+        pca <- prcomp(yn, scale.=FALSE, center=FALSE)
 
         par(mfcol=c(1,5), mai=c(.5,.5,.05,.05), mgp=c(1.3,.3,0), tcl=-.25)
         matplot(xtime, t(ys), type="l", lty=1, xlab='time/h')
@@ -180,7 +190,6 @@ for ( v in 1:nrow(sims)  ) {
         for ( j in 1:nrow(ys) )
             points(ys[j,], yc[j,], col=j, type='l')
           
-        pca <- prcomp(yn, scale.=FALSE, center=FALSE)
         plotPC(pca, sarrows=TRUE, vlines=TRUE, scol=1:NY, slwd=2, scale=1,
                zero.axis=TRUE, saxis=FALSE, vaxis=FALSE)
         legend("bottomright", c(styp))
