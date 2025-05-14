@@ -377,10 +377,10 @@ plotPC <- function(phases, x=1, y=2,
     
     lam <- phases$sdev
     n <- NROW(phases$x)
-    lam <- lam * sqrt(n)
-    if(scale < 0 || scale > 1) warning("'scale' is outside [0, 1]")
-    if(scale != 0) lam <- lam^scale else lam <- 1
-    if(pc.biplot) lam <- lam / sqrt(n)
+    lam <- lam * sqrt(n) # singular values! TODO: n+1 ?
+    if ( scale < 0 || scale > 1 ) warning("'scale' is outside [0, 1]")
+    if ( scale != 0 ) lam <- lam^scale else lam <- 1
+    if ( pc.biplot ) lam <- lam / sqrt(n) # back to sdev
     
     phases$rotation[,allv] <- t(t(phases$rotation[,allv]) * lam)
     phases$x[,alls] <- t(t(phases$x[,alls])/lam)
@@ -450,6 +450,8 @@ plotPC <- function(phases, x=1, y=2,
         ylimv <- ylim*ratio
     }
 
+    ## TODO: allow to flip order of vectors and scores plots!
+    
     if ( vectors ) { # plot eigenvectors
         ax <- c(3,4)
         if ( !scores ) ax <- c(1,2)
@@ -460,7 +462,9 @@ plotPC <- function(phases, x=1, y=2,
                  txt.cex=txt.cex,
                  xlim=xlimv, ylim=ylimv, ax=ax, xlab=xvlab, ylab=yvlab,
                  axis=vaxis, ...)
-    }
+    } else # empty plot
+        plot(0, col=NA, axes=FALSE, xlab='', ylab='', xlim=xlimv, ylim=ylimv)
+    
     if ( zero.axis ) {
         if ( zero.axis.label ) {
             axis(1, at=0, label=xlab)
@@ -470,6 +474,7 @@ plotPC <- function(phases, x=1, y=2,
         abline(v=0)
     }
     ## draw arrows where length reflects % var
+    ## TODO: draw higher vp to a set fraction of the axis
     if ( pc.arrows ) { 
         
         vp <- phases$summary['Proportion of Variance',]
