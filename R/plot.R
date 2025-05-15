@@ -234,6 +234,7 @@ monoplot <- function(x, type='rotation',
     
 
     ## take color from PCA decoration
+    ## TODO: remove this or implement smarter!
     if ( is.null(col) & !is.null(phases) )  
         if ( 'col' %in% colnames(phases) )
             col <- phases$col
