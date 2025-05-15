@@ -60,8 +60,7 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
                     par(xpd=TRUE)
                 }
                 shadowtext(x=(starts+ends)/2, y=rep(y0, length(starts)),
-                           labels=labs,
-                           col=scol, pos=pos, lxpd=lxpd)
+                           labels=labs, col=scol, pos=pos, xpd=lxpd)
                 if ( lxpd ) par(xpd=oxpd)
             }
 
@@ -89,7 +88,7 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
             shadowtext(x=x$x.phases[,type], y=rep(y0, nrow(x$x.phases)),
                        labels=labs, col=scol, ...)
             
-            if ( lxpd )par(xpd=oxpd)
+            if ( lxpd ) par(xpd=oxpd)
         } 
         if ( ticks ) axis(4, at=y0, labels=type, las=2)
         
