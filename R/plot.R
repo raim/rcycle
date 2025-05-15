@@ -59,8 +59,10 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
                     oxpd <- par('xpd')
                     par(xpd=TRUE)
                 }
-                shadowtext(x=(starts+ends)/2, y=rep(y0, length(starts)),
-                           labels=labs, col=scol, pos=pos, xpd=lxpd)
+                segmenTools::shadowtext(x=(starts+ends)/2,
+                                        y=rep(y0, length(starts)),
+                                        labels=labs, col=scol, pos=pos,
+                                        xpd=lxpd)
                 if ( lxpd ) par(xpd=oxpd)
             }
 
@@ -85,8 +87,9 @@ arrows.phases <- function(x, types='shoulder', phase='phi',
                 oxpd <- par('xpd')
                 par(xpd=TRUE)
             }
-            shadowtext(x=x$x.phases[,type], y=rep(y0, nrow(x$x.phases)),
-                       labels=labs, col=scol, ...)
+            segmenTools::shadowtext(x=x$x.phases[,type],
+                                    y=rep(y0, nrow(x$x.phases)),
+                                    labels=labs, col=scol, ...)
             
             if ( lxpd ) par(xpd=oxpd)
         } 
@@ -269,10 +272,10 @@ monoplot <- function(x, type='rotation',
         if ( !missing(labels.top) & !is.null(phases) ) 
             labs[rank(-phases$amp) > labels.top] <- ''
                 
-        shadowtext(xy[,xs], xy[,ys],
-                   labels=labs,
-                   col=col,
-                   cex=txt.cex, font=2, xpd=TRUE, r=.1)
+        segmenTools::shadowtext(xy[,xs], xy[,ys],
+                                labels=labs,
+                                col=col,
+                                cex=txt.cex, font=2, xpd=TRUE, r=.1)
     }
     if ( arrows ) {
 
@@ -485,12 +488,12 @@ plotPC <- function(phases, x=1, y=2,
         arrows(x0=par('usr')[1], y0=par('usr')[3],
                y1=par('usr')[3] + vary, lwd=pc.lwd, length=.05, xpd=TRUE)
         if ( FALSE ) { # TODO: plot at end of arrows
-            shadowtext(0, par('usr')[3],
-                       labels=paste(varp[1], '%'),
-                       xpd=TRUE, pos=4, col=1, font=2)
-            shadowtext(par('usr')[1], 0, 
-                       labels=paste(varp[2], '%'),
-                       xpd=TRUE, pos=4, srt=90, col=1, font=2)
+            segmenTools::shadowtext(0, par('usr')[3],
+                                    labels=paste(varp[1], '%'),
+                                    xpd=TRUE, pos=4, col=1, font=2)
+            segmenTools::shadowtext(par('usr')[1], 0, 
+                                    labels=paste(varp[2], '%'),
+                                    xpd=TRUE, pos=4, srt=90, col=1, font=2)
         }
     }
     if ( scores ) { # plot scores/PCs
