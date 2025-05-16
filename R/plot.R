@@ -340,7 +340,7 @@ plotPC <- function(phases, x=1, y=2,
 
                    arcsinh = FALSE, # useful to emphasize crowded data, TODO: avoid
                    zero.axis = FALSE, zero.axis.label = zero.axis,
-                   pc.arrows = FALSE, pc.lwd = 1,
+                   pc.arrows = FALSE, pc.lwd = 1, pc.scale = 1,
                    show.var=TRUE,
                    ...) {
 
@@ -476,13 +476,13 @@ plotPC <- function(phases, x=1, y=2,
         abline(h=0)
         abline(v=0)
     }
-    ## draw arrows where length reflects % var
+    ## draw arrows where length reflects % var (*pc.scale)
     ## TODO: draw higher vp to a set fraction of the axis
     if ( pc.arrows ) { 
         
         vp <- phases$summary['Proportion of Variance',]
-        varx <- diff(par('usr')[1:2])*vp[x]
-        vary <- diff(par('usr')[3:4])*vp[y]
+        varx <- diff(par('usr')[1:2])*vp[x] * pc.scale
+        vary <- diff(par('usr')[3:4])*vp[y] * pc.scale
 
         arrows(x0=par('usr')[1], y0=par('usr')[3],
                x1=par('usr')[1] + varx, lwd=pc.lwd, length=.05, xpd=TRUE)

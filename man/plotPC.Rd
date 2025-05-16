@@ -44,6 +44,7 @@ plotPC(
   zero.axis.label = zero.axis,
   pc.arrows = FALSE,
   pc.lwd = 1,
+  pc.scale = 1,
   show.var = TRUE,
   ...
 )
