@@ -286,10 +286,15 @@ get_pseudophase <- function(states,
     ## CELL PSEUDOPHASE from loadings of PC1 vs. PC2
     X <- phases$rotation[,1]
     Y <- phases$rotation[,2]
+    Z <- phases$rotation[,3]
 
-    ## get cell phase angle
+    ## get cell phase angle 2D
     theta <- atan2(Y, X)
     amp <- sqrt(Y^2 + X^2)
+
+    ## 3D angle
+    R <- sqrt(X^2 + Y^2 + Z^2)
+    pphi <- acos(Z / R)
 
     ## phase: rank(theta) in radian, aligned at theta=phi=0
     phi <- phase_rank(theta, align=TRUE, center=TRUE)
@@ -298,10 +303,15 @@ get_pseudophase <- function(states,
     ## COHORT PSEUDOPHASE
     cX <- phases$x[,1]
     cY <- phases$x[,2]
+    cZ <- phases$x[,3]
 
     ## get cohort phase angle
     ctheta <- atan2(cY, cX)
     camp <- sqrt(cY^2 + cX^2)
+
+    ## cohort 3D angle
+    cR <- sqrt(cX^2 + cY^2 + cZ^2)
+    cpphi <- acos(cZ / cR)
 
     ## interpolate cohort phase to cell rank phase via angle
     cphi <- approx_phase(x=theta, y=phi, xout=ctheta)$y
@@ -339,7 +349,9 @@ get_pseudophase <- function(states,
     phases$rotation.phase <- cbind.data.frame(order=order(phi),
                                               phi=phi,
                                               theta=theta,
-                                              amplitude=amp)
+                                              amplitude=amp,
+                                              radius3d=R,
+                                              pphi=pphi)
     rownames(phases$rotation.phase) <- rownames(phases$rotation)
     
 
@@ -353,7 +365,9 @@ get_pseudophase <- function(states,
                                        order=order(cphi),
                                        phi=cphi,
                                        theta=ctheta,
-                                       amp=camp)
+                                       amp=camp,
+                                       radius3d=cR,
+                                       pphi=cpphi)
     rownames(phases$x.phase) <- rownames(phases$x)
     
     ## old: add cohort phases, IDs, colors, etc. to cohort ?values?

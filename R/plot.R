@@ -270,9 +270,11 @@ monoplot <- function(x, type='rotation',
 
         ## AMPLITUDE CUTOFF
         ## only show labels for top X amplitudes 
-        if ( !missing(labels.top) & !is.null(phases) ) 
-            labs[rank(-phases$amp) > labels.top] <- ''
-                
+        if ( !missing(labels.top) & !is.null(phases) ) {
+
+            amp <- sqrt(xy[,xs]^2 + xy[,ys]^2)
+            labs[rank(-amp) > labels.top] <- ''
+        }
         segmenTools::shadowtext(xy[,xs], xy[,ys],
                                 labels=labs,
                                 col=col,
@@ -522,7 +524,9 @@ plotPC <- function(phases, x=1, y=2,
     ## note: this should only be used for adding data to the canvas!
     ## indicate that this is scaled
     ## TODO: add scale and plot settings, e.g. axis limits!
-    phases$SCALED <- TRUE 
+    phases$SCALED <- TRUE
+    phases$dim <- list(x=list(xlim=xlim, ylim=ylim),
+                       rotation=list(xlim=xlimv, ylim=ylimv))
     invisible(phases)
     
 }
