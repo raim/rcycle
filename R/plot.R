@@ -263,6 +263,22 @@ monoplot <- function(x, type='rotation',
              col=col, pch=pch, cex=cex, 
              xlab=NA, ylab=NA, axes=FALSE, ...)
     
+    if ( arrows ) {
+
+        ## background color: black or white? 
+        bgn <- rep(NA, length(col))
+        bg.thresh <- 0.75
+        for (i in 1:length(col)) {
+            crgb <- col2rgb(col[i])/255
+            L <- 0.2126 * crgb[1, 1] + 0.7152 * crgb[2, 1] + 
+                0.0722 * crgb[3, 1]
+            bgn[i] <- ifelse(L > bg.thresh, "#000000", "#FFFFFF")
+        }
+        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
+               col=bgn, lwd=lwd+2, length=.05)
+        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
+               col=col, lwd=lwd, length=.05)
+    }
     if ( labels ) {
 
         ## TODO: solve this cleaner and independent of _ convention
@@ -279,22 +295,6 @@ monoplot <- function(x, type='rotation',
                                 labels=labs,
                                 col=col,
                                 cex=txt.cex, font=2, xpd=TRUE, r=.1)
-    }
-    if ( arrows ) {
-
-        ## background color: black or white? 
-        bgn <- rep(NA, length(col))
-        bg.thresh <- 0.75
-        for (i in 1:length(col)) {
-            crgb <- col2rgb(col[i])/255
-            L <- 0.2126 * crgb[1, 1] + 0.7152 * crgb[2, 1] + 
-                0.0722 * crgb[3, 1]
-            bgn[i] <- ifelse(L > bg.thresh, "#000000", "#FFFFFF")
-        }
-        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
-               col=bgn, lwd=lwd+2, length=.05)
-        arrows(x0=0,y0=0, x1=xy[,xs], y1=xy[,ys],
-               col=col, lwd=lwd, length=.05)
     }
     if ( lines )
         lines(xy[,xs], xy[,ys], col=col[1], type='b', pch=NA, lwd=lwd)
