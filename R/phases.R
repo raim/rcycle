@@ -424,8 +424,8 @@ segment_state <- function(phases, segment='inflection',
     
     
     ## calculate overlaps between state based and segment-based classes
-    ovl <- clusterCluster(cl1=phases$rotation.phase[,sid], cl1.srt=seg.srt,
-                          cl2=phases$rotation.phase[,class], cl2.srt=cls.srt)
+    ovl <- clusterCluster(query=phases$rotation.phase[,sid], q.srt=seg.srt,
+                          target=phases$rotation.phase[,class], t.srt=cls.srt)
     ## assign to cohort with minimal overlap p.value
     if ( plot )
         plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, xlab=class, ylab=sid)
