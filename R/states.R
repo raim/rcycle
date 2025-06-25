@@ -4,7 +4,7 @@
 #' Normalize count table by total counts per cell
 #' @param count table with genes in rows and cells in columns
 #' @export
-normalize_counts <- function(counts, check=TRUE) {
+normalize_counts <- function(counts, scale=FALSE, check=TRUE) {
 
     total <- apply(counts, 2, sum, na.rm=TRUE)
 
@@ -21,8 +21,11 @@ normalize_counts <- function(counts, check=TRUE) {
             return(counts)
         }
     }
-    ## TODO: faster way w/o double transpose
+    ## TODO: faster way w/o double transpose?
     counts <- t(t(counts)/total)
+
+    ## scale back up mean of total
+    if ( scale ) counts <- counts*mean(total)
 
     ## adding total counts as attribute
     attr(counts, "total") <- total

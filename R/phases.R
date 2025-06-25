@@ -263,16 +263,22 @@ get_pseudophase <- function(states,
                             revert.phase=FALSE, 
                             segments=FALSE, spar=1e-3,
                             classify=FALSE, validate=FALSE,
+                            log=FALSE, # BEFORE row norm
                             row.center=TRUE,  # BEFORE column scaling!
                             scale=TRUE, center=TRUE, # PCA vs. SVD
                             verb=1) {
 
     cstates <- states
     
+    ## TODO/NOTE: log seems to have no effect for cohort states,
+    ## if cstates are low numbers such as total normalized counts
+    if ( log ) cstates <- log10(cstates+1)
+
     ## ROW-CENTERING cohorts
     if ( row.center )
         cstates <- cstates - apply(cstates, 1, mean) 
 
+    
     ## scale as in prcomp prior to SVD
     ## TODO: do externally and re-set in prcomp result structure? 
     ##cstates <- scale(cstates, scale=scale, center=center)
