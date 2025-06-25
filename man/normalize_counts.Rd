@@ -4,7 +4,7 @@
 \alias{normalize_counts}
 \title{Normalize count table by total counts per cell}
 \usage{
-normalize_counts(counts, check = TRUE)
+normalize_counts(counts, scale = FALSE, check = TRUE)
 }
 \arguments{
 \item{count}{table with genes in rows and cells in columns}

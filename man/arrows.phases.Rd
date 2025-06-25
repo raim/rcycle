@@ -6,6 +6,7 @@
 \usage{
 arrows.phases(
   x,
+  y,
   types = "shoulder",
   phase = "phi",
   y0,

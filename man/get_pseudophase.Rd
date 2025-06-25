@@ -11,6 +11,7 @@ get_pseudophase(
   spar = 0.001,
   classify = FALSE,
   validate = FALSE,
+  log = FALSE,
   row.center = TRUE,
   scale = TRUE,
   center = TRUE,
