@@ -152,8 +152,12 @@ get_segments <- function(phases,
 
         ## replace previus
         old <- which(colnames(phases$rotation.phase)%in%colnames(df))
-        if ( length(old)>0 )
-            phases$rotation.phase <-phases$rotation.phase[,-old] 
+        if ( length(old)>0 ) {
+            vals <- colnames(phases$rotation.phase)[old]
+            cat(paste("WARNING: replacing old values:",
+                      paste(vals, collapse=";"),"\n"))
+            phases$rotation.phase <-phases$rotation.phase[,-old]
+        }
         phases$rotation.phase <- cbind(phases$rotation.phase,
                                  df)
         
@@ -196,8 +200,12 @@ get_segments <- function(phases,
 
         ## replace previus
         old <- which(colnames(phases$rotation.phase)%in%colnames(df))
-        if ( length(old)>0 )
-            phases$rotation.phase <-phases$rotation.phase[,-old] 
+        if ( length(old)>0 ) {
+            vals <- colnames(phases$rotation.phase)[old]
+            cat(paste("WARNING: replacing old values:",
+                      paste(vals, collapse=";"),"\n"))
+            phases$rotation.phase <-phases$rotation.phase[,-old]
+        }
         phases$rotation.phase <- cbind(phases$rotation.phase,
                                  df)
         
@@ -251,8 +259,12 @@ get_segments <- function(phases,
 
         ## replace previus
         old <- which(colnames(phases$rotation.phase)%in%colnames(df))
-        if ( length(old)>0 )
+        if ( length(old)>0 ) {
+            vals <- colnames(phases$rotation.phase)[old]
+            cat(paste("WARNING: replacing old values:",
+                      paste(vals, collapse=";"),"\n"))
             phases$rotation.phase <-phases$rotation.phase[,-old] 
+        }
         phases$rotation.phase <- cbind(phases$rotation.phase,
                               df)
         

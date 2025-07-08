@@ -73,11 +73,15 @@ approx_phase <- function(x, y, xout, ...) {
 #'
 #' @param phases phases object as returned by \link{get_pseudophase}.
 #' @export
-revert <- function(phases,  force=FALSE, verb=1) {
+revert <- function(phases, srt, force=FALSE, verb=1) {
 
-    if ( !force )
-        force <- revert_phase(phi=phases$x.phase$phi)
-    
+    if ( !force ) {
+        x.phase <- phases$x.phase
+        if ( !missing(srt) ) { ## only using the states provided
+            x.phase <- x.phase[srt[srt%in%rownames(x.phase)],]
+        }
+        force <- revert_phase(phi=x.phase$phi)
+    }
     if ( force ) {
         if ( verb>0 )
             cat(paste("\treverting all phases\n"))
