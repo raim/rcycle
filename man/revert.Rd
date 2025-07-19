@@ -4,7 +4,7 @@
 \alias{revert}
 \title{Revert all phases if order is wrong.}
 \usage{
-revert(phases, force = FALSE, verb = 1)
+revert(phases, srt, force = FALSE, verb = 1)
 }
 \arguments{
 \item{phases}{phases object as returned by \link{get_pseudophase}.}

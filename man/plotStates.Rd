@@ -9,6 +9,7 @@ plotStates(
   states,
   cls.srt,
   cls.col,
+  ncells,
   win = 0.01,
   norm = FALSE,
   lines = TRUE,
@@ -22,6 +23,7 @@ plotStates(
   axes = TRUE,
   ylab,
   ylim,
+  verb = 0,
   ...
 )
 }
