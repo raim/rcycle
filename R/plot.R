@@ -151,10 +151,11 @@ stop('this needs to be udpated')
 #' Plot cohort state time series.
 #' @export
 plotStates <- function(phase, states, cls.srt, cls.col,
+                       ncells,
                        win=.01, norm=FALSE, lines=TRUE, ma=TRUE,
                        sid="", legend=TRUE, leg.nrow=1,
                        xtype='phase', xlab=expression(phase~phi),
-                       lwd=2, axes=TRUE, ylab, ylim, ...) {
+                       lwd=2, axes=TRUE, ylab, ylim, verb=0, ...) {
 
     ## TODO: allow phases object
 
@@ -169,8 +170,19 @@ plotStates <- function(phase, states, cls.srt, cls.col,
         cls.srt <- rownames(states)
     if ( missing(cls.col) )
         cls.col <- setNames(1:length(cls.srt), nm=cls.srt)
+
+    ## MOVING AVERAGE SIZE
+    if ( missing(ncells) )
+        ncells <- ncol(states)*win
     
-    Ncells <- ncol(states)*win 
+    if ( ncells > ncol(states) ) {## falling back on window
+        warning("ncells > number of cells, falling back on fraction", win)
+        ncells <- ncol(states)*win
+    }
+
+    if ( verb>0 )
+        cat(paste('moving average over', ncells,
+                  'cells:', round(ncells/ncol(states)*100), '%\n'))
 
     if ( missing(ylim) ) {
         ylim <- c(states[cls.srt,])
@@ -198,7 +210,7 @@ plotStates <- function(phase, states, cls.srt, cls.col,
     if ( ma )
         for ( k in seq_along(cls.srt) ) 
             lines(phase[ord], ma(states[cls.srt[k], ord],
-                                 n=Ncells, circular=TRUE),
+                                 n=ncells, circular=TRUE),
                   col=paste0(cls.col[cls.srt[k]]), lwd=lwd)
 
     figlabel(paste0(sid), pos=ifelse(legend,"topleft","top"), cex=1.2, font=2)
