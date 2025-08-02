@@ -152,15 +152,17 @@ stop('this needs to be udpated')
 #' @export
 plotStates <- function(phase, states, cls.srt, cls.col,
                        ncells,
-                       win=.01, norm=FALSE, lines=TRUE, ma=TRUE,
+                       ordered=FALSE,
+                       win=.01, log=FALSE, norm=FALSE, lines=TRUE, ma=TRUE,
                        sid="", legend=TRUE, leg.nrow=1,
-                       xtype='phase', xlab=expression(phase~phi),
+                       xtype='phase', xlab=expression(phase~phi), xlim, 
                        lwd=2, axes=TRUE, ylab, ylim, verb=0, ...) {
 
     ## TODO: allow phases object
 
     ## order by x-value
-    ord <- order(phase)
+    if ( ordered ) ord <- 1:length(phase)
+    else ord <- order(phase)
 
     if ( norm )    
         states <- log2(states/apply(states, 1, mean))
@@ -184,16 +186,28 @@ plotStates <- function(phase, states, cls.srt, cls.col,
         cat(paste('moving average over', ncells,
                   'cells:', round(ncells/ncol(states)*100), '%\n'))
 
+    if ( ma ) # moving average
+        mastates <- t(apply(states[, ord, drop=FALSE], 1,
+                            function(x) ma(x, n=ncells, circular=TRUE)))
+
     if ( missing(ylim) ) {
-        ylim <- c(states[cls.srt,])
-        ylim <- range(ylim[is.finite(ylim)],na.rm=TRUE)
-    } 
+        if ( lines ) {
+            ylim <- c(states[cls.srt,])
+            ylim <- range(ylim[is.finite(ylim)],na.rm=TRUE)
+        } else {
+            ylim <- c(mastates[cls.srt,])
+            ylim <- range(ylim[is.finite(ylim)],na.rm=TRUE)
+              
+        }
+    }
+
     
     if ( missing(ylab) )
         ylab <- ifelse(norm, expression(log[2](sample/mean)),
                        expression(mean~counts))
     
-    xlim <- range(phase)
+    if ( missing(xlim) ) 
+        xlim <- range(phase)
     
     plot(1, xlim=xlim, ylim=ylim, col=NA,
          main=NA, axes=FALSE, xlab=xlab, ylab=ylab, ...)
@@ -203,21 +217,22 @@ plotStates <- function(phase, states, cls.srt, cls.col,
         else axis(1) 
         axis(2)
     }
-    if ( lines ) 
+    if ( lines ) {
+        acols <- segmenTools::add_alphas(cls.col, rep(77/255, length(cls.col)))
         for ( k in seq_along(cls.srt) ) 
             lines(phase[ord], states[cls.srt[k], ord],
-                  col=paste0(cls.col[cls.srt[k]],77))
+                  col=acols[cls.srt[k]])
+    }
     if ( ma )
         for ( k in seq_along(cls.srt) ) 
-            lines(phase[ord], ma(states[cls.srt[k], ord],
-                                 n=ncells, circular=TRUE),
-                  col=paste0(cls.col[cls.srt[k]]), lwd=lwd)
+            lines(phase[ord], mastates[cls.srt[k],],
+                  col=cls.col[cls.srt[k]], lwd=lwd)
 
     figlabel(paste0(sid), pos=ifelse(legend,"topleft","top"), cex=1.2, font=2)
     if ( legend )
         legend("topright", sub(".*_", "", cls.srt),
                col=cls.col[cls.srt],
-               pch=15, pt.cex=1, cex=.8, inset=c(-0.1,-0.1),
+               pch=15, pt.cex=1, cex=.8, ##inset=c(-0.1,-0.1),
                bg="#ffffff00", ncol=ceiling(length(cls.srt)/leg.nrow),
                x.intersp=.6,
                seg.len=0, xpd=TRUE, box.col=NA)
