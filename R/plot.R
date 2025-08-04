@@ -152,8 +152,9 @@ stop('this needs to be udpated')
 #' @export
 plotStates <- function(phase, states, cls.srt, cls.col,
                        ncells,
-                       ordered=FALSE,
-                       win=.01, log=FALSE, norm=FALSE, lines=TRUE, ma=TRUE,
+                       ordered=FALSE, 
+                       win=.01, circular=TRUE, ma=TRUE,
+                       log=FALSE, norm=FALSE, lines=TRUE, 
                        sid="", legend=TRUE, leg.nrow=1,
                        xtype='phase', xlab=expression(phase~phi), xlim, 
                        lwd=2, axes=TRUE, ylab, ylim, verb=0, ...) {
@@ -182,13 +183,16 @@ plotStates <- function(phase, states, cls.srt, cls.col,
         ncells <- ncol(states)*win
     }
 
+    ## must be integer!!
+    ncells <- floor(ncells)
+
     if ( verb>0 )
         cat(paste('moving average over', ncells,
                   'cells:', round(ncells/ncol(states)*100), '%\n'))
 
     if ( ma ) # moving average
         mastates <- t(apply(states[, ord, drop=FALSE], 1,
-                            function(x) ma(x, n=ncells, circular=TRUE)))
+                            function(x) ma(x, n=ncells, circular=circular)))
 
     if ( missing(ylim) ) {
         if ( lines ) {
