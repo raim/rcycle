@@ -34,8 +34,12 @@ get_wavelet <- function(phi, counts, ID, verb=1, ...) {
     
     n <- length(counts)
     n2 <- floor(n/2)
-    counts <- c(counts[(n2+1):n],counts,counts[1:n2])
-    ctme <- c(phi[(n2+1):n]-2*pi, phi, phi[1:n2]+2*pi)
+    counts <- c(counts[(n2+1):n],
+                counts,
+                counts[1:n2])
+    ctme <- c(phi[(n2+1):n]-2*pi,
+              phi,
+              phi[1:n2]+2*pi)
     
     ## remove rare duplicated time points
     dups <- which(duplicated(ctme))
@@ -60,7 +64,37 @@ get_wavelet <- function(phi, counts, ID, verb=1, ...) {
                                          verbose = verb>1,
                                          ...)
     ## RESULT: expanded/filtered  data 
-    list(wlet=clet, data=cbind(ctme, counts))
+    list(wlet=clet, data=data.frame(time=ctme, counts=counts))
+}
+
+## TODO: finish custom plotter
+plot_wavelet <- function(wlet, type = "Power", col, p.min) {
+
+    clet <- wlet$wlet
+    ctme <- wlet$data[,1] # time in radian
+    
+    ## period in fraction of a full cycle
+    period <- clet$Period/(2*pi)
+    ylab <- paste0('cycles')
+    ylim <- log2(c(5e-4,3))
+
+    ## values to plot
+    values <- clet[[type]]
+
+    if ( type%in%c("Power") ) {
+    } else if ( type%in%c("Power.pval","Power.xy.pval") ) {
+
+        ## estimate minimal p-value cutoff from data
+        if ( missing(p.min) )
+            p.min <- min(values[values>0])
+
+    } else if ( type%in%c("Coherence") ) {
+        ## values from 0 to 1
+    }
+
+    ## colorscale
+    
+    
 }
 
 ## Wavelet coherence analysis between two counts vectors along a
@@ -90,4 +124,37 @@ get_coherence <- function(phi, counts, ID1, ID2, verb=0, ...) {
                               n.sim = CNPERM,
                               verb = verb>1)
 
+}
+
+## Morlet wavelet function (via chatGPT)
+#' @param t time vector in sec
+#' @param central frequency in Hz
+morlet_wavelet <- function(t, f0 = 1) {
+
+  pi <- base::pi
+  sigma <- 1 / (2 * pi * f0)  # width of Gaussian envelope
+  norm_factor <- (pi^(-1/4)) / sqrt(sigma)  # normalize for unit energy
+
+  # wavelet: complex sinusoid * Gaussian envelope
+  wavelet <- norm_factor * exp(1i * 2 * pi * f0 * t) * exp(-t^2 / (2 * sigma^2))
+  return(wavelet)
+ }
+
+
+show_morlet <- function(t = seq(-5, 5, length.out = n),
+                        n = 1000, f0 = 1,
+                        xlab = "Time", ylab = "Amplitude",
+                        main = "Morlet Wavelet", legend = TRUE, ...) {
+
+    ## Generate Morlet wavelet
+    w <- morlet_wavelet(t, f0 = f0)
+
+    ## Plot real and imaginary parts
+    plot(t, Re(w), type = "l", col = "blue", ylim = range(c(Re(w), Im(w))),
+         ylab = ylab, xlab = xlab, main = main, ...)
+    lines(t, Im(w), col = "red")
+    lines(t, Mod(w), col = "black", lty = 2)
+    if ( legend )
+        legend("topright", legend = c("Re(ψ)", "Im(ψ)", "|ψ|"),
+               col = c("blue", "red", "black"), lty = c(1, 1, 2))
 }
