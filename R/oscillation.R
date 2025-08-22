@@ -49,12 +49,16 @@ get_wavelet <- function(phi, counts, ID, verb=1, ...) {
         counts <- counts[-dups]
         ctme <- ctme[-dups]
     }
-    
+
+    ## minimal period
+    ##if ( missing(lowerPeriod) )
+    lowerPeriod <- 2*dt
     ## maximal period: take all
+    ##if ( missing(upperPeriod) )
     upperPeriod <- length(counts)*dt
     
     clet <- WaveletComp::analyze.wavelet(data.frame(x=counts), "x",
-                                         lowerPeriod = 2*dt, 
+                                         lowerPeriod = lowerPeriod, 
                                          upperPeriod = upperPeriod, 
                                          dt = dt, 
                                          ##loess.span = LOESS.SPAN,
@@ -126,35 +130,49 @@ get_coherence <- function(phi, counts, ID1, ID2, verb=0, ...) {
 
 }
 
-## Morlet wavelet function (via chatGPT)
+
+#' Morlet wavelet function (via chatGPT)
 #' @param t time vector in sec
 #' @param central frequency in Hz
-morlet_wavelet <- function(t, f0 = 1) {
+morlet_wavelets <- function(t, f0 = 6, s0 = 1, dj = 1/12, j = 0) {
+    
+    ## Convert scale index j to scale value
+    scale <- s0 * 2^(j * dj)
+  
+    ## Morlet parameters
+    pi <- base::pi
+    sigma <- scale / (2 * pi * f0)  # Gaussian width
+    norm_factor <- (pi^(-1/4)) / sqrt(sigma)
+  
+    ## Wavelet
+    wavelet <- norm_factor *
+        exp(1i * 2 * pi * f0 * t / scale) *
+        exp(-t^2 / (2 * sigma^2))
+    
+    return(list(
+        wavelet = wavelet,
+        scale = scale,
+        period = (4 * pi * scale) / (f0 + sqrt(2 + f0^2))
+    ))
+}
 
-  pi <- base::pi
-  sigma <- 1 / (2 * pi * f0)  # width of Gaussian envelope
-  norm_factor <- (pi^(-1/4)) / sqrt(sigma)  # normalize for unit energy
-
-  # wavelet: complex sinusoid * Gaussian envelope
-  wavelet <- norm_factor * exp(1i * 2 * pi * f0 * t) * exp(-t^2 / (2 * sigma^2))
-  return(wavelet)
- }
-
-
-show_morlet <- function(t = seq(-5, 5, length.out = n),
-                        n = 1000, f0 = 1,
+show_morlet <- function(t = seq(-5, 5, length.out = n), n = 1000,
+                        f0 = 6, s0 = 1, dj = 1/12, j = 0,
                         xlab = "Time", ylab = "Amplitude",
                         main = "Morlet Wavelet", legend = TRUE, ...) {
 
     ## Generate Morlet wavelet
-    w <- morlet_wavelet(t, f0 = f0)
+    w <- morlet_wavelets(t=t, f0 = f0, s0 = s0, dj = dj, j = j)
 
     ## Plot real and imaginary parts
-    plot(t, Re(w), type = "l", col = "blue", ylim = range(c(Re(w), Im(w))),
+    plot(t, Re(w$wavelet),
+         type = "l", col = "blue",
+         ylim = range(c(Re(w$wavelet), Im(w$wavelet))),
          ylab = ylab, xlab = xlab, main = main, ...)
-    lines(t, Im(w), col = "red")
-    lines(t, Mod(w), col = "black", lty = 2)
+    lines(t, Im(w$wavelet), col = "red")
+    lines(t, Mod(w$wavelet), col = "black", lty = 2)
     if ( legend )
         legend("topright", legend = c("Re(ψ)", "Im(ψ)", "|ψ|"),
                col = c("blue", "red", "black"), lty = c(1, 1, 2))
+    return(w)
 }
