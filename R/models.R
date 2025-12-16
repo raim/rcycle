@@ -1,7 +1,98 @@
 
 ## MODELS for PERIODIC GENE EXPRESSION
 
-## ODE Models
+## PULSE WAVE GENERATING FUNCTIONS
+
+pwm_simple <-  function(time, tosc, phi, theta = 0) {
+  # Returns integer 0/1 vector: 1 when pulse is on.
+  # theta in radians; tosc period in same time units as time.
+  omega <- 2 * pi / tosc
+  # convert phase shift theta (radians) to time shift
+  t_shifted <- (time - theta / omega) %% tosc
+  as.integer(t_shifted < (phi * tosc))
+}
+
+
+## pulse wave function - direct and very SLOW calculation
+## wikipedia: "Note that, for symmetry, the starting time (t = 0)
+## in this expansion is halfway through the first pulse."
+## TODO: why do we need to scale?
+#' alpha controls the smoothing by exponentially damping higher harmonics; alpha=0: no smoothing; alpha<=0.5: mild smoothing; alpha>0.5: noticable smoothing; alpha>2: towards sinus
+#' 
+#' t <- seq(0,10, length=100)
+#' plot(t, pwf(t=t, tosc=1.5, k=1, phi=.4), type='l', col=2)
+#' lines(t, pwf(t=t, tosc=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
+#'
+pw_fourier <- function(t=0, k, phi, tosc, N=1e4, shift=0, theta=0,
+                       start.on=FALSE, alpha=0) {
+
+    ## shift to start with on phase
+    ## NOTE: to start at on we'd shift in the cos function:
+    ## cos(n*omega*t - n*pi*phi)
+    if ( start.on )
+        t <- t - phi*tosc/2
+ 
+    
+    ## shift time to get phase shift (passed in unit of time!)
+    t <- t - shift
+
+    ## sum expression
+    ## TODO: faster vectorization instead of loop here but we have
+    ## both n and t vectors?
+    omega <- 2*pi/tosc
+    sincos <- 0
+    for ( n in 1:N )  
+        sincos <- sincos +
+            1/n * sin(pi*n*phi) * cos(n*omega*t - n*theta)* exp(-alpha*n)
+    x <- 2/pi * sincos
+    
+    ## shift to 0 and k
+    x <- k*(phi + x) 
+    x
+}
+
+## pulse wave via sawtooth: subtract phase-shifted
+## NOTE: sawtooth starts with off phase, but we can shift time
+## here to ensure it starts with an on phase
+## TODO: different formulation to avoid min/max scaling?
+pw_sawtooth <- function(t=0, k=1, tosc, thoc=.5, alpha=0, shift=0,
+                        start.on=FALSE, start.like.pw=TRUE, scale=TRUE) {
+
+    if ( start.like.pw ) # shift to start like pwf with half pulse!
+        t <- t - thoc/2
+    else if ( start.on ) # shift to start with on phase
+        t <- t + (tosc-thoc)
+        
+    ## shift time to get phase shift (passed in unit of time!)
+    t <- t - shift
+    
+    st <-  atan(pracma::cot(pi* t      /tosc)) 
+    st2 <- atan(pracma::cot(pi*(t+thoc)/tosc))
+
+    ## TODO: implement smoothing of saw tooth function!
+    if ( alpha!=0 ) {
+        stop('smoothing not implemented yet for saw tooth function')
+        sig2 <- (t+thoc)/alpha
+        sig2 <- 1/(1-exp(-sig2))
+        sig1 <- t/alpha
+        sig1 <- 1/(1-exp(-sig1))
+        
+        st2 <- st2*sig2
+        st <- st*sig1
+        ##return(sig)
+    } 
+    
+    x <- 1/pi * (st2 - st)
+    
+    ## scale between 0 and k
+    ## TODO: use different formula to avoid min/max scaling?
+    if ( scale )
+        x <- k*(x-min(x))/(max(x)-min(x)) # x <- k*thoc/tosc + x
+    x
+}
+
+### ODE Models
+
 
 #' ODE of pulse width-modulated transcription.
 #' @export
@@ -87,7 +178,7 @@ rmean <- function(k, gamma, k0, dr, mu, phi, tau,
     if ( model %in% c('k_dr_k0') )
         rmn <- rmn + k0/gamma
 
-    rmn    
+    unname(rmn)
     
 }
 
@@ -140,7 +231,7 @@ ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE, k, k0,
         else ramp <- term*k/gamma
     }
 
-    ramp
+    unname(ramp)
     
 }
 
