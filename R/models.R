@@ -141,11 +141,12 @@ pwmode_k_dr_k0 <- function(time, state, parameters, hocf){
 
 ### ANALYTIC
 
+
 #' Calculate mean abundance from rates and times.
 #'@export
-rmean <- function(k, gamma, k0, dr, mu, phi, tau,
-                  model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
-                  use.coth = TRUE) {
+get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
+                      model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
+                      use.coth = TRUE) {
 
     if ( missing(gamma) )
         gamma <- dr+mu
@@ -183,8 +184,10 @@ rmean <- function(k, gamma, k0, dr, mu, phi, tau,
 }
 
 
-ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE, k, k0,
-                 model = c('k', 'dr', 'k_dr', 'k_dr_k0'), ...) {
+#' Calculate abundance amplitudes from rates and times.
+#'@export
+get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE, k, k0,
+                     model = c('k', 'dr', 'k_dr', 'k_dr_k0'), ...) {
 
     if ( model %in% c('dr', 'k_dr', 'k_dr_k0') ) {
 
@@ -235,6 +238,10 @@ ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE, k, k0,
     
 }
 
+get_rna <- function() {
+
+    ## TODO: wrapper for get_rmean and get_ramp
+}
 
 
 get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),

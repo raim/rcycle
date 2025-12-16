@@ -95,59 +95,59 @@ times <- seq(0,50*tosc, tosc/200)
 pulses <- pwm_simple(time=times, tosc=tosc, phi=thoc/tosc, theta = 0)
 hocf <- approxfun(x = times, y = pulses,
                   method = "constant", rule = 2) # HOC pulse
-outb <- ode(y = c(R=rmean(dr=params['dr'],
-                          k=params['k'],
-                          phi=thoc/tosc,
-                          tau=tosc,
-                          mu=params['mu'], model = 'k_dr')),
-            times = times, func = pwmode_k_dr, 
-            parms = params, hocf = hocf)
-outt <- ode(y = c(R=rmean(dr=params['dr'],
-                          k=params['k'],
-                          phi=thoc/tosc,
-                          tau=tosc,
-                          mu=params['mu'],
-                          model = 'k')),
-            times = times, func = pwmode_k, 
-            parms = params, hocf = hocf)
-outd <- ode(y = c(R=rmean(dr=params['dr'],
-                          k=params['k'],
-                          phi=thoc/tosc,
-                          tau=tosc,
-                          mu=params['mu'],
-                          model = 'dr')),
-            times = times, func = pwmode_dr, 
-            parms = params, hocf = hocf)
-outk0 <- ode(y = c(R=rmean(dr=params['dr'],
-                           k=params['k'],
-                           k0=params['k0'],
-                           phi=thoc/tosc,
-                           tau=tosc,
-                           mu=params['mu'],
-                           model = 'k_dr_k0')),
+out_k_dr <- ode(y = c(R=get_rmean(dr=params['dr'],
+                                  k=params['k'],
+                                  phi=thoc/tosc,
+                                  tau=tosc,
+                                  mu=params['mu'], model = 'k_dr')),
+                times = times, func = pwmode_k_dr, 
+                parms = params, hocf = hocf)
+out_k <- ode(y = c(R=get_rmean(dr=params['dr'],
+                               k=params['k'],
+                               phi=thoc/tosc,
+                               tau=tosc,
+                               mu=params['mu'],
+                               model = 'k')),
+             times = times, func = pwmode_k, 
+             parms = params, hocf = hocf)
+out_dr <- ode(y = c(R=get_rmean(dr=params['dr'],
+                                k=params['k'],
+                                phi=thoc/tosc,
+                                tau=tosc,
+                                mu=params['mu'],
+                                model = 'dr')),
+              times = times, func = pwmode_dr, 
+              parms = params, hocf = hocf)
+out_k0 <- ode(y = c(R=get_rmean(dr=params['dr'],
+                               k=params['k'],
+                               k0=params['k0'],
+                               phi=thoc/tosc,
+                               tau=tosc,
+                               mu=params['mu'],
+                               model = 'k_dr_k0')),
              times = times, func = pwmode_dr, 
              parms = params, hocf = hocf)
 
 pulse <- cbind(time=times, kappa=pulses)
 
 ## cut start for proper norm between R0 and R1
-outt[outt[,1]<10*tosc,2] <- mean(outt[,2])
-outb[outb[,1]<10*tosc,2] <- mean(outb[,2])
-outd[outd[,1]<10*tosc,2] <- mean(outd[,2])
-outk0[outk0[,1]<10*tosc,2] <- mean(outk0[,2])
+out_k[out_k[,1]<10*tosc,2] <- mean(out_k[,2])
+out_k_dr[out_k_dr[,1]<10*tosc,2] <- mean(out_k_dr[,2])
+out_dr[out_dr[,1]<10*tosc,2] <- mean(out_dr[,2])
+out_k0[out_k0[,1]<10*tosc,2] <- mean(out_k0[,2])
 
 
 plotdev(file.path(out.path, 'pwm_cartoon_piecewise'),
         type='pdf', width=3, height=2)
 par(mai=c(.35,.35,.1,.35), mgp=c(1.4,0.3,0), tcl=-.25)
-plot(outt[,1], minmax(outt[,2]),
+plot(out_k[,1], minmax(out_k[,2]),
      xlim=c(45*tosc-.05*tosc,
             46*tosc+.05*tosc),
      type='l', axes=FALSE,
      xlab='', ylab='')
-lines(outb[,1], minmax(outb[,2]), col=2, lty=2)
-lines(outd[,1], minmax(outd[,2]), col=3, lty=3)
-lines(outk0[,1], minmax(outk0[,2]), col=4, lty=4)
+lines(out_k_dr[,1], minmax(out_k_dr[,2]), col=3, lty=2)
+lines(out_dr[,1], minmax(out_dr[,2]), col=2, lty=3)
+lines(out_k0[,1], minmax(out_k0[,2]), col=4, lty=4)
 axis(2, at=0:1, labels=expression(R[0], R[1]), las=2, col=NA)
 axis(4, at=0:1, labels=expression(R[tau], R[1]), las=2, col=NA)
 axis(1, at=45*tosc, labels=0, col=NA) 

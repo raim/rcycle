@@ -32,9 +32,9 @@ models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
 tmns <- matrix(NA, nrow=length(taus), ncol=length(models))
 colnames(tmns) <- models
 for ( mod in models ) {
-    tmns[,mod] <- ramp(gamma=gamma, phi=phi, tau=taus,
-                       k=k, k0=k0, # only required with basal expression!
-                       model = mod, relative=TRUE)
+    tmns[,mod] <- get_ramp(gamma=gamma, phi=phi, tau=taus,
+                           k=k, k0=k0, # only required with basal expression!
+                           model = mod, relative=TRUE)
 }
 
 plotdev(file.path(out.path, 'pwm_ramp_tau'),
@@ -50,9 +50,9 @@ dev.off()
 pmns <- matrix(NA, nrow=length(phis), ncol=length(models))
 colnames(pmns) <- models
 for ( mod in models ) {
-    pmns[,mod] <- ramp(gamma=gamma, phi=phis, tau=tau,
-                       k=k, k0=k0, # only required with basal expression!
-                       model = mod, relative=TRUE)
+    pmns[,mod] <- get_ramp(gamma=gamma, phi=phis, tau=tau,
+                           k=k, k0=k0, # only required with basal expression!
+                           model = mod, relative=TRUE)
 }
 
 plotdev(file.path(out.path, 'pwm_ramp_phi'),

@@ -14,8 +14,8 @@ out.path <- '/home/raim/programs/rcycle/vignettes'
 
 
 ## TODO:
-## * move plots to vignette,
 ## * generate more tests of model results.
+##   currently tests consistency of amplitude and mean calc.
 
 ## average RP parameters (from chemostatData)
 k <- 263.9
@@ -38,12 +38,12 @@ models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
 ## Test equivalence of relative amplitude rampr == ramp/rmean
 for ( mod in models ) {
 
-    ampr <- ramp(gamma=gamma, phi=phis, tau=tau, model = mod, relative=TRUE,
-                 k=k, k0=k0)
-    amp <- ramp(gamma=gamma, phi=phis, tau=tau, model = mod, relative=FALSE,
-                k=k, k0=k0)
-    mn <- rmean(k=k, k0=k0, gamma=gamma, phi=phis, tau=tau, model = mod)
-
+    ampr <- get_ramp(gamma=gamma, phi=phis, tau=tau, model = mod, relative=TRUE,
+                     k=k, k0=k0)
+    amp <- get_ramp(gamma=gamma, phi=phis, tau=tau, model = mod, relative=FALSE,
+                    k=k, k0=k0)
+    mn <- get_rmean(k=k, k0=k0, gamma=gamma, phi=phis, tau=tau, model = mod)
+    
     ## should be equiv.
     ##plot(ampr, amp/mn); abline(a=0, b=1)
 

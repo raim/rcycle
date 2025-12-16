@@ -16,9 +16,9 @@ library(deSolve)
 out.path <- '/home/raim/programs/rcycle/vignettes'
 
 ## TODO:
-## * write proper tests for pulse waves, 
-##   approx. function, and ODE models,
-## * decide on which pulse wave functions to keep, or analyze.
+## * Write proper tests for pulse waves, 
+##   approx. function, and ODE models, numeric vs. analytic, 
+## * Decide on which pulse wave functions to keep, or analyze.
 
 ## average RP parameters (from chemostatData)
 k <- 263.9
