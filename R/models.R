@@ -3,13 +3,13 @@
 
 ## PULSE WAVE GENERATING FUNCTIONS
 
-pwm_simple <-  function(time, tosc, phi, theta = 0) {
+pwm_simple <-  function(time, tau, phi, theta = 0) {
   # Returns integer 0/1 vector: 1 when pulse is on.
-  # theta in radians; tosc period in same time units as time.
-  omega <- 2 * pi / tosc
+  # theta in radians; tau period in same time units as time.
+  omega <- 2 * pi / tau
   # convert phase shift theta (radians) to time shift
-  t_shifted <- (time - theta / omega) %% tosc
-  as.integer(t_shifted < (phi * tosc))
+  t_shifted <- (time - theta / omega) %% tau
+  as.integer(t_shifted < (phi * tau))
 }
 
 
@@ -20,17 +20,17 @@ pwm_simple <-  function(time, tosc, phi, theta = 0) {
 #' alpha controls the smoothing by exponentially damping higher harmonics; alpha=0: no smoothing; alpha<=0.5: mild smoothing; alpha>0.5: noticable smoothing; alpha>2: towards sinus
 #' 
 #' t <- seq(0,10, length=100)
-#' plot(t, pwf(t=t, tosc=1.5, k=1, phi=.4), type='l', col=2)
-#' lines(t, pwf(t=t, tosc=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
+#' plot(t, pwf(t=t, tau=1.5, k=1, phi=.4), type='l', col=2)
+#' lines(t, pwf(t=t, tau=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
 #'
-pw_fourier <- function(t=0, k, phi, tosc, N=1e4, shift=0, theta=0,
+pw_fourier <- function(t=0, k, phi, tau, N=1e4, shift=0, theta=0,
                        start.on=FALSE, alpha=0) {
 
     ## shift to start with on phase
     ## NOTE: to start at on we'd shift in the cos function:
     ## cos(n*omega*t - n*pi*phi)
     if ( start.on )
-        t <- t - phi*tosc/2
+        t <- t - phi*tau/2
  
     
     ## shift time to get phase shift (passed in unit of time!)
@@ -39,7 +39,7 @@ pw_fourier <- function(t=0, k, phi, tosc, N=1e4, shift=0, theta=0,
     ## sum expression
     ## TODO: faster vectorization instead of loop here but we have
     ## both n and t vectors?
-    omega <- 2*pi/tosc
+    omega <- 2*pi/tau
     sincos <- 0
     for ( n in 1:N )  
         sincos <- sincos +
@@ -55,19 +55,19 @@ pw_fourier <- function(t=0, k, phi, tosc, N=1e4, shift=0, theta=0,
 ## NOTE: sawtooth starts with off phase, but we can shift time
 ## here to ensure it starts with an on phase
 ## TODO: different formulation to avoid min/max scaling?
-pw_sawtooth <- function(t=0, k=1, tosc, thoc=.5, alpha=0, shift=0,
+pw_sawtooth <- function(t=0, k=1, tau, thoc=.5, alpha=0, shift=0,
                         start.on=FALSE, start.like.pw=TRUE, scale=TRUE) {
 
     if ( start.like.pw ) # shift to start like pwf with half pulse!
         t <- t - thoc/2
     else if ( start.on ) # shift to start with on phase
-        t <- t + (tosc-thoc)
+        t <- t + (tau-thoc)
         
     ## shift time to get phase shift (passed in unit of time!)
     t <- t - shift
     
-    st <-  atan(pracma::cot(pi* t      /tosc)) 
-    st2 <- atan(pracma::cot(pi*(t+thoc)/tosc))
+    st <-  atan(pracma::cot(pi* t      /tau)) 
+    st2 <- atan(pracma::cot(pi*(t+thoc)/tau))
 
     ## TODO: implement smoothing of saw tooth function!
     if ( alpha!=0 ) {
@@ -87,7 +87,7 @@ pw_sawtooth <- function(t=0, k=1, tosc, thoc=.5, alpha=0, shift=0,
     ## scale between 0 and k
     ## TODO: use different formula to avoid min/max scaling?
     if ( scale )
-        x <- k*(x-min(x))/(max(x)-min(x)) # x <- k*thoc/tosc + x
+        x <- k*(x-min(x))/(max(x)-min(x)) # x <- k*thoc/tau + x
     x
 }
 
@@ -197,7 +197,8 @@ get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE, k, k0,
 
         gt <- gamma*tau
 
-        term2 <- phi/2 * coth(gt*(1-phi)/2)
+        ## TODO: use expm1 version?
+        term2 <- phi/2 * pracma::coth(gt*(1-phi)/2)
 
         term1 <- switch (model,
                          k_dr = 1/gt,
@@ -244,23 +245,165 @@ get_rna <- function() {
 }
 
 
-get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
-                      ramp, rmean, rmin, rmax,
-                      phi=phis, tau=tosc, mu=mu,
-                      lower = 1e-6, upper = 20, ...) {
-
-    
-
-}
 
 get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       k, dr, k0, lower = 1e-6, upper = 20, ...) {
 }
 
+### INTERNAL ROOT FINDING FUNCTIONS
+
+
+
+get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
+                      a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
+                      phi = NA, tau = NA, mu = NA,
+                      k = NA, k0 = NA, gamma = NA, 
+                      lower = 1e-6, upper = 20, tol = 1e-9,
+                      verb = 0, ...) {
+
+    ## relative amplitude is required for all
+    if ( all(is.na(a)) ) a <- A/R
+
+    if ( !model %in% c('k')  ) {
+        
+        ## get transcription rate from abs. amplitude
+        if ( all(is.na(k)) ) {
+            if ( all(is.na(A)) )
+                warning('transcription rate k requires absolute amplitude A')
+            k <- get_transcription(A = A, phi = phi, tau = tau, model = model)
+        }
+        ## only required for k_dr_k0
+        ## get Rmin from Rmax and k
+        if ( is.na(Rmin) & !is.na(Rmax) ) Rmin <- Rmax - k*phi*tau
+    }
+    
+    dr <- unlist(Map(get_degradation,
+                     model = model,
+                     a=a, A=A, R=R, Rmin=Rmin, Rmax=Rmax,
+                     phi = phi, tau = tau, mu = mu,
+                     k = k, 
+                     lower = lower, upper = upper, tol = tol,
+                     verb = verb)   )
+    
+    if ( model %in% c('k') ) {
+
+        gamma <- dr
+        if ( !is.na(mu) ) gamma <- dr + mu
+   
+        k <- get_transcription(R = R, gamma = gamma, phi = phi, model = model)
+
+        if ( length(k)==1 )
+            k <- rep(k, length(dr))
+    }
+
+    ## add k0
+    
+    res <- cbind(k=k, dr=dr)
+    rownames(res) <- NULL
+    res
+}
+
+#' Calculate transcription rate from average abundance and degradation rates.
+#' from base equation for average abundance
+#' TODO: map fluorescence to a rough transcript/cell number
+#' @param R average abundance
+#' @param A absolute amplitude, for biphasic models
+get_transcription <- function(R = NA, A = NA, phi = NA,
+                              dr = NA, mu = NA, gamma = NA, tau = NA,
+                              model = c('k', 'dr','k_dr', 'k_dr_k0')) {
+
+    if ( model %in% c('k') ) {
+        if ( !is.na(dr) & !is.na(mu) )
+            gamma <- mu+dr
+        k <- R*gamma/phi
+    } else 
+        k <- A/(phi*tau)
+    
+    k
+}
+
+get_basal <- function(k, gamma, tau, phi, Rmin, Rmax, verb = 1) {
+
+    ##beta <- exp(gamma*tau*(1-phi))
+    betam1 <- expm1(gamma*tau*(1-phi)) 
+    
+    if ( !missing(Rmin) ) 
+        k0min <- k0 <- (Rmin - k*phi*tau/betam1)*gamma
+    if ( !missing(Rmax) ) 
+        k0max <- k0 <- (Rmax - k*phi*tau*(1 + 1/betam1))*gamma
+    if ( exists('k0min', mode = 'numeric') &
+         exists('k0max', mode = 'numeric') ) {
+        if ( verb>0 ) cat(paste('mean of rmin- and rmax-based basal rates\n'))
+        k0 <- (k0min+k0max)/2    
+    }
+    k0
+}
+
+
+#' Fit a transcript degradation rate from relative amplitude and
+#' oscillation parameters, using the \code{\link[stats]{uniroot}}  function
+#'
+#' @param a relative abundance amplitude (max(x)-min(x)/mean(x)).
+#' @param R mean abundance, required for model with basal transcription.
+#' @param Rmin minimal abundance, required for model with basal transcription.
+#' @param k transcription rate, required for model with basal transcription.
+#' @param phi duty cycle.
+#' @param tau period.
+#' @param mu growth rate, used only for correction (gamma=growth+degradation).
+#' @param lower the lower end point of the interval to be  searched by \code{\link[stats]{uniroot}}.
+#' @param upper the upper end point of the interval to be  searched by \code{\link[stats]{uniroot}}.
+#' @param model 
+#' @param tol error tolerance of the \code{\link[stats]{uniroot}}  call.
+#' @param ... further parameters to \code{\link[stats]{uniroot}} 
+get_degradation <- function(a,  R, Rmin, Rmax, k,
+                            phi, tau, mu,
+                            model, ## must exist as root finding function
+                            lower = 1e-6, upper = 1e4, tol = 1e-9,
+                            verb = 0, ...) {
+
+    
+
+    
+    ## get model-specific function for root-finding,
+    ## each returns x = gamma * tau
+    rootf <- get(paste0('root_', model), mode = 'function')
+    
+
+    ## Solve f(x) = 0 for x in a reasonable range
+    solution <- try(stats::uniroot(rootf, a=a, phi=phi, R=R, Rmin=Rmin,
+                                   lower = lower, upper = upper, tol = tol),
+                    silent = verb==0)
+    if ( class(solution)=="try-error" ) {
+        if ( verb>0 )
+            cat(paste0('Model <', model, '> failed with:',
+                       '\n\ta=', a,
+                       '\n\tR=', R,
+                       '\n\tRmin=', Rmin,
+                       '\n\tRmax=', Rmax,
+                       '\n\tk=', k,
+                       '\n\tphi=', phi,
+                       '\n\ttau=', tau,
+                       '\n\tmu=',  mu, '\n'))
+        return(NA)
+    }
+        
+    ## Recover gamma from x = gamma * tau
+    x_sol <- solution$root
+    gamma <- x_sol / tau
+
+    ## correct for growth
+    ## gamma = degradation + growth
+    if ( !missing(mu) )
+        gamma <- gamma - mu
+
+    gamma
+}
+
+## ROOT FINDING FUNCTIONS USED IN get_degradation
 
 ## transcription with const. degradation,
-## where x = gamma * tosc
-root_k <- function(x) {
+## where x = gamma * tau
+root_k <- function(x, a, phi, R = NA, Rmin = NA) {
     lhs <- a * phi
     ##term1 <- (1 - exp(-phi * x)) / (1 - exp(-x))
     ##term2 <- (1 - exp(x * (phi - 1)))
@@ -269,40 +412,69 @@ root_k <- function(x) {
     rhs <- term1 * term2
     return(lhs - rhs)
 }
+    
+
 
 ## anti-phasic transcription/degradation,
-## where x = gamma * tosc
-root_k_dr <- function(x) {
-
+## where x = gamma * tau
+root_k_dr_coth <- function(x, a, phi, R = NA, Rmin = NA) {
+    
     lhs <- 1/a
-    ##term1 <- phi/(exp(x * (1-phi))-1)
+    term1 <- 1/x
+    term2 <- phi/2 * pracma::coth((x-x*phi)/2)
+    rhs <- term1+term2
+    return(lhs - rhs)
+}
+root_k_dr <- function(x, a, phi, R = NA, Rmin = NA) {
+        
+    lhs <- 1/a
     term1 <- phi/expm1(x * (1-phi)) # = exp() + 1, where 1 cancels below
-        term2 <- phi/2
+    term2 <- phi/2
     term3 <- 1/x
     rhs <- term1 + term2 + term3
     return(lhs - rhs)
 }
 
-## anti-phasic transcription/degradation and basal transcription
-## where x = gamma * tosc
-root_k_dr_k0 <- function(x) {
-
-    ## requires mean(R), min(R), and either amplitde a or
-    ## transcription rate k
+## degradation pulse
+## where x = gamma * tau
+root_dr <- function(x, a, phi, R = NA, Rmin = NA) {
     
-    lhs <- R - Rmin
-
-    betam1 <- expm1(x*(1-phi)) # exp() +1
-    
-    term1 <- (phi-1) /betam1 
-    term2 <- phi/2
-    term3 <- 1/x 
-    
-    rhs <- phi*k*tosc*(term1 + term2 + term3)
+    lhs <- 1/a
+    term1 <- (1-1/phi)/x
+    term2 <- phi/2 * pracma::coth((x-x*phi)/2)
+    rhs <- term1+term2
 
     return(lhs - rhs)
 }
 
+
+## anti-phasic transcription/degradation and basal transcription
+## where x = gamma * tau
+root_k_dr_k0_coth <- function(x, a, phi, R, Rmin) {
+
+    A <- a*R
+    lhs <- (R - Rmin)/A
+
+    term1 <- 1/x
+    term2 <- 1/expm1(x*(phi-1))
+    term3 <- phi/2 * pracma::coth((x-x*phi)/2)
+    rhs <- term1 - term2 + term3
+    return(lhs - rhs)
+}
+root_k_dr_k0 <- function(x, a, phi, R, Rmin) {
+    
+    lhs <- R - Rmin
+    betam1 <- expm1(x*(1-phi)) # exp() +1
+    term1 <- (phi-1) /betam1 
+    term2 <- phi/2
+    term3 <- 1/x 
+    rhs <- a*R*(term1 + term2 + term3)
+    ##rhs <- phi*k*tau*(term1 + term2 + term3)
+    return(lhs - rhs)
+}
+
+
+### ANALYTIC MODEL
 
 #' PWM of transcription, analytic solution.
 #'
@@ -316,7 +488,7 @@ root_k_dr_k0 <- function(x) {
 #' @param dr RNA degradation rate, required if gamma is missing.
 #' @param mu Growth/dilution rate, required if gamma is missing.
 #' @param phi Duty cycle (fraction of period ON, between 0 and 1).
-#' @param tosc Oscillation period.
+#' @param tau Oscillation period.
 #' @param k0 Basal transcription rate (default 0).
 #' @param alpha Fourier damping factor (default 0).
 #' @param theta Phase shift in radians (default 0).
@@ -333,7 +505,7 @@ root_k_dr_k0 <- function(x) {
 #'   - `P`: protein abundance (if protein params given)
 #'@export
 pwm_k <- function(t, R0, k, gamma, dr,  mu, k0=0, 
-                  phi, tosc,
+                  phi, tau,
                   alpha=0, shift=0, theta=0, N=5e2,
                   P0, dp, ell, rho) {
 
@@ -352,7 +524,7 @@ pwm_k <- function(t, R0, k, gamma, dr,  mu, k0=0,
         gamma <- mu+dr
 
     ## angular frequency
-    omega <- 2*pi/tosc
+    omega <- 2*pi/tau
 
     ## exponential decay term
     EGT <- exp(-gamma*t)
@@ -441,11 +613,16 @@ pwm_k <- function(t, R0, k, gamma, dr,  mu, k0=0,
     rt
 }
 
+### SOME PLOT UTILS
+
 ## plot labels
 ## TODO: get axis/unit functions used for stan model script
 axis_labels <- c(rmean=expression('\u27E8'*R*'\u27E9'/(n/cell)),
                  ramp=expression(tilde(R)),
                  rampr=expression(tilde(r)),
-                 r=expression(R(t)),
+                 r=expression(R(t)/(n/cell)),
                  phi=expression(duty~cycle~phi),
-                 tau=expression(period~tau))
+                 tau=expression(period~tau/h),
+                 k=expression(k/(n/h)),
+                 dr=expression(delta[R]/h^-1),
+                 gamma=expression(gamma/h^-1))

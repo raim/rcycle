@@ -95,6 +95,25 @@ times <- seq(0,50*tosc, tosc/200)
 pulses <- pwm_simple(time=times, tosc=tosc, phi=thoc/tosc, theta = 0)
 hocf <- approxfun(x = times, y = pulses,
                   method = "constant", rule = 2) # HOC pulse
+
+models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
+outl <- list()
+for ( mod in models ) {
+
+    state <- c(R=get_rmean(dr=params['dr'],
+                           k=params['k'],
+                           k0=params['k0'],
+                           phi=thoc/tosc,
+                           tau=tosc,
+                           mu=params['mu'], model = mod))
+    outl[[mod]] <- ode(y = state,
+                       times = times,
+                       func = get(paste0('pwmode_', mod), mode = 'function'),
+                       parms = params, hocf = hocf)
+}
+outl <- lapply(outl, function(x)  {
+    x[x[,1]<10*tosc, 2] <- mean(x[,2]); x})
+
 out_k_dr <- ode(y = c(R=get_rmean(dr=params['dr'],
                                   k=params['k'],
                                   phi=thoc/tosc,
@@ -140,14 +159,16 @@ out_k0[out_k0[,1]<10*tosc,2] <- mean(out_k0[,2])
 plotdev(file.path(out.path, 'pwm_cartoon_piecewise'),
         type='pdf', width=3, height=2)
 par(mai=c(.35,.35,.1,.35), mgp=c(1.4,0.3,0), tcl=-.25)
-plot(out_k[,1], minmax(out_k[,2]),
+plot(0, ylim=c(0,1), col=NA,
      xlim=c(45*tosc-.05*tosc,
             46*tosc+.05*tosc),
      type='l', axes=FALSE,
      xlab='', ylab='')
-lines(out_k_dr[,1], minmax(out_k_dr[,2]), col=3, lty=2)
-lines(out_dr[,1], minmax(out_dr[,2]), col=2, lty=3)
-lines(out_k0[,1], minmax(out_k0[,2]), col=4, lty=4)
+for ( i in seq_along(models) ) {
+
+    dat <- outl[[models[i]]]
+    lines(dat[,1], minmax(dat[,2]), col=i, lty=i)
+}
 axis(2, at=0:1, labels=expression(R[0], R[1]), las=2, col=NA)
 axis(4, at=0:1, labels=expression(R[tau], R[1]), las=2, col=NA)
 axis(1, at=45*tosc, labels=0, col=NA) 
@@ -156,12 +177,12 @@ axis(1, at=46*tosc, labels=expression(tau), col=NA)
 abline(h=0:1, lty=3, col=8)
 abline(v=seq(0:100)*tosc, lty=3, col=8)
 abline(v=seq(0:100)*tosc+thoc, lty=3, col=8)
-                                        #lines(pulse, col='gray')
+
 arrows(y0=0, x0=45*tosc, x1=45*tosc+thoc,
        code=3, length=.1, col=8, lwd=1.5)
 arrows(y0=0, x0=45*tosc+thoc, x1=46*tosc,
        code=3, length=.1, col=8, lwd=1.5)
-if (FALSE )
-    legend('topright', legend=c('const. deg.',
-                                'anti-phasic deg.'), col=1:2, lty=1:2)
+legend(x=45*tosc+1.1*thoc, y=1, names(outl),
+       col=1:length(outl), lty=1:length(outl), bg='#ffffff77', box.col=NA,
+       seg.len=.75, y.intersp=.75, inset=c(-.25,0), xpd=TRUE)         
 dev.off()
