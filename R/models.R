@@ -210,7 +210,7 @@ get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE, k, k0,
         if ( missing(k0) ) k0 <- NA
 
         if ( !relative ) {
-            rmean <- rmean(
+            rmean <- get_rmean(
                 k = k,
                 gamma = gamma,
                 phi = phi,

@@ -8,7 +8,7 @@ pw_fourier(
   t = 0,
   k,
   phi,
-  tosc,
+  tau,
   N = 10000,
   shift = 0,
   theta = 0,
@@ -18,6 +18,6 @@ pw_fourier(
 }
 \description{
 t <- seq(0,10, length=100)
-plot(t, pwf(t=t, tosc=1.5, k=1, phi=.4), type='l', col=2)
-lines(t, pwf(t=t, tosc=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
+plot(t, pwf(t=t, tau=1.5, k=1, phi=.4), type='l', col=2)
+lines(t, pwf(t=t, tau=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
 }

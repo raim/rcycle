@@ -13,7 +13,7 @@ pwm_k(
   mu,
   k0 = 0,
   phi,
-  tosc,
+  tau,
   alpha = 0,
   shift = 0,
   theta = 0,
@@ -41,7 +41,7 @@ pwm_k(
 
 \item{phi}{Duty cycle (fraction of period ON, between 0 and 1).}
 
-\item{tosc}{Oscillation period.}
+\item{tau}{Oscillation period.}
 
 \item{alpha}{Fourier damping factor (default 0).}
 

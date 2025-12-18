@@ -1,11 +1,7 @@
 #!/usr/bin/Rscript --vanilla
 
 library(rcycle)
-library(unittest, quietly = TRUE)
-
-if ( !interactive() )
-    options(warn=2, error = function() {
-        sink(stderr()) ; traceback(3) ; q(status = 1) })
+library(testthat)
 
 
 #. temp requirements

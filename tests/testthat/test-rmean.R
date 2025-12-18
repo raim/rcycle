@@ -1,11 +1,8 @@
 #!/usr/bin/Rscript --vanilla
 
 library(rcycle)
-library(unittest, quietly = TRUE)
+library(testthat)
 
-if ( !interactive() )
-    options(warn=2, error = function() {
-        sink(stderr()) ; traceback(3) ; q(status = 1) })
 
 #. temp requirements
 library(segmenTools)
@@ -40,8 +37,11 @@ phis <- 0:100/100
 
 models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
 for ( mod in models ) {
-    ok(ut_cmp_equal(get_rmean(k=k, k0=k0, dr=dr, mu=mu, phi=.5, tau=taus,
-                              model = mod, use.coth = TRUE),
-                    get_rmean(k=k, k0=k0, dr=dr, mu=mu, phi=.5, tau=taus,
-                              model = mod, use.coth = FALSE)), "two numbers")
+    test_that("coth and emp1m based rmean implementations agree", {
+        x <- get_rmean(k=k, k0=k0, dr=dr, mu=mu, phi=.5, tau=taus,
+                       model = mod, use.coth = TRUE)
+        y <- get_rmean(k=k, k0=k0, dr=dr, mu=mu, phi=.5, tau=taus,
+                              model = mod, use.coth = FALSE)
+        expect_equal(x, y, tolerance = 1e-10)
+    })
 }
