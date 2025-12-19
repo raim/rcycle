@@ -254,19 +254,27 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
 
     if ( all(is.na(gamma)) )
         gamma <- dr+mu
+
+    if ( all(is.na(A)) )
+        A <- a*R
     
     ## model k:
     ## 1.) get phi from R/(k/gamma)
     ## 2.) get tau from relative amplitude via uniroot
+    phi <- NA
     if ( model %in% c('k') )
         phi <- R*gamma/k
 
     ## NOTE: using Map allows vectorization of input
     tau <- unlist(Map(get_tau,
                       model = model,
-                      a = a, gamma = gamma,  phi = phi, 
+                      a = a, gamma = gamma,  phi = phi,
+                      A = A, k = k,
                       lower = lower, upper = upper, tol = tol,
                       verb = verb))
+
+    if ( model %in% c('k_dr') )
+        phi <- A/(k*tau)
 
     if ( length(phi)==1 )
         phi <- rep(phi, length(tau))
@@ -284,15 +292,20 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     ## fit ton=phi*tau and untangel via absolute amplitude
 }
 
-get_tau <- function(a, gamma, phi,
+get_tau <- function(a, gamma, phi, A, k,
                     model, ## must exist as root finding function
                     lower = 1e-6, upper = 1e4, tol = 1e-9,
                     verb = 0, ...) {
 
     ## Solve f(x) = 0 for x in a reasonable range
     ## where x = gamma*tau
-    rootf <- root_tau_k
-    solution <- try(stats::uniroot(rootf, a = a, gamma = gamma, phi = phi, 
+    
+    ## get model-specific function for root-finding,
+    ## each returns x = gamma * tau
+    rootf <- get(paste0('root_tau_', model), mode = 'function')
+
+    solution <- try(stats::uniroot(rootf, a = a, gamma = gamma, phi = phi,
+                                   A = A, k = k,
                                    lower = lower, upper = upper, tol = tol),
                     silent = verb==0)
 
@@ -302,6 +315,8 @@ get_tau <- function(a, gamma, phi,
                        '\n\ta=', a,
                        '\n\tgamma=', gamma,
                        '\n\tphi=', phi,
+                       '\n\tA=', A,
+                       '\n\tk=', k,
                        '\n'))
         return(NA)
     }
@@ -311,12 +326,11 @@ get_tau <- function(a, gamma, phi,
 }
 
 ## where x=tau
-root_tau_k <- function(x, a, gamma, phi) {
-
-    lhs <- a * phi
+root_tau_k <- function(x, a, gamma, phi, A = NA, k = NA) {
 
     GT <- gamma*x
 
+    lhs <- a * phi
     term1 <- (- expm1(-phi * GT)) / (- expm1(- GT))
     term2 <- ( - expm1(GT * (phi - 1)))
     rhs <- term1 * term2
@@ -324,11 +338,18 @@ root_tau_k <- function(x, a, gamma, phi) {
 }
 
 
-## where x = phi*tau
-root_tau_dr <- function(x, A, a) {
+## where x=tau
+root_tau_k_dr <- function(x, a, gamma, phi = NA, A, k) {
 
-    ## x=phi*tau
-    ## A = k*x
+    GT <- gamma*x
+    phi <- A/(k*x)
+
+    lhs <- 1/a
+    term1 <- phi/expm1(GT * (1-phi)) 
+    term2 <- phi/2
+    term3 <- 1/GT
+    rhs <- term1 + term2 + term3
+    return(lhs - rhs)
 }
 
 get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
@@ -517,7 +538,7 @@ root_k_dr_coth <- function(x, a, phi, R = NA, Rmin = NA) {
 root_k_dr <- function(x, a, phi, R = NA, Rmin = NA) {
         
     lhs <- 1/a
-    term1 <- phi/expm1(x * (1-phi)) # = exp() + 1, where 1 cancels below
+    term1 <- phi/expm1(x * (1-phi)) 
     term2 <- phi/2
     term3 <- 1/x
     rhs <- term1 + term2 + term3
