@@ -247,12 +247,89 @@ get_rna <- function() {
 
 
 get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
-                      k, dr, k0, lower = 1e-6, upper = 20, ...) {
+                      a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
+                      k = NA, gamma = NA, dr = NA, mu = NA, k0 = NA, 
+                      lower = 1e-6, upper = 100, tol = 1e-9,
+                      verb = 0, ...) {
+
+    if ( all(is.na(gamma)) )
+        gamma <- dr+mu
+    
+    ## model k:
+    ## 1.) get phi from R/(k/gamma)
+    ## 2.) get tau from relative amplitude via uniroot
+    if ( model %in% c('k') )
+        phi <- R*gamma/k
+
+    ## NOTE: using Map allows vectorization of input
+    tau <- unlist(Map(get_tau,
+                      model = model,
+                      a = a, gamma = gamma,  phi = phi, 
+                      lower = lower, upper = upper, tol = tol,
+                      verb = verb))
+
+    if ( length(phi)==1 )
+        phi <- rep(phi, length(tau))
+
+    if ( all(is.na(phi)) )
+        warning('no duty cycles calculated')
+    if ( all(is.na(tau)) )
+        warning('no periods calculated')
+    
+    res <- cbind.data.frame(phi=phi, tau=tau)
+    rownames(res) <- NULL
+    res
+
+    ## models dr:
+    ## fit ton=phi*tau and untangel via absolute amplitude
 }
 
-### INTERNAL ROOT FINDING FUNCTIONS
+get_tau <- function(a, gamma, phi,
+                    model, ## must exist as root finding function
+                    lower = 1e-6, upper = 1e4, tol = 1e-9,
+                    verb = 0, ...) {
+
+    ## Solve f(x) = 0 for x in a reasonable range
+    ## where x = gamma*tau
+    rootf <- root_tau_k
+    solution <- try(stats::uniroot(rootf, a = a, gamma = gamma, phi = phi, 
+                                   lower = lower, upper = upper, tol = tol),
+                    silent = verb==0)
+
+    if ( class(solution)=="try-error" ) {
+        if ( verb>0 )
+            cat(paste0('Model <', model, '> failed with:',
+                       '\n\ta=', a,
+                       '\n\tgamma=', gamma,
+                       '\n\tphi=', phi,
+                       '\n'))
+        return(NA)
+    }
+        
+    ## return tau
+    solution$root
+}
+
+## where x=tau
+root_tau_k <- function(x, a, gamma, phi) {
+
+    lhs <- a * phi
+
+    GT <- gamma*x
+
+    term1 <- (- expm1(-phi * GT)) / (- expm1(- GT))
+    term2 <- ( - expm1(GT * (phi - 1)))
+    rhs <- term1 * term2
+    return(lhs - rhs)
+}
 
 
+## where x = phi*tau
+root_tau_dr <- function(x, A, a) {
+
+    ## x=phi*tau
+    ## A = k*x
+}
 
 get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
@@ -261,29 +338,36 @@ get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       lower = 1e-6, upper = 20, tol = 1e-9,
                       verb = 0, ...) {
 
-    ## relative amplitude is required for all
+    ## REQUIRED:
+    ## * period tau and duty cycle phi,
+    ## * relative amplitude a and mean abundance R,
+    ## * additionally, the model with basal transcription requires
+    ##   Rmin or Rmax
+    
+    ## generate required values
     if ( all(is.na(a)) ) a <- A/R
 
     if ( !model %in% c('k')  ) {
         
         ## get transcription rate from abs. amplitude
         if ( all(is.na(k)) ) {
-            if ( all(is.na(A)) )
+            if ( all(is.na(a*R)) ) 
                 warning('transcription rate k requires absolute amplitude A')
-            k <- get_transcription(A = A, phi = phi, tau = tau, model = model)
+            
+            k <- get_transcription(A = a*R, phi = phi, tau = tau, model = model)
         }
         ## only required for k_dr_k0
         ## get Rmin from Rmax and k
-        if ( is.na(Rmin) & !is.na(Rmax) ) Rmin <- Rmax - k*phi*tau
+        if ( all(is.na(Rmin)) & !any(is.na(Rmax)) ) Rmin <- Rmax - k*phi*tau
     }
-    
+
+    ## NOTE: using Map allows vectorization of input
     dr <- unlist(Map(get_degradation,
                      model = model,
-                     a=a, A=A, R=R, Rmin=Rmin, Rmax=Rmax,
+                     a=a, R=R, Rmin=Rmin, 
                      phi = phi, tau = tau, mu = mu,
-                     k = k, 
                      lower = lower, upper = upper, tol = tol,
-                     verb = verb)   )
+                     verb = verb))
     
     if ( model %in% c('k') ) {
 
@@ -296,9 +380,15 @@ get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
             k <- rep(k, length(dr))
     }
 
-    ## add k0
+    ## TODO: add k0
+
     
-    res <- cbind(k=k, dr=dr)
+    if ( all(is.na(k)) )
+        warning('no transcription rates calculated')
+    if ( all(is.na(dr)) )
+        warning('no degradation rates calculated')
+    
+    res <- cbind.data.frame(k=k, dr=dr)
     rownames(res) <- NULL
     res
 }
@@ -355,7 +445,7 @@ get_basal <- function(k, gamma, tau, phi, Rmin, Rmax, verb = 1) {
 #' @param model 
 #' @param tol error tolerance of the \code{\link[stats]{uniroot}}  call.
 #' @param ... further parameters to \code{\link[stats]{uniroot}} 
-get_degradation <- function(a,  R, Rmin, Rmax, k,
+get_degradation <- function(a,  R, Rmin, 
                             phi, tau, mu,
                             model, ## must exist as root finding function
                             lower = 1e-6, upper = 1e4, tol = 1e-9,
@@ -370,6 +460,7 @@ get_degradation <- function(a,  R, Rmin, Rmax, k,
     
 
     ## Solve f(x) = 0 for x in a reasonable range
+    ## where x = gamma*tau
     solution <- try(stats::uniroot(rootf, a=a, phi=phi, R=R, Rmin=Rmin,
                                    lower = lower, upper = upper, tol = tol),
                     silent = verb==0)
@@ -379,8 +470,6 @@ get_degradation <- function(a,  R, Rmin, Rmax, k,
                        '\n\ta=', a,
                        '\n\tR=', R,
                        '\n\tRmin=', Rmin,
-                       '\n\tRmax=', Rmax,
-                       '\n\tk=', k,
                        '\n\tphi=', phi,
                        '\n\ttau=', tau,
                        '\n\tmu=',  mu, '\n'))
@@ -388,8 +477,8 @@ get_degradation <- function(a,  R, Rmin, Rmax, k,
     }
         
     ## Recover gamma from x = gamma * tau
-    x_sol <- solution$root
-    gamma <- x_sol / tau
+    GT <- solution$root
+    gamma <- GT / tau
 
     ## correct for growth
     ## gamma = degradation + growth
