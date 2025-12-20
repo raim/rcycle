@@ -9,8 +9,6 @@ get_degradation(
   a,
   R,
   Rmin,
-  Rmax,
-  k,
   phi,
   tau,
   mu,
@@ -29,8 +27,6 @@ get_degradation(
 
 \item{Rmin}{minimal abundance, required for model with basal transcription.}
 
-\item{k}{transcription rate, required for model with basal transcription.}
-
 \item{phi}{duty cycle.}
 
 \item{tau}{period.}
@@ -46,6 +42,8 @@ get_degradation(
 \item{tol}{error tolerance of the \code{\link[stats]{uniroot}}  call.}
 
 \item{...}{further parameters to \code{\link[stats]{uniroot}}}
+
+\item{k}{transcription rate, required for model with basal transcription.}
 }
 \description{
 Fit a transcript degradation rate from relative amplitude and
