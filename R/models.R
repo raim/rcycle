@@ -304,25 +304,32 @@ get_tau <- function(a, gamma, phi, A, k,
     ## each returns x = gamma * tau
     rootf <- get(paste0('root_tau_', model), mode = 'function')
 
-    solution <- try(stats::uniroot(rootf, a = a, gamma = gamma, phi = phi,
-                                   A = A, k = k,
-                                   lower = lower, upper = upper, tol = tol),
+    ## TODO: find better solution or test whether taking the
+    ## the highest root is always appropriate. 
+    solution <- try(rootSolve::uniroot.all(rootf,
+                                           a = a, gamma = gamma, phi = phi,
+                                           A = A, k = k,
+                                           lower = lower, upper = upper,
+                                           tol = tol),
                     silent = verb==0)
 
     if ( class(solution)=="try-error" ) {
         if ( verb>0 )
             cat(paste0('Model <', model, '> failed with:',
                        '\n\ta=', a,
-                       '\n\tgamma=', gamma,
-                       '\n\tphi=', phi,
-                       '\n\tA=', A,
-                       '\n\tk=', k,
-                       '\n'))
+                       ';\n\tgamma=', gamma,
+                       ';\n\tphi=', phi,
+                       ';\n\tA=', A,
+                       ';\n\tk=', k,
+                       ';\n'))
         return(NA)
     }
+    if ( verb>0 ) 
+        cat(paste0('taking max of ', length(solution), ' roots\n'))
+    
         
     ## return tau
-    solution$root
+    max(solution)
 }
 
 ## where x=tau
