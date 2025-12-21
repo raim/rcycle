@@ -7,6 +7,7 @@ source('/home/raim/programs/rcycle/R/models.R')
 ## Testin root finding functions
 
 ## TODO:
+## * write unit tests,
 ## * understand all root finding functions, and find
 ##   best solution, ideally just stats::uniroot,
 ##   or informed selection from uniroot.all.
