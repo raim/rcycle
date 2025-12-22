@@ -265,6 +265,7 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     if ( model %in% c('k') )
         phi <- R*gamma/k
 
+
     ## NOTE: using Map allows vectorization of input
     tau <- unlist(Map(get_tau,
                       model = model,
@@ -272,7 +273,7 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       A = A, k = k,
                       lower = lower, upper = upper, tol = tol,
                       verb = verb))
-
+    
     if ( model %in% c('k_dr') )
         phi <- A/(k*tau)
 
@@ -312,8 +313,14 @@ get_tau <- function(a, gamma, phi, A, k,
                                            lower = lower, upper = upper,
                                            tol = tol),
                     silent = verb==0)
-
-    if ( class(solution)=="try-error" ) {
+    if ( FALSE ) {
+        solution <- try(stats::uniroot(rootf, a = a, gamma = gamma, phi = phi,
+                                       A = A, k = k,
+                                       lower = lower, upper = upper, tol = tol),
+                        silent = verb==0)
+    }
+    
+    if ( class(solution)=="try-error" | length(solution)==0 ) {
         if ( verb>0 )
             cat(paste0('Model <', model, '> failed with:',
                        '\n\ta=', a,
@@ -324,12 +331,15 @@ get_tau <- function(a, gamma, phi, A, k,
                        ';\n'))
         return(NA)
     }
-    if ( verb>0 ) 
-        cat(paste0('taking max of ', length(solution), ' roots\n'))
     
-        
+
     ## return tau
-    max(solution)
+    if ( length(solution)>1 ) {
+        if ( verb>0 ) 
+            cat(paste0('taking max of ', length(solution), ' roots\n'))
+        solution <- max(solution)
+    }
+    solution
 }
 
 ## where x=tau
