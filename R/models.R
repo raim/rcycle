@@ -750,6 +750,7 @@ axis_labels <- c(rmean=expression('\u27E8'*R*'\u27E9'/(n/cell)),
                  r=expression(R(t)/(n/cell)),
                  phi=expression(duty~cycle~phi),
                  tau=expression(period~tau/h),
+                 mu=expression(growth~rate~mu/h^-1),
                  k=expression(k/(n/h)),
                  dr=expression(delta[R]/h^-1),
                  gamma=expression(gamma/h^-1))
