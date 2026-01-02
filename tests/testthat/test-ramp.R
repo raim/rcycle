@@ -35,12 +35,19 @@ models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
 for ( mod in models ) {
 
     test_that("relative and absolute amplitudes agree", {
+        ampr_f <- get_ramp(gamma=gamma, phi=phis,
+                           tau=tau, model = mod, relative = TRUE,
+                           k=k, k0=k0, force.relative = TRUE)
+        amp_f <- get_ramp(gamma=gamma, phi=phis,
+                          tau=tau, model = mod, relative = FALSE,
+                          k=k, k0=k0, force.relative = TRUE)
+
         ampr <- get_ramp(gamma=gamma, phi=phis,
-                         tau=tau, model = mod, relative=TRUE,
-                         k=k, k0=k0)
+                         tau=tau, model = mod, relative = TRUE,
+                         k=k, k0=k0, force.relative = FALSE)
         amp <- get_ramp(gamma=gamma, phi=phis,
-                        tau=tau, model = mod, relative=FALSE,
-                        k=k, k0=k0)
+                        tau=tau, model = mod, relative = FALSE,
+                        k=k, k0=k0, force.relative = FALSE)
         mn <- get_rmean(k=k, k0=k0, gamma=gamma, phi=phis, tau=tau, model = mod)
     
         ## should be equiv.
@@ -52,5 +59,23 @@ for ( mod in models ) {
         ## TODO: test expected number of NA
         ##sum(!nan)
         expect_equal(ampr[nan], ampm[nan], tolerance = 1e-10)
+
+        ## TODO: fix and test force.relative=TRUE
+        ## * model k_dr correct except for differnt NAs,
+        ##      amp_f is NA for phi=11
+        ## * mode dr and k_dr_k0: different results for ampr==ampm vs ampr_f
+        ##   and amp vs. amp_f
+        if ( FALSE ) {
+            nan <- !is.na(ampr)
+            expect_equal(ampr[nan], ampr_f[nan], tolerance = 1e-10)
+            nan <- !is.na(amp_f)
+            expect_equal(amp[nan], amp_f[nan], tolerance = 1e-10)
+            plot(ampm, ampr)
+            abline(a=0, b=1)
+            plot(ampr, ampr_f)
+            abline(a=0, b=1)
+            plot(amp, amp_f)
+            abline(a=0, b=1)
+        }
     })
 }

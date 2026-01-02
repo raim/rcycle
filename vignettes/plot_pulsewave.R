@@ -40,10 +40,10 @@ for ( i in seq_along(phocs) ) {
     ploc <- 1 - phoc
     
     hocon <- as.numeric(pw_fourier(t=stime, k=1,
-                                   phi=phoc, tosc=tosc, theta=0*pi,
+                                   phi=phoc, tau=tosc, theta=0*pi,
                                    N=1e3)>.5)
     locon <- as.numeric(pw_fourier(t=stime, k=1,
-                                   phi=ploc, tosc=tosc, theta=pi,
+                                   phi=ploc, tau=tosc, theta=pi,
                                    N=1e3)>.5)
     
     lines(stime, .8*hocon+i-1, type='l', col=2)
@@ -79,7 +79,7 @@ mu <- .1
 
 ## NOTE: parameters for average RP from pwmavg.R/pwmode.R
 params <- c(k=263.9,
-            k0=10,
+            k0=100,
             dr=1.7,
             nb=3,
             dp=0.069,
@@ -87,11 +87,11 @@ params <- c(k=263.9,
             mu=mu)
 times <- seq(0,50*tosc, tosc/200)
 ## start pulse at time 0
-pulses <- pwm_simple(time=times, tosc=tosc, phi=thoc/tosc, theta = 0)
+pulses <- pwm_simple(time=times, tau=tosc, phi=thoc/tosc, theta = 0)
 hocf <- approxfun(x = times, y = pulses,
                   method = "constant", rule = 2) # HOC pulse
 
-models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
+models <- c('k', 'k_dr', 'dr', 'k_dr_k0')
 outl <- list()
 for ( mod in models ) {
 
@@ -106,49 +106,12 @@ for ( mod in models ) {
                        func = get(paste0('pwmode_', mod), mode = 'function'),
                        parms = params, hocf = hocf)
 }
+## CUT ENDS for proper relative ylims
 outl <- lapply(outl, function(x)  {
     x[x[,1]<10*tosc, 2] <- mean(x[,2]); x})
 
-out_k_dr <- ode(y = c(R=get_rmean(dr=params['dr'],
-                                  k=params['k'],
-                                  phi=thoc/tosc,
-                                  tau=tosc,
-                                  mu=params['mu'], model = 'k_dr')),
-                times = times, func = pwmode_k_dr, 
-                parms = params, hocf = hocf)
-out_k <- ode(y = c(R=get_rmean(dr=params['dr'],
-                               k=params['k'],
-                               phi=thoc/tosc,
-                               tau=tosc,
-                               mu=params['mu'],
-                               model = 'k')),
-             times = times, func = pwmode_k, 
-             parms = params, hocf = hocf)
-out_dr <- ode(y = c(R=get_rmean(dr=params['dr'],
-                                k=params['k'],
-                                phi=thoc/tosc,
-                                tau=tosc,
-                                mu=params['mu'],
-                                model = 'dr')),
-              times = times, func = pwmode_dr, 
-              parms = params, hocf = hocf)
-out_k0 <- ode(y = c(R=get_rmean(dr=params['dr'],
-                               k=params['k'],
-                               k0=params['k0'],
-                               phi=thoc/tosc,
-                               tau=tosc,
-                               mu=params['mu'],
-                               model = 'k_dr_k0')),
-             times = times, func = pwmode_dr, 
-             parms = params, hocf = hocf)
-
+## show pulse
 pulse <- cbind(time=times, kappa=pulses)
-
-## cut start for proper norm between R0 and R1
-out_k[out_k[,1]<10*tosc,2] <- mean(out_k[,2])
-out_k_dr[out_k_dr[,1]<10*tosc,2] <- mean(out_k_dr[,2])
-out_dr[out_dr[,1]<10*tosc,2] <- mean(out_dr[,2])
-out_k0[out_k0[,1]<10*tosc,2] <- mean(out_k0[,2])
 
 
 plotdev(file.path(out.path, 'pwm_cartoon_piecewise'),
@@ -180,4 +143,28 @@ arrows(y0=0, x0=45*tosc+thoc, x1=46*tosc,
 legend(x=45*tosc+1.1*thoc, y=1, names(outl),
        col=1:length(outl), lty=1:length(outl), bg='#ffffff77', box.col=NA,
        seg.len=.75, y.intersp=.75, inset=c(-.25,0), xpd=TRUE)         
+dev.off()
+
+
+plotdev(file.path(out.path, 'pwm_cartoon_piecewise_abs'),
+        type='pdf', width=3, height=2)
+par(mai=c(.5,.75,.1,.35), mgp=c(1.4,0.3,0), tcl=-.25)
+ylm <- range(unlist(lapply(outl, function(x) range(x[,2], na.rm=TRUE))))
+plot(0, col = NA, ylim=ylm,
+     xlim=c(45*tosc-.05*tosc,
+            46*tosc+.05*tosc),
+     type='l', axes=FALSE,
+     xlab='time/h', ylab='R(t)/(n/cell)')
+for ( i in seq_along(models) ) {
+    dat <- outl[[models[i]]]
+    lines(dat[,1], dat[,2], col=i, lty=i)
+}
+axis(1)
+axis(2)
+abline(v=seq(0:100)*tosc, lty=3, col=8)
+abline(v=seq(0:100)*tosc+thoc, lty=3, col=8)
+
+legend('topright', names(outl),
+       col=1:length(outl), lty=1:length(outl), bg='#ffffff77', box.col=NA,
+       seg.len=.75, y.intersp=.75, inset=c(-.2,0), xpd=TRUE)         
 dev.off()

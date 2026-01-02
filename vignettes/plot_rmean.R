@@ -14,7 +14,7 @@ W <- H <- 2.5
 
 ## average RP parameters (from chemostatData)
 k <- 263.9
-dr <- 1.7
+dr <- 2*1.7
 mu <- 0
 gamma <- dr+mu
 k0 <- k/10
@@ -44,7 +44,7 @@ if ( FALSE ) {
 
 ## relative amplitudes dependence on period
 ## NOTE: higher abundance with increasing period!
-models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
+models <- c('k', 'k_dr', 'dr', 'k_dr_k0')
 tmns <- matrix(NA, nrow=length(taus), ncol=length(models))
 colnames(tmns) <- models
 for ( mod in models ) {
@@ -160,13 +160,24 @@ for ( mod in models ) {
     figlabel(paste(mod), pos = 'topright', cex=1.2)
     dev.off()
 
+
+    ## TODO: understand this and build as option in num2col?
+    z <- phta
+    nrz <- nrow(z)
+    ncz <- ncol(z)
+    color <- viridis::viridis(100)
+    zfacet <- z[-1, -1] + z[-1, -ncz] + z[-nrz, -1] + z[-nrz, -ncz]
+    facetcol <- cut(zfacet, 100)
     plotdev(file.path(out.path, paste0('pwm_rmean_3d_', mod,
-                                       '_log_persp')),
+                                       '_persp')),
             type='pdf', width=W, height=H)
-    par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
-    lphta <- log10(phta)
-    lphta[is.infinite(lphta)] <- NA
-    persp(x=phis, y=taus, z= lphta)
+    par(mai=c(.0,.0,.0,.0), mgp=c(2,0.3,0), tcl=-.25)
+    persp(x=phis, y=taus, z= phta, theta = -60, phi = 0,
+          col=color[facetcol],
+          zlab = 'mean RNA',
+          xlab = 'duty cycle',
+          ylab = 'period')
+    figlabel(mod, pos = 'topleft')
     dev.off()
 
     ## TODO: useful 3D plots?

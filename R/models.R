@@ -154,8 +154,9 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
     ## base model: phi*k/gamma
     rmn <- phi*k/gamma
 
-    ## expand, if the model is requested for a vector of periods
-    if ( !missing(tau) ) 
+
+    ## expand, if the model is requested for a vector of periods or duty cycles
+    if ( length(tau) > length(rmn) ) 
         rmn <- rep(rmn, length(tau))
 
     ## add terms for all other models
@@ -173,12 +174,14 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
 
         rmn <- rmn + (phi^2*k*tau/2)*term2
     }
-    if ( model %in% c('dr') )
+    if ( model %in% c('dr') ) {
+        ##cat(paste('adding k/gamma\n'))
         rmn <- rmn + k/gamma
-    
-    if ( model %in% c('k_dr_k0') )
+    }
+    if ( model %in% c('k_dr_k0') ) {
+        ##cat(paste('adding k0/gamma\n'))
         rmn <- rmn + k0/gamma
-
+    }
     unname(rmn)
     
 }
@@ -186,38 +189,82 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
 
 #' Calculate abundance amplitudes from rates and times.
 #'@export
-get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE, k, k0,
+get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE,
+                     k, k0, force.relative = FALSE, use.coth = FALSE,
                      model = c('k', 'dr', 'k_dr', 'k_dr_k0'), ...) {
 
     if ( model %in% c('dr', 'k_dr', 'k_dr_k0') ) {
 
-        ## calculate relative amplitude
-        if ( missing(gamma) )
-            gamma <- dr+mu
+        if ( !missing(k) & !force.relative ) {
 
-        gt <- gamma*tau
 
-        ## TODO: use expm1 version?
-        term2 <- phi/2 * pracma::coth(gt*(1-phi)/2)
+            ## ABS. AMPLITUDE FIRST
+            ## DIRECTLY, VIA K, PHI AND TAU
+            ramp <- phi*tau*k
 
-        term1 <- switch (model,
-                         k_dr = 1/gt,
-                         dr = (1-1/phi)/gt,
-                         k_dr_k0 = (1-k0/(k*phi))/gt)
+            ## for relative amplitude we need to divide by the mean
+            if ( relative ) {
+                ## TODO: numerical instabilities via mean?
 
-        ramp <- 1/(term1 + term2)
+                if ( missing(gamma) )
+                    gamma <- dr+mu
 
-        if ( missing(k0) ) k0 <- NA
+                rmean <- get_rmean(
+                    k = k,
+                    gamma = gamma,
+                    phi = phi,
+                    tau = tau,
+                    k0 = k0,
+                    model = model, use.coth = use.coth) 
+                ramp <- ramp/rmean
+            }
+        } else {
+            
+            ## REL. AMPLITUDE FIRST
+            ## NOTE: numerical instabilities via both
+            ##       relative amplitude and mean?
+            ## NOTE: k for relative amplitude is only
+            ##       required for model with basal expression
+            
 
-        if ( !relative ) {
-            rmean <- get_rmean(
-                k = k,
-                gamma = gamma,
-                phi = phi,
-                tau = tau,
-                k0 = k0,
-                model = model, ...)
-            ramp <- ramp*rmean 
+            gt <- gamma*tau
+
+            ## TODO: test numerics coth vs. expm1
+            ## term2 <- phi/2 * pracma::coth(gt*(1-phi)/2)
+            y <- gt*(1-phi)
+            if ( use.coth ) 
+                term2 <-  phi/2 * pracma::coth(y/2)
+            else {
+                ye <- expm1(y) # exp(y)-1
+                term2 <- phi/2 * (ye+2)/ye
+            }
+            
+            if ( model == 'k_dr' )
+                term1 <- 1/gt
+            else if ( model == 'dr' )
+                term1 <- (1-1/phi)/gt
+            else if ( model == 'k_dr_k0' )
+                term1 <- (1-k0/(k*phi))/gt
+##            term1 <- switch (model,
+##                             k_dr = 1/gt,
+##                             dr = (1-1/phi)/gt,
+##                             k_dr_k0 = (1-k0/(k*phi))/gt)
+            
+            ramp <- 1/(term1 + term2)
+            
+            if ( missing(k0) ) k0 <- NA
+
+            ## for absolute amplitude we need to multiple by the mean
+            if ( !relative ) {
+                rmean <- get_rmean(
+                    k = k,
+                    gamma = gamma,
+                    phi = phi,
+                    tau = tau,
+                    k0 = k0,
+                    model = model, use.coth = use.coth)
+                ramp <- ramp*rmean 
+            }
         }
     } else if ( model %in% c('k') ) {
 
