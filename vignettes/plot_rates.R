@@ -80,6 +80,8 @@ logaxis(4, labels=FALSE)
 for ( i in seq_along(models) ) 
     lines(phis, log10(prates[[models[[i]]]][,'k']), col=i, type='l', lty=i)
 mtext(bquote(tau==.(tau)~h), 3, 0)
+legend('topright', models, col=1:length(models), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
 dev.off()
 
 plotdev(file.path(out.path, 'pwm_rates_dr_phi'),
@@ -93,6 +95,8 @@ logaxis(4, labels=FALSE)
 for ( i in seq_along(models) )
     lines(phis, log10(prates[[models[[i]]]][,'dr']), col=i, type='l', lty=i)
 mtext(bquote(tau==.(tau)~h), 3, 0)
+legend('bottomright', models, col=1:length(models), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
 dev.off()
 
 
@@ -122,6 +126,8 @@ axis(1)
 logaxis(2)
 logaxis(4, labels=FALSE)
 mtext(bquote(phi==.(phi)), 3, 0)
+legend('topright', models, col=1:length(models), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
 dev.off()
 
 plotdev(file.path(out.path, 'pwm_rates_dr_tau'),
@@ -135,4 +141,6 @@ axis(1)
 logaxis(2)
 logaxis(4, labels=FALSE)
 mtext(bquote(phi==.(phi)), 3, 0)
+legend('bottomleft', models, col=1:length(models), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
 dev.off()

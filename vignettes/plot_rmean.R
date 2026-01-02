@@ -85,7 +85,6 @@ dev.off()
 pmns <- matrix(NA, nrow=length(phis), ncol=length(models))
 colnames(pmns) <- models
 for ( mod in models ) {
-
     pmns[,mod] <- get_rmean(k=k, gamma=gamma, k0=k0, phi=phis, tau=tau,
                             model = mod, use.coth = TRUE)
 }
@@ -119,3 +118,77 @@ mtext(bquote(tau==.(tau)~h), 3, 0)
 dev.off()
 
 
+### 3D - CALCULATE ALL PHI/TAU COMBINATIONS
+
+taus <- seq(0,7.5, .5)
+phis <- 1:10/10
+phta <- matrix(NA, nrow=length(phis), ncol=length(taus))
+
+PHT <- list()
+
+mod <- 'k_dr'
+for ( mod in models ) {
+
+    for ( i in 1:length(phis) ) 
+        for ( j in 1:length(taus) ) 
+            phta[i,j] <- get_rmean(k = k, gamma = gamma, k0 = k0,
+                                   phi = phis[i], tau = taus[j],
+                                   model = mod)
+    PHT[[mod]] <- phta
+
+    phta[is.infinite(phta)] <- NA
+    plot(phis, phta[,ncol(phta)])
+    
+    image_matrix(x = taus, y = phis, z = log10(phta[nrow(phta):1,]),
+                 axis = 1:2, col = viridis::viridis(100))
+    plotdev(file.path(out.path, paste0('pwm_rmean_3d_', mod)),
+            type='pdf', width=W, height=H)
+    par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
+    image_matrix(x = taus, y = phis, z = phta[nrow(phta):1,],
+                 axis = 1:2, col = viridis::viridis(100),
+                 xlab = axis_labels['tau'], ylab = axis_labels['phi'],
+                 main = axis_labels['rmean'])
+    figlabel(paste(mod), pos = 'topright', cex=1.2)
+    dev.off()
+    plotdev(file.path(out.path, paste0('pwm_rmean_3d_', mod, '_log')),
+            type='pdf', width=W, height=H)
+    par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
+    image_matrix(x = taus, y = phis, z = log10(phta[nrow(phta):1,]),
+                 axis = 1:2, col = viridis::viridis(100),
+                 xlab = axis_labels['tau'], ylab = axis_labels['phi'],
+                 main = axis_labels['rmean'])
+    figlabel(paste(mod), pos = 'topright', cex=1.2)
+    dev.off()
+
+    plotdev(file.path(out.path, paste0('pwm_rmean_3d_', mod,
+                                       '_log_persp')),
+            type='pdf', width=W, height=H)
+    par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
+    lphta <- log10(phta)
+    lphta[is.infinite(lphta)] <- NA
+    persp(x=phis, y=taus, z= lphta)
+    dev.off()
+
+    ## TODO: useful 3D plots?
+    if ( interactive() ) {
+
+        image(x = phis, y = taus, z = phta,
+              col = viridis::viridis(100),
+              ylab = axis_labels['tau'], xlab = axis_labels['phi'],
+              main = axis_labels['rampr'])
+
+        library('rgl')
+
+        grid <- expand.grid(x = phis, y = taus)
+        plot3d(x=grid$x, y=grid$y, z= phta,
+               ylab = axis_labels['tau'], xlab = axis_labels['phi'],
+               zlab = axis_labels['rampr'])
+        surface3d(x=phis, y=taus, z= phta,
+                  color = "lightblue",
+                  back = "lines")
+        
+        persp(x=phis, y=taus, z= phta)
+        contour(x=phis, y=taus, z= phta)
+
+    }
+}
