@@ -13,6 +13,8 @@ get_ramp(
   relative = TRUE,
   k,
   k0,
+  force.relative = FALSE,
+  use.coth = FALSE,
   model = c("k", "dr", "k_dr", "k_dr_k0"),
   ...
 )

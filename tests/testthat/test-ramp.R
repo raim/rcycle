@@ -50,26 +50,22 @@ for ( mod in models ) {
                         k=k, k0=k0, force.relative = FALSE)
         mn <- get_rmean(k=k, k0=k0, gamma=gamma, phi=phis, tau=tau, model = mod)
     
-        ## should be equiv.
-        ##plot(ampr, amp/mn); abline(a=0, b=1)
-
+        ## manual relative amplitude
         ampm <- (amp/mn)
-        nan <- !is.na(ampm)
         
         ## TODO: test expected number of NA
         ##sum(!nan)
+        nan <- !is.na(ampm)
         expect_equal(ampr[nan], ampm[nan], tolerance = 1e-10)
 
-        ## TODO: fix and test force.relative=TRUE
-        ## * model k_dr correct except for differnt NAs,
-        ##      amp_f is NA for phi=11
-        ## * mode dr and k_dr_k0: different results for ampr==ampm vs ampr_f
-        ##   and amp vs. amp_f
+        ## test force.relative version
+        nan <- !is.na(ampr)
+        expect_equal(ampr[nan], ampr_f[nan], tolerance = 1e-10)
+
+        nan <- !is.na(amp_f)
+        expect_equal(amp[nan], amp_f[nan], tolerance = 1e-10)
+
         if ( FALSE ) {
-            nan <- !is.na(ampr)
-            expect_equal(ampr[nan], ampr_f[nan], tolerance = 1e-10)
-            nan <- !is.na(amp_f)
-            expect_equal(amp[nan], amp_f[nan], tolerance = 1e-10)
             plot(ampm, ampr)
             abline(a=0, b=1)
             plot(ampr, ampr_f)

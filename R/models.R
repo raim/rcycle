@@ -239,16 +239,16 @@ get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE,
                 term2 <- phi/2 * (ye+2)/ye
             }
             
-            if ( model == 'k_dr' )
-                term1 <- 1/gt
-            else if ( model == 'dr' )
-                term1 <- (1-1/phi)/gt
-            else if ( model == 'k_dr_k0' )
-                term1 <- (1-k0/(k*phi))/gt
-##            term1 <- switch (model,
-##                             k_dr = 1/gt,
-##                             dr = (1-1/phi)/gt,
-##                             k_dr_k0 = (1-k0/(k*phi))/gt)
+            ##if ( model == 'k_dr' )
+            ##    term1 <- 1/gt
+            ##else if ( model == 'dr' ) 
+            ##    term1 <- (1+1/phi)/gt
+            ##else if ( model == 'k_dr_k0' )
+            ##    term1 <- (1+k0/(k*phi))/gt
+            term1 <- switch (model,
+                             k_dr = 1/gt,
+                             dr = (1+1/phi)/gt,
+                             k_dr_k0 = (1+k0/(k*phi))/gt)
             
             ramp <- 1/(term1 + term2)
             
@@ -312,6 +312,9 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     if ( model %in% c('k') )
         phi <- R*gamma/k
 
+    ## TODO: get ton=phi*tau for models dr ..
+    ## and use in root functions?
+
 
     ## NOTE: using Map allows vectorization of input
     tau <- unlist(Map(get_tau,
@@ -346,10 +349,10 @@ get_tau <- function(a, gamma, phi, A, k,
                     verb = 0, ...) {
 
     ## Solve f(x) = 0 for x in a reasonable range
-    ## where x = gamma*tau
+    ## where x = tau
     
     ## get model-specific function for root-finding,
-    ## each returns x = gamma * tau
+    ## each returns x = tau
     rootf <- get(paste0('root_tau_', model), mode = 'function')
 
     ## TODO: find better solution or test whether taking the
@@ -370,11 +373,13 @@ get_tau <- function(a, gamma, phi, A, k,
     if ( class(solution)=="try-error" | length(solution)==0 ) {
         if ( verb>0 )
             cat(paste0('Model <', model, '> failed with:',
-                       '\n\ta=', a,
-                       ';\n\tgamma=', gamma,
-                       ';\n\tphi=', phi,
-                       ';\n\tA=', A,
-                       ';\n\tk=', k,
+                       '\n\ta= ', a,
+                       ';\n\tgamma= ', gamma,
+                       ';\n\tphi= ', phi,
+                       ';\n\tA= ', A,
+                       ';\n\tk= ', k,
+                       ';\n\t#solutions= ', length(solution),
+                       ';\n\tclass= ', class(solution),
                        ';\n'))
         return(NA)
     }
@@ -415,6 +420,10 @@ root_tau_k_dr <- function(x, a, gamma, phi = NA, A, k) {
     rhs <- term1 + term2 + term3
     return(lhs - rhs)
 }
+root_tau_dr <- function(x, a, gamma, phi = NA, A, k)
+    stop('not implemented yet')
+root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k)
+    stop('not implemented yet')
 
 get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
@@ -497,6 +506,7 @@ get_transcription <- function(R = NA, A = NA, phi = NA,
     k
 }
 
+## TODO: use this!
 get_basal <- function(k, gamma, tau, phi, Rmin, Rmax, verb = 1) {
 
     ##beta <- exp(gamma*tau*(1-phi))
@@ -535,7 +545,6 @@ get_degradation <- function(a,  R, Rmin,
                             model, ## must exist as root finding function
                             lower = 1e-6, upper = 1e4, tol = 1e-9,
                             verb = 0, ...) {
-
     
 
     
@@ -611,10 +620,11 @@ root_k_dr <- function(x, a, phi, R = NA, Rmin = NA) {
 
 ## degradation pulse
 ## where x = gamma * tau
+## TODO: expm1-based version
 root_dr <- function(x, a, phi, R = NA, Rmin = NA) {
     
     lhs <- 1/a
-    term1 <- (1-1/phi)/x
+    term1 <- (1+1/phi)/x  #TODO: this was 1-1/phi, is it correct now?
     term2 <- phi/2 * pracma::coth((x-x*phi)/2)
     rhs <- term1+term2
 
@@ -624,6 +634,7 @@ root_dr <- function(x, a, phi, R = NA, Rmin = NA) {
 
 ## anti-phasic transcription/degradation and basal transcription
 ## where x = gamma * tau
+## TODO: reconstruct math for this version
 root_k_dr_k0_coth <- function(x, a, phi, R, Rmin) {
 
     A <- a*R
@@ -639,7 +650,7 @@ root_k_dr_k0 <- function(x, a, phi, R, Rmin) {
     
     lhs <- R - Rmin
     betam1 <- expm1(x*(1-phi)) # exp() +1
-    term1 <- (phi-1) /betam1 
+    term1 <- (phi-1) /betam1 # TODO: should this be (1-phi) /betam1  ?
     term2 <- phi/2
     term3 <- 1/x 
     rhs <- a*R*(term1 + term2 + term3)
@@ -795,7 +806,7 @@ axis_labels <- c(rmean=expression('\u27E8'*R*'\u27E9'/(n/cell)),
                  ramp=expression(tilde(R)),
                  rampr=expression(tilde(r)),
                  r=expression(R(t)/(n/cell)),
-                 phi=expression(duty~cycle~phi),
+                 phi=expression(duty~cycle~varphi),
                  tau=expression(period~tau/h),
                  mu=expression(growth~rate~mu/h^-1),
                  k=expression(k/(n/h)),

@@ -12,7 +12,7 @@ source('/home/raim/programs/rcycle/R/models.R')
 ##   best solution, ideally just stats::uniroot,
 ##   or informed selection from uniroot.all.
 ## * trace NA cases?
-## * better understand difficulties with dr and k_dr_k0 models.
+## * better understand difficulties for get_tau for model k.
 
 a <- 1.32991318770238
 gamma <- 0.411938922118397
@@ -31,18 +31,20 @@ roots_k <- rootSolve::uniroot.all(f=root_tau_k,
                                   a = a, gamma = gamma, phi = phi,
                                   lower = min(x), upper = max(x))
 
+plot(x, tau_k, type='l', xlab='period/h', ylab='root_tau_k_dr')
+abline(h = 0, col=2, lty=2)
+abline(v = roots_k, col=2, lty=2)
+
 tau_k_dr <- root_tau_k_dr(x, a = a, gamma = gamma, phi = NA, A = A, k = k)
 roots_k_dr <- rootSolve::uniroot.all(f=root_tau_k_dr,
                                      a = a, gamma = gamma, A = A, k = k,
                                      lower = min(x), upper = max(x))
 
-plot(x, tau_k_dr, type='l', xlab='period/h', ylab='root_tau_k_dr')
+plot(x, tau_k_dr, type='l', xlab='period/h', ylab='root_tau_k_dr',
+     ylim = c(-10,10))
 abline(h = 0, col=2, lty=2)
 abline(v = roots_k_dr, col=2, lty=2)
 
-plot(x, tau_k, type='l', xlab='period/h', ylab='root_tau_k_dr')
-abline(h = 0, col=2, lty=2)
-abline(v = roots_k, col=2, lty=2)
 
 ## get_degradation roots
 
@@ -56,6 +58,7 @@ for ( model in c('k', 'dr', 'k_dr', 'k_dr_k0') ) {
 
     plot(gt, y, type='l', xlab=expression(gamma*tau), ylab='root_k')
     abline(h = 0, col=2, lty=2)
+    Sys.sleep(2)
     
 }
 

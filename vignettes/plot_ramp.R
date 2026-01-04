@@ -20,7 +20,7 @@ k <- 263.9
 dr <- 2*1.7
 mu <- 0
 gamma <- dr+mu
-k0 <- 10
+k0 <- 100
 
 ## osci and growth params
 phi <- .5

@@ -20,7 +20,7 @@ k <- 263.9
 dr <- 2*1.7
 mu <- 0
 gamma <- dr+mu
-k0 <- 10
+k0 <- 100
 
 ## osci and growth params
 phi <- .5
@@ -68,18 +68,23 @@ mtext(bquote(phi==.(phi)), 3, 0)
 dev.off()
 
 ## amplitudes dependence on duty cycle phi
-## TODO: test relative amplitude here, different results
-## for dr and k_dr_k0 models
-## for both versions force.relative = TRUE / FALSE
+## NOTE: this also tests the version
 pmns <- matrix(NA, nrow=length(phis), ncol=length(models))
 colnames(pmns) <- models
-for ( mod in models ) {
-    for ( i in 1:length(phis) )
+mns <- amps <- pmns
+for ( mod in models ) 
+    for ( i in 1:length(phis) ) {
         pmns[i,mod] <- get_ramp(gamma=gamma, phi=phis[i], tau=tau,
                                k=k, k0=k0, 
                                model = mod, relative = TRUE,
-                               force.relative = FALSE)
-}
+                               force.relative = TRUE)
+        amps[i,mod] <- get_ramp(gamma=gamma, phi=phis[i], tau=tau,
+                                k=k, k0=k0, 
+                                model = mod, relative = FALSE,
+                                force.relative = FALSE)
+        mns[i,mod] <- get_rmean(k=k, gamma=gamma, k0=k0, phi=phis[i], tau=tau,
+                                model = mod)
+    }
 
 plotdev(file.path(out.path, 'pwm_rampr_phi'),
         type='pdf', width=W, height=H)
@@ -93,6 +98,22 @@ legend('topleft', colnames(pmns), col=1:ncol(pmns), lty=1, bty='n',
        seg.len=.5, y.intersp=.75)
 axis(4, labels=FALSE)
 mtext(bquote(tau==.(tau)~h), 3, 0)
+dev.off()
+
+plotdev(file.path(out.path, 'pwm_rampr_phi_all'),
+        type='pdf', width=W, height=2.5*H, bg=NA)
+par(mfrow=c(3,1), mai=c(.35,.5,.05,.15), mgp=c(1.4,0.3,0), tcl=-.25)
+matplot(phis, amps, type='l', lty=1, col=1:ncol(pmns),
+        xlab=expression(duty~cycle~phi), ylab=axis_labels['ramp'])
+matplot(phis, mns, type='l', lty=1, col=1:ncol(pmns),
+        ylim = c(0,500),
+        xlab=expression(duty~cycle~phi), ylab=axis_labels['rmean'])
+matplot(phis, amps/mns, type='l', lty=1, col=1:ncol(pmns),
+        xlab=expression(duty~cycle~phi), ylab=axis_labels['rampr'])
+legend('topleft', colnames(pmns), col=1:ncol(pmns), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)
+axis(4, labels=FALSE)
+#mtext(bquote(tau==.(tau)~h), 3, 0)
 dev.off()
 
 plotdev(file.path(out.path, 'pwm_rampr_phi_log'),
