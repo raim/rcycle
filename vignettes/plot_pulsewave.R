@@ -13,17 +13,19 @@ out.path <- '/home/raim/programs/rcycle/vignettes'
 ## TODO:
 ## * move to vignettes and instead test pw_fourier, pw_simple, pw_sawtooth,
 
-## average RP parameters (from chemostatData)
-k <- 263.9
-dr <- 1.7
-gamma <- dr+mu
-k0 <- 10
 
 ## osci and growth params
 stime <- seq(0, 3, .01)
 phocs <- c(.01, seq(.2, .8, .2), .99)
 tosc <- 1
 mu <- 0
+
+## average RP parameters (from chemostatData)
+k <- 263.9
+dr <- 1.7
+gamma <- dr+mu
+k0 <- 10
+
 
 plotdev(file.path(out.path, 'pwm_cartoon'), type='pdf', width=5, height=2)
 par(mfcol=c(1,2), mai=c(.35,.5,.35,.1), mgp=c(.5,0,0))
@@ -53,7 +55,7 @@ text(x=rep(max(stime), length(phocs)), y=seq_along(phocs)-.5,
      labels=phocs, col=2, xpd=TRUE, pos=4)
 ##text(x=max(stime), y=-.75, labels=expression(phi), col=2, xpd=TRUE, cex=1.2,
 ##     pos=4)
-text(x=max(stime)+1, y=-1.5, labels=expression(atop(duty), cycle~phi),
+text(x=max(stime)+1, y=-1.5, labels=expression(atop(duty), cycle~varphi),
      col=2, xpd=TRUE, cex=1, pos=2)
 
 
@@ -74,7 +76,7 @@ dev.off()
 
 state <- c(R=0)
 tosc <- 3
-thoc <- 2
+thoc <- 1.5
 mu <- .1
 
 ## NOTE: parameters for average RP from pwmavg.R/pwmode.R
@@ -123,12 +125,17 @@ plot(0, ylim=c(0,1), col=NA,
      type='l', axes=FALSE,
      xlab='', ylab='')
 for ( i in seq_along(models) ) {
-
     dat <- outl[[models[i]]]
-    lines(dat[,1], minmax(dat[,2]), col=i, lty=i)
+    lines(dat[,1], minmax(dat[,2]), col=i, lty=i, lwd=.5)
+    mn <- mean(minmax(dat[,2]))
+    abline(h=mn, col=i, lty=i, lwd=.1)
+    if (i==1) 
+        axis(4, at=mn, label=axis_labels['rmeanau'], las=2, col=i)
 }
-axis(2, at=0:1, labels=expression(R[0], R[1]), las=2, col=NA)
+axis(2, at=0, labels=expression(R[0], R[1]), las=2, col=NA)
+arrows(x0=par('usr')[1]-.2, y0=0.1, y1=.9, code=3, length=.1, xpd=TRUE)
 axis(4, at=0:1, labels=expression(R[tau], R[1]), las=2, col=NA)
+mtext(axis_labels['ramp'], 2, .6)
 axis(1, at=45*tosc, labels=0, col=NA) 
 axis(1, at=45*tosc+thoc, labels=expression(tau[on]), col=NA) 
 axis(1, at=46*tosc, labels=expression(tau), col=NA)
@@ -140,9 +147,10 @@ arrows(y0=0, x0=45*tosc, x1=45*tosc+thoc,
        code=3, length=.1, col=8, lwd=1.5)
 arrows(y0=0, x0=45*tosc+thoc, x1=46*tosc,
        code=3, length=.1, col=8, lwd=1.5)
-legend(x=45*tosc+1.1*thoc, y=1, names(outl),
-       col=1:length(outl), lty=1:length(outl), bg='#ffffff77', box.col=NA,
-       seg.len=.75, y.intersp=.75, inset=c(-.25,0), xpd=TRUE)         
+if ( FALSE )
+    legend(x=45*tosc+1.1*thoc, y=1, names(outl),
+           col=1:length(outl), lty=1:length(outl), bg='#ffffff77', box.col=NA,
+           seg.len=.75, y.intersp=.75, inset=c(-.25,0), xpd=TRUE)         
 dev.off()
 
 

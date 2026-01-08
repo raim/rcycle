@@ -86,6 +86,16 @@ for ( mod in models )
                                 model = mod)
     }
 
+## TODO: analyze mean vs. amplitudea along phis
+## NOTE: u-shaped for model k, and
+##       shifted hyperbolic for models dr
+if ( FALSE ) 
+    for ( mod in models ) {
+        lplot(amps[,mod], mns[,mod])#, log='y')
+        lplot(amps[,mod], mns[,mod], log='xy')
+        Sys.sleep(1)
+    }
+
 plotdev(file.path(out.path, 'pwm_rampr_phi'),
         type='pdf', width=W, height=H)
 par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
@@ -93,7 +103,7 @@ ppmns <- pmns
 ##ppmns[ppmns<0] <- NA
 matplot(phis, ppmns, type='l', lty=1, col=1:ncol(pmns),
         ylim=c(0,6), # max(pmns[is.finite(pmns)], na.rm=TRUE)),
-        xlab=expression(duty~cycle~phi), ylab=axis_labels['rampr'])
+        xlab=axis_labels['phi'], ylab=axis_labels['rampr'])
 legend('topleft', colnames(pmns), col=1:ncol(pmns), lty=1, bty='n',
        seg.len=.5, y.intersp=.75)
 axis(4, labels=FALSE)
@@ -104,12 +114,12 @@ plotdev(file.path(out.path, 'pwm_rampr_phi_all'),
         type='pdf', width=W, height=2.5*H, bg=NA)
 par(mfrow=c(3,1), mai=c(.35,.5,.05,.15), mgp=c(1.4,0.3,0), tcl=-.25)
 matplot(phis, amps, type='l', lty=1, col=1:ncol(pmns),
-        xlab=expression(duty~cycle~phi), ylab=axis_labels['ramp'])
+        xlab=axis_labels['phi'], ylab=axis_labels['ramp'])
 matplot(phis, mns, type='l', lty=1, col=1:ncol(pmns),
         ylim = c(0,500),
-        xlab=expression(duty~cycle~phi), ylab=axis_labels['rmean'])
+        xlab=axis_labels['phi'], ylab=axis_labels['rmean'])
 matplot(phis, amps/mns, type='l', lty=1, col=1:ncol(pmns),
-        xlab=expression(duty~cycle~phi), ylab=axis_labels['rampr'])
+        xlab=axis_labels['phi'], ylab=axis_labels['rampr'])
 legend('topleft', colnames(pmns), col=1:ncol(pmns), lty=1, bty='n',
        seg.len=.5, y.intersp=.75)
 axis(4, labels=FALSE)
@@ -121,7 +131,7 @@ plotdev(file.path(out.path, 'pwm_rampr_phi_log'),
 par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
 matplot(phis, log10(pmns), type='l', lty=1, col=1:ncol(pmns),
         ylim=c(log10(0.03), log10(max(pmns[is.finite(pmns)], na.rm=TRUE))),
-        axes=FALSE, xlab=expression(duty~cycle~phi), ylab=axis_labels['rampr'])
+        axes=FALSE, xlab=axis_labels['phi'], ylab=axis_labels['rampr'])
 axis(1)
 logaxis(2)
 logaxis(4, labels=FALSE)

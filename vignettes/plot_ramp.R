@@ -83,7 +83,7 @@ ppmns <- pmns
 ppmns[ppmns<0] <- NA
 matplot(phis, ppmns, type='l', lty=1:ncol(pmns), col=1:ncol(pmns),
         ##ylim=c(0,1e3), # max(pmns[is.finite(pmns)], na.rm=TRUE)),
-        xlab=expression(duty~cycle~phi), ylab=axis_labels['ramp'])
+        xlab=axis_labels['phi'], ylab=axis_labels['ramp'])
 legend('topleft', colnames(pmns), col=1:ncol(pmns), lty=1, bty='n',
        seg.len=.5, y.intersp=.75)
 axis(4, labels=FALSE)
@@ -95,7 +95,7 @@ plotdev(file.path(out.path, 'pwm_ramp_phi_log'),
 par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
 matplot(phis, log10(pmns), type='l', lty=1, col=1:ncol(pmns),
         ylim=c(log10(0.03), log10(max(pmns[is.finite(pmns)], na.rm=TRUE))),
-        axes=FALSE, xlab=expression(duty~cycle~phi), ylab=axis_labels['ramp'])
+        axes=FALSE, xlab=axis_labels['phi'], ylab=axis_labels['ramp'])
 axis(1)
 logaxis(2)
 logaxis(4, labels=FALSE)
@@ -124,6 +124,17 @@ for ( mod in models ) {
                                   model = mod, relative=FALSE)
 
     PHT[[mod]] <- phta
+}
+
+## get range of values for common color map
+tmp <- unlist(PHT)
+mx <- max(tmp[is.finite(tmp)], na.rm=TRUE)
+mn <- min(tmp[tmp>0], na.rm=TRUE)
+
+for ( mod in models ) {
+
+    phta <- PHT[[mod]]
+    
     phta[is.infinite(phta)] <- NA
     plot(phis, phta[,ncol(phta)])
 
@@ -152,16 +163,22 @@ for ( mod in models ) {
     ncz <- ncol(z)
     color <- viridis::viridis(100)
     zfacet <- z[-1, -1] + z[-1, -ncz] + z[-nrz, -1] + z[-nrz, -ncz]
+    facetcol <- cut(log(zfacet), breaks=seq(log(mn),log(mx*4), length.out=100))
     facetcol <- cut(zfacet, 100)
+
+    ## manually indicating that mean and amp are lower for model k
+    mxi <- max(z, na.rm=TRUE)
+    z <- z*ifelse( mod == 'k', .33, .9)
+
     plotdev(file.path(out.path, paste0('pwm_ramp_3d_', mod, '_persp')),
             type='pdf', width=W, height=H)
-    par(mai=c(.0,.0,.0,.0), mgp=c(2,0.3,0), tcl=-.25)
-    persp(x=phis, y=taus, z= phta, theta = -60, phi = 0,
+    par(mai=c(.1,.0,.0,.0), mgp=c(2,0.3,0), tcl=-.25)
+    persp(x = phis, y = taus, z = z, theta = -60, phi = 0,
           col=color[facetcol],
           zlab = 'RNA amplitude',
           xlab = 'duty cycle',
           ylab = 'period',
-          ticktype = 'simple')
+          ticktype = 'simple', zlim = c(0,mxi))
     ## TODO: draw ticks for z-axis!
     figlabel(mod, pos = 'topleft')
     dev.off()

@@ -420,10 +420,10 @@ root_tau_k_dr <- function(x, a, gamma, phi = NA, A, k) {
     rhs <- term1 + term2 + term3
     return(lhs - rhs)
 }
-root_tau_dr <- function(x, a, gamma, phi = NA, A, k)
-    stop('not implemented yet')
-root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k)
-    stop('not implemented yet')
+##root_tau_dr <- function(x, a, gamma, phi = NA, A, k)
+##    stop('not implemented yet')
+##root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k)
+##    stop('not implemented yet')
 
 get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
@@ -463,27 +463,30 @@ get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                      lower = lower, upper = upper, tol = tol,
                      verb = verb))
     
+    gamma <- dr
+    if ( !is.na(mu) ) gamma <- dr + mu
     if ( model %in% c('k') ) {
-
-        gamma <- dr
-        if ( !is.na(mu) ) gamma <- dr + mu
-   
         k <- get_transcription(R = R, gamma = gamma, phi = phi, model = model)
-
         if ( length(k)==1 )
             k <- rep(k, length(dr))
     }
 
-    ## TODO: add k0
+    res <- cbind.data.frame(k=k, dr=dr)
+    rownames(res) <- NULL
 
+    ## add k0
+    if ( model %in% c('k_dr_k0') ) {
+        res$k0 <- get_basal(k = k, gamma = gamma, tau = tau, phi = phi,
+                            Rmin = Rmin, Rmax = Rmax, verb = 0)
+        if ( all(is.na(res$k0)) )
+            warning('no basal transcription rates calculated')
+    }
     
     if ( all(is.na(k)) )
         warning('no transcription rates calculated')
     if ( all(is.na(dr)) )
         warning('no degradation rates calculated')
     
-    res <- cbind.data.frame(k=k, dr=dr)
-    rownames(res) <- NULL
     res
 }
 
@@ -650,7 +653,7 @@ root_k_dr_k0 <- function(x, a, phi, R, Rmin) {
     
     lhs <- R - Rmin
     betam1 <- expm1(x*(1-phi)) # exp() +1
-    term1 <- (phi-1) /betam1 # TODO: should this be (1-phi) /betam1  ?
+    term1 <- (1-phi) /betam1 # TODO: should this be (1-phi) /betam1  ?
     term2 <- phi/2
     term3 <- 1/x 
     rhs <- a*R*(term1 + term2 + term3)
@@ -803,6 +806,7 @@ pwm_k <- function(t, R0, k, gamma, dr,  mu, k0=0,
 ## plot labels
 ## TODO: get axis/unit functions used for stan model script
 axis_labels <- c(rmean=expression('\u27E8'*R*'\u27E9'/(n/cell)),
+                 rmeanau=expression('\u27E8'*R*'\u27E9'),
                  ramp=expression(tilde(R)),
                  rampr=expression(tilde(r)),
                  r=expression(R(t)/(n/cell)),
