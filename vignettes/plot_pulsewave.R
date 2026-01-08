@@ -132,7 +132,7 @@ for ( i in seq_along(models) ) {
     if (i==1) 
         axis(4, at=mn, label=axis_labels['rmeanau'], las=2, col=i)
 }
-axis(2, at=0, labels=expression(R[0], R[1]), las=2, col=NA)
+axis(2, at=0:1, labels=expression(R[0], R[1]), las=2, col=NA)
 arrows(x0=par('usr')[1]-.2, y0=0.1, y1=.9, code=3, length=.1, xpd=TRUE)
 axis(4, at=0:1, labels=expression(R[tau], R[1]), las=2, col=NA)
 mtext(axis_labels['ramp'], 2, .6)
