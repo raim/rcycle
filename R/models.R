@@ -295,7 +295,8 @@ get_rna <- function() {
 }
 
 
-## 
+##
+#' @export
 get_pmean <- function(R, rho, l, dp, mu, phip,
                       r.model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       p.model = c('const', 'phi'), ...)  { # P(mu)
@@ -314,6 +315,7 @@ get_pmean <- function(R, rho, l, dp, mu, phip,
     unname(p)
 }
 
+#' @export
 get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
                       k = NA, gamma = NA, dr = NA, mu = NA, k0 = NA, 
@@ -364,6 +366,7 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     ## fit ton=phi*tau and untangel via absolute amplitude
 }
 
+#' @export
 get_tau <- function(a, gamma, phi, A, k,
                     model, ## must exist as root finding function
                     lower = 1e-6, upper = 1e4, tol = 1e-9,
