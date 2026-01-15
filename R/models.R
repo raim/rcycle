@@ -148,6 +148,8 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
                       model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       use.coth = TRUE) {
 
+    if ( length(model)>1 ) model <- model[1]
+
     if ( missing(gamma) )
         gamma <- dr+mu
 
@@ -156,8 +158,9 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
 
 
     ## expand, if the model is requested for a vector of periods or duty cycles
-    if ( length(tau) > length(rmn) ) 
-        rmn <- rep(rmn, length(tau))
+    if ( !missing(tau) )
+        if ( length(tau) > length(rmn) ) 
+            rmn <- rep(rmn, length(tau))
 
     ## add terms for all other models
     ## phi^2*k*tau/2 * coth(gamma*tau*(1-phi)/2)
@@ -292,6 +295,24 @@ get_rna <- function() {
 }
 
 
+## 
+get_pmean <- function(R, rho, l, dp, mu, phip,
+                      r.model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
+                      p.model = c('const', 'phi'), ...)  { # P(mu)
+
+    if ( length(r.model)>1 ) r.model <- r.model[1]
+    if ( length(p.model)>1 ) p.model <- p.model[1]
+
+    if ( missing(R) )
+        R <- get_rmean(dr=dr, k=k, phi=phi, mu=mu,
+                       model = r.model, ...)
+    p <- R*rho*l/(mu+dp)
+    
+    if ( p.model %in% c('phi') ) # translation in HOC only
+        p <- p*phip
+
+    unname(p)
+}
 
 get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
@@ -815,4 +836,6 @@ axis_labels <- c(rmean=expression('\u27E8'*R*'\u27E9'/(n/cell)),
                  mu=expression(growth~rate~mu/h^-1),
                  k=expression(k/(n/h)),
                  dr=expression(delta[R]/h^-1),
+                 hl=expression(tau[1/2]/h),
+                 bi=expression(budding~index~varphi[bud]/'%'),
                  gamma=expression(gamma/h^-1))
