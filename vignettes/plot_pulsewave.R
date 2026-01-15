@@ -34,7 +34,7 @@ plot(1, col=NA, xlim=range(stime), ylim=c(0, length(phocs)), axes=FALSE,
      xlab='time', ylab=NA)
 text(mean(stime), length(phocs)+1,
      labels='Alternating pulse waves\nof gene expression:', font=2, xpd=TRUE)
-mtext('growth rate', 2, 1)
+mtext('growth rate', 2, .6)
 arrows(x0=-.2, y0=.5, y1=length(phocs)-.5, xpd=TRUE, length=.1)
 arrows(x0=.5, x1=max(stime)-.5, y0=-.7, xpd=TRUE, length=.1)
 for ( i in seq_along(phocs) ) {
@@ -58,12 +58,11 @@ text(x=rep(max(stime), length(phocs)), y=seq_along(phocs)-.5,
 text(x=max(stime)+1, y=-1.5, labels=expression(atop(duty), cycle~varphi),
      col=2, xpd=TRUE, cex=1, pos=2)
 
-
-par(mai=c(.35,.5,.35,.1))
+par(mai=c(.35,.35,.35,.1))
 plot(phocs, col=NA, xlim=c(0, length(phocs)), ylim=c(0, 1), axes=FALSE,
      ylab=NA, xlab='growth rate')
-mtext('proteome fraction', 2, 1)
-arrows(x0=-.2, y0=.05, y1=.95, xpd=TRUE, length=.1)
+mtext('proteome fraction', 2, 0)
+arrows(x0=0, y0=.05, y1=.95, xpd=TRUE, length=.1)
 arrows(x0=.5, x1=length(phocs)-.5, y0=-.1, xpd=TRUE, length=.1)
 lines(phocs, col=2, type='b')
 lines(1-phocs, col=4, type='b', lty=3)
