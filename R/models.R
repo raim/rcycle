@@ -317,7 +317,7 @@ get_pmean <- function(R, rho, l, dp, mu, phip,
 
 #' @export
 get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
-                      a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
+                      a = NA, R = NA, Rmin = NA, 
                       k = NA, gamma = NA, dr = NA, mu = NA, k0 = NA, 
                       lower = 1e-6, upper = 100, tol = 1e-9,
                       verb = 0, ...) {
@@ -325,9 +325,7 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     if ( all(is.na(gamma)) )
         gamma <- dr+mu
 
-    if ( all(is.na(A)) )
-        A <- a*R
-    
+
     ## model k:
     ## 1.) get phi from R/(k/gamma)
     ## 2.) get tau from relative amplitude via uniroot
@@ -342,21 +340,25 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     ## NOTE: using Map allows vectorization of input
     tau <- unlist(Map(get_tau,
                       model = model,
-                      a = a, gamma = gamma,  phi = phi,
-                      A = A, k = k,
+                      a = a,  R = R, Rmin = Rmin, 
+                      k = k, gamma = gamma,
+                      phi = phi,
                       lower = lower, upper = upper, tol = tol,
                       verb = verb))
     
-    if ( model %in% c('k_dr') )
+    ## TODO: omit A from arguments and solve this
+    ## in root functions?
+    A <- a*R
+    if ( model %in% c('k_dr', 'dr', 'k_dr_k0') )
         phi <- A/(k*tau)
 
     if ( length(phi)==1 )
         phi <- rep(phi, length(tau))
 
-    if ( all(is.na(phi)) )
-        warning('no duty cycles calculated')
     if ( all(is.na(tau)) )
         warning('no periods calculated')
+    if ( all(is.na(phi)) )
+        warning('no duty cycles calculated')
     
     res <- cbind.data.frame(phi=phi, tau=tau)
     rownames(res) <- NULL
@@ -367,7 +369,7 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
 }
 
 #' @export
-get_tau <- function(a, gamma, phi, A, k,
+get_tau <- function(a, R = NA, Rmin = NA,  k, gamma, phi,
                     model, ## must exist as root finding function
                     lower = 1e-6, upper = 1e4, tol = 1e-9,
                     verb = 0, ...) {
@@ -379,17 +381,21 @@ get_tau <- function(a, gamma, phi, A, k,
     ## each returns x = tau
     rootf <- get(paste0('root_tau_', model), mode = 'function')
 
+    ## TODO: omit A from arguments and solve this
+    ## in root functions?
+    A <- a*R
+    
     ## TODO: find better solution or test whether taking the
     ## the highest root is always appropriate. 
     solution <- try(rootSolve::uniroot.all(rootf,
                                            a = a, gamma = gamma, phi = phi,
-                                           A = A, k = k,
+                                           A = A, k = k, R = R, Rmin = Rmin,
                                            lower = lower, upper = upper,
                                            tol = tol),
                     silent = verb==0)
     if ( FALSE ) {
         solution <- try(stats::uniroot(rootf, a = a, gamma = gamma, phi = phi,
-                                       A = A, k = k,
+                                       A = A, k = k, R = R, Rmin = Rmin,
                                        lower = lower, upper = upper, tol = tol),
                         silent = verb==0)
     }
@@ -401,6 +407,8 @@ get_tau <- function(a, gamma, phi, A, k,
                        ';\n\tgamma= ', gamma,
                        ';\n\tphi= ', phi,
                        ';\n\tA= ', A,
+                       ';\n\tR= ', R,
+                       ';\n\tRmin= ', Rmin,
                        ';\n\tk= ', k,
                        ';\n\t#solutions= ', length(solution),
                        ';\n\tclass= ', class(solution),
@@ -419,7 +427,7 @@ get_tau <- function(a, gamma, phi, A, k,
 }
 
 ## where x=tau
-root_tau_k <- function(x, a, gamma, phi, A = NA, k = NA) {
+root_tau_k <- function(x, a, gamma, phi, A = NA, k = NA, R = NA, Rmin = NA) {
 
     GT <- gamma*x
 
@@ -432,7 +440,7 @@ root_tau_k <- function(x, a, gamma, phi, A = NA, k = NA) {
 
 
 ## where x=tau
-root_tau_k_dr <- function(x, a, gamma, phi = NA, A, k) {
+root_tau_k_dr <- function(x, a, gamma, phi = NA, A, k, R = NA, Rmin = NA) {
 
     GT <- gamma*x
     phi <- A/(k*x)
@@ -444,8 +452,34 @@ root_tau_k_dr <- function(x, a, gamma, phi = NA, A, k) {
     rhs <- term1 + term2 + term3
     return(lhs - rhs)
 }
-##root_tau_dr <- function(x, a, gamma, phi = NA, A, k)
-##    stop('not implemented yet')
+
+## where x=tau
+root_tau_dr <- function(x, a, gamma, phi = NA, A, k, R = NA, Rmin = NA) {
+    
+    GT <- gamma*x
+    phi <- A/(k*x)
+
+    lhs <- 1/a
+    term1 <- phi/expm1(GT * (1-phi)) 
+    term2 <- phi/2
+    term3 <- (1+1/phi)/GT
+    rhs <- term1 + term2 + term3
+    return(lhs - rhs)
+}
+
+root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k, R, Rmin) {
+
+    GT <- gamma*x
+    phi <- A/(k*x)
+
+    lhs <- (1 - Rmin/R)/a
+    ##term1 <- (1-phi)/expm1(x*(1-phi)) # NOTE: wrong but worked e.g. for ATO3 in chin12 data
+    term1 <- (phi-1)/expm1(GT*(1-phi))
+    term2 <- phi/2
+    term3 <- 1/GT
+    rhs <- term1 + term2 + term3
+    return(lhs - rhs)
+}
 ##root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k)
 ##    stop('not implemented yet')
 
@@ -624,17 +658,8 @@ root_k <- function(x, a, phi, R = NA, Rmin = NA) {
 }
     
 
-
 ## anti-phasic transcription/degradation,
 ## where x = gamma * tau
-root_k_dr_coth <- function(x, a, phi, R = NA, Rmin = NA) {
-    
-    lhs <- 1/a
-    term1 <- 1/x
-    term2 <- phi/2 * pracma::coth((x-x*phi)/2)
-    rhs <- term1+term2
-    return(lhs - rhs)
-}
 root_k_dr <- function(x, a, phi, R = NA, Rmin = NA) {
         
     lhs <- 1/a
@@ -645,45 +670,63 @@ root_k_dr <- function(x, a, phi, R = NA, Rmin = NA) {
     return(lhs - rhs)
 }
 
-## degradation pulse
-## where x = gamma * tau
-## TODO: expm1-based version
 root_dr <- function(x, a, phi, R = NA, Rmin = NA) {
-    
     lhs <- 1/a
-    term1 <- (1+1/phi)/x  #TODO: this was 1-1/phi, is it correct now?
-    term2 <- phi/2 * pracma::coth((x-x*phi)/2)
-    rhs <- term1+term2
-
+    term1 <- phi/expm1(x * (1-phi)) 
+    term2 <- phi/2
+    term3 <- (1+1/phi)/x
+    rhs <- term1 + term2 + term3
     return(lhs - rhs)
 }
 
-
-## anti-phasic transcription/degradation and basal transcription
-## where x = gamma * tau
-## TODO: reconstruct math for this version
-root_k_dr_k0_coth <- function(x, a, phi, R, Rmin) {
-
-    A <- a*R
-    lhs <- (R - Rmin)/A
-
-    term1 <- 1/x
-    term2 <- 1/expm1(x*(phi-1))
-    term3 <- phi/2 * pracma::coth((x-x*phi)/2)
-    rhs <- term1 - term2 + term3
-    return(lhs - rhs)
-}
 root_k_dr_k0 <- function(x, a, phi, R, Rmin) {
+    lhs <- (1 - Rmin/R)/a
+    ##term1 <- (1-phi)/expm1(x*(1-phi)) # NOTE: wrong but worked e.g. for ATO3 in chin12 data
+    term1 <- (phi-1)/expm1(x*(1-phi))
+    term2 <- phi/2
+    term3 <- 1/x 
+    rhs <- term1 + term2 + term3
+    return(lhs - rhs)
+}
+
+## NOTE: keep for testing?
+root_k_dr_k0_old <- function(x, a, phi, R, Rmin) {
     
     lhs <- R - Rmin
     betam1 <- expm1(x*(1-phi)) # exp() +1
-    term1 <- (1-phi) /betam1 # TODO: should this be (1-phi) /betam1  ?
+    ##term1 <- (1-phi) /betam1 # TODO: should this be (phi-1)  !?
+    term1 <- (phi-1) /betam1 # TODO: correct now?
     term2 <- phi/2
     term3 <- 1/x 
     rhs <- a*R*(term1 + term2 + term3)
-    ##rhs <- phi*k*tau*(term1 + term2 + term3)
     return(lhs - rhs)
 }
+
+root_k_dr_coth <- function(x, a, phi, R = NA, Rmin = NA) {
+    
+    lhs <- 1/a
+    term1 <- 1/x
+    term2 <- phi/2 * pracma::coth((x-x*phi)/2)
+    rhs <- term1 + term2
+    return(lhs - rhs)
+}
+root_dr_coth <- function(x, a, phi, R = NA, Rmin = NA) {
+    lhs <- 1/a
+    term1 <- (1+1/phi)/x  
+    term2 <- phi/2 * pracma::coth((x-x*phi)/2)
+    rhs <- term1 + term2
+    return(lhs - rhs)
+}
+
+root_k_dr_k0_coth <- function(x, a, phi, R, Rmin) {
+    lhs <- (1 - Rmin/R)/a
+    term1 <- 1/x
+    term2 <- phi/2 * pracma::coth((x-x*phi)/2)
+    term3 <- - 1/expm1(x*(1-phi)) 
+    rhs <- term1 + term2 + term3
+    return(lhs - rhs)
+}
+
 
 
 ### ANALYTIC MODEL

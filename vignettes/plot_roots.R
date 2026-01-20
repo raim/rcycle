@@ -46,6 +46,7 @@ abline(h = 0, col=2, lty=2)
 abline(v = roots_k_dr, col=2, lty=2)
 
 
+
 ## get_degradation roots
 
 tau <- seq(-100,100,.01)
@@ -58,8 +59,7 @@ for ( model in c('k', 'dr', 'k_dr', 'k_dr_k0') ) {
 
     plot(gt, y, type='l', xlab=expression(gamma*tau), ylab='root_k')
     abline(h = 0, col=2, lty=2)
-    Sys.sleep(2)
-    
+    ##Sys.sleep(2)
 }
 
 
@@ -71,14 +71,44 @@ gt_k_dr_k0 <- root_k_dr_k0(gt, a = a, phi = .1, R = R, Rmin = Rmin)
 plot(gt, gt_k, type='l', xlab=expression(gamma*tau), ylab='root_k')
 abline(h = 0, col=2, lty=2)
 
-plot(gt, gt_k_dr, type='l', xlab=expression(gamma*tau), ylab='root_k',
+plot(gt, gt_k_dr, type='l', xlab=expression(gamma*tau), ylab='root_k_dr',
      ylim=c(-10,10))
 abline(h = 0, col=2, lty=2)
 
-plot(gt, gt_dr, type='l', xlab=expression(gamma*tau), ylab='root_k',
+plot(gt, gt_dr, type='l', xlab=expression(gamma*tau), ylab='root_dr',
      ylim=c(-10,10))
 abline(h = 0, col=2, lty=2)
 
-plot(gt, gt_k_dr_k0, type='l', xlab=expression(gamma*tau), ylab='root_k')
+plot(gt, gt_k_dr_k0, type='l', xlab=expression(gamma*tau), ylab='root_k_dr_k0')
 abline(h = 0, col=2, lty=2)
 
+source('/home/raim/programs/rcycle/R/models.R')
+
+gt_k_dr_k0 <- root_k_dr_k0(gt, a = a, phi = .1, R = R, Rmin = Rmin)
+gt_k_dr_k0_old <- root_k_dr_k0_old(gt, a = a, phi = .1, R = R, Rmin = Rmin)
+gt_k_dr_k0_coth <- root_k_dr_k0_coth(gt, a = a, phi = .1, R = R, Rmin = Rmin)
+
+## relation of old the new root finding function: a*R
+plot(gt_k_dr_k0, gt_k_dr_k0_old/(a*R))
+abline(a=0, b=1)
+
+plot(gt_k_dr_k0, gt_k_dr_k0_coth)
+abline(a=0, b=1)
+
+roots_k_dr_k0 <- rootSolve::uniroot.all(f=root_k_dr_k0,
+                                        a = a, phi = .1, R = R, Rmin = Rmin,
+                                        lower = min(x), upper = max(x))
+roots_k_dr_k0_old <- rootSolve::uniroot.all(f=root_k_dr_k0_old,
+                                            a = a, phi = .1, R = R, Rmin = Rmin,
+                                            lower = min(x), upper = max(x))
+roots_k_dr_k0_coth <- rootSolve::uniroot.all(f=root_k_dr_k0_coth,
+                                             a = a, phi = .1, R = R, Rmin = Rmin,
+                                             lower = min(x), upper = max(x))
+
+plot(gt, gt_k_dr_k0, type='l', xlab=expression(gamma*tau), ylab='root_k',
+     ylim = c(-1,10))
+lines(gt, gt_k_dr_k0_old/(a*R), col =2, lty=3 , lwd=3)
+abline(h=0)
+abline(v = roots_k_dr_k0_old, col=4, lty=1, lwd=4)
+abline(v = roots_k_dr_k0_coth, col=3, lty=3, lwd=3)
+abline(v = roots_k_dr_k0, col=2, lty=3, lwd=2)
