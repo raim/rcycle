@@ -480,8 +480,6 @@ root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k, R, Rmin) {
     rhs <- term1 + term2 + term3
     return(lhs - rhs)
 }
-##root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k)
-##    stop('not implemented yet')
 
 get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
