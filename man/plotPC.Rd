@@ -50,11 +50,30 @@ plotPC(
 )
 }
 \arguments{
-\item{z}{use the zth PC component for coloring
-between quantiles given in z.q}
+\item{phases}{PCA object, as returned from stats::prcomp or the
+annotated version via rcycle::pseudophase.}
 
-\item{scale}{scale parameter, if provided it converts the plot
-to a true biplot}
+\item{x, y}{PC components to plot on x and y axes.}
+
+\item{z}{use the zth PC component for coloring between quantiles
+given in z.q}
+
+\item{vectors}{plot eigenvectors.}
+
+\item{vlines}{connect eigenvector tips by a line, useful for
+circular data.}
+
+\item{varrows}{draw origin-based arrows for eigenvectors (as in a biplot).}
+
+\item{scores}{plot transformed data.}
+
+\item{slines}{connect transformed data by a line, useful for
+circular data.}
+
+\item{sarrows}{draw origin-based arrows for transformed data.}
+
+\item{scale}{scale parameter, if provided it converts the plot to a
+true biplot}
 }
 \description{
 NOTE: scale = 1, pc.biplot = FALSE is equivalent to the defaults

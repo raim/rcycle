@@ -346,11 +346,22 @@ monoplot <- function(x, type='rotation',
 #' 
 #' NOTE: scale = 1, pc.biplot = FALSE is equivalent to the defaults
 #' of R's biplot.prcomp.
-#' 
-#' @param z use the zth PC component for coloring
-#' between quantiles given in z.q
-#' @param scale scale parameter, if provided it converts the plot
-#' to a true biplot 
+#'
+#' @param phases PCA object, as returned from stats::prcomp or the
+#'     annotated version via rcycle::pseudophase.
+#' @param x,y PC components to plot on x and y axes.
+#' @param z use the zth PC component for coloring between quantiles
+#'     given in z.q
+#' @param scale scale parameter, if provided it converts the plot to a
+#'     true biplot
+#' @param vectors plot eigenvectors.
+#' @param varrows draw origin-based arrows for eigenvectors (as in a biplot).
+#' @param vlines connect eigenvector tips by a line, useful for
+#'     circular data.
+#' @param scores plot transformed data.
+#' @param sarrows draw origin-based arrows for transformed data.
+#' @param slines connect transformed data by a line, useful for
+#'     circular data.
 #' @export
 plotPC <- function(phases, x=1, y=2,
                    z, z.q = c(.05,.95), z.legend = FALSE, # color by PCz

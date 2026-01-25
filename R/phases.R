@@ -290,7 +290,7 @@ get_pseudophase <- function(states,
     ## PCA of cells
     ## scale: bring COLUMNS to unit variance (x-mean(x))/std(x)
     ## equiv to eigen(cor(cstates))
-    phases <- prcomp(cstates, scale.=scale, center=center) 
+    phases <- stats::prcomp(cstates, scale.=scale, center=center) 
     
 
     ## CELL PSEUDOPHASE from loadings of PC1 vs. PC2
