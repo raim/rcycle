@@ -34,9 +34,10 @@ models <- c('k', 'dr', 'k_dr', 'k_dr_coth', 'k_dr_k0', 'k_dr_k0_coth')
 
 mrates <- list()
 krng <- drrng <- c()
-for ( mod in models ) {
 
-    a <- seq(.5,5,.4)
+## WHAT WAS THAT? NOT USED
+for ( mod in models ) {
+    ##a <- seq(.5,5,.4) ## ?
     
     mrates[[mod]] <-
         get_rates(model = mod,
@@ -65,10 +66,14 @@ for ( mod in models ) {
     tmp <- prates[[mod]][,'k']
     krng <- range(c(krng, tmp[is.finite(tmp)]), na.rm=TRUE)
     tmp <- prates[[mod]][,'dr']
-    drrng <- range(c(drrng, tmp[is.finite(tmp)]), na.rm=TRUE)
+    ## NOTE: ugly cutoff to remove spurious single
+    ## results for the k0 model from plot range
+    ## TODO: find out why these occur and fix
+    drrng <- range(c(drrng, tmp[is.finite(tmp)& tmp> 1e-3]), na.rm=TRUE)
 
 }
 
+## NOTE: model DR, gamma is u-shaped -> counteracted by k
 plotdev(file.path(out.path, 'pwm_rates_k_phi'),
         type='pdf', width=W, height=H)
 par(mai=c(.5,.55,.25,.15), mgp=c(1.3,0.3,0), tcl=-.25)
@@ -92,14 +97,14 @@ plot(phis, phis, ylim=log10(drrng), col=NA, axes=FALSE,
 axis(1)
 logaxis(2)
 logaxis(4, labels=FALSE)
-for ( i in seq_along(models) )
+for ( i in seq_along(models) ) 
     lines(phis, log10(prates[[models[[i]]]][,'dr']), col=i, type='l', lty=i)
 mtext(bquote(tau==.(tau)~h), 3, 0)
-legend('bottomright', models, col=1:length(models), lty=1, bty='n',
+legend('top', models, col=1:length(models), lty=1, bty='n',
        seg.len=.5, y.intersp=.75)         
 dev.off()
 
-
+## vary period
 trates <- list()
 for ( mod in models ) {
     
@@ -112,7 +117,10 @@ for ( mod in models ) {
     tmp <- trates[[mod]][,'k']
     krng <- range(c(krng, tmp[is.finite(tmp)]), na.rm=TRUE)
     tmp <- trates[[mod]][,'dr']
-    drrng <- range(c(drrng, tmp[is.finite(tmp)]), na.rm=TRUE)
+    ## NOTE: ugly cutoff to remove spurious single
+    ## results for the k0 model from plot range
+    ## TODO: find out why these occur and fix
+    drrng <- range(c(drrng, tmp[is.finite(tmp)& tmp> 1e-3]), na.rm=TRUE)
 }
 
 plotdev(file.path(out.path, 'pwm_rates_k_tau'),
@@ -141,6 +149,6 @@ axis(1)
 logaxis(2)
 logaxis(4, labels=FALSE)
 mtext(bquote(phi==.(phi)), 3, 0)
-legend('bottomleft', models, col=1:length(models), lty=1, bty='n',
+legend('topright', models, col=1:length(models), lty=1, bty='n',
        seg.len=.5, y.intersp=.75)         
 dev.off()

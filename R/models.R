@@ -164,7 +164,7 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
 
     ## add terms for all other models
     ## phi^2*k*tau/2 * coth(gamma*tau*(1-phi)/2)
-    if ( model %in% c('dr', 'k_dr', 'k_dr_k0') ) {
+    if ( model %in% c('dr', 'k_dr', 'k_dr_k0', 'k_dr_k0_coth') ) {
 
         ## exponent
         y <- gamma*tau*(1-phi)
@@ -181,7 +181,7 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
         ##cat(paste('adding k/gamma\n'))
         rmn <- rmn + k/gamma
     }
-    if ( model %in% c('k_dr_k0') ) {
+    if ( model %in% c('k_dr_k0', 'k_dr_k0_coth') ) {
         ##cat(paste('adding k0/gamma\n'))
         rmn <- rmn + k0/gamma
     }
@@ -196,7 +196,7 @@ get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE,
                      k, k0, force.relative = FALSE, use.coth = FALSE,
                      model = c('k', 'dr', 'k_dr', 'k_dr_k0'), ...) {
 
-    if ( model %in% c('dr', 'k_dr', 'k_dr_k0') ) {
+    if ( model %in% c('dr', 'k_dr', 'k_dr_k0', 'k_dr_k0_coth') ) {
 
         if ( !missing(k) & !force.relative ) {
 
@@ -531,7 +531,7 @@ get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     rownames(res) <- NULL
 
     ## add k0
-    if ( model %in% c('k_dr_k0') ) {
+    if ( model %in% c('k_dr_k0', 'k_dr_k0_coth') ) {
         res$k0 <- get_basal(k = k, gamma = gamma, tau = tau, phi = phi,
                             Rmin = Rmin, Rmax = Rmax, verb = 0)
         if ( all(is.na(res$k0)) )
@@ -872,7 +872,7 @@ pwm_k <- function(t, R0, k, gamma, dr,  mu, k0=0,
 ## TODO: get axis/unit functions used for stan model script
 axis_labels <- c(rmean=expression('\u27E8'*R*'\u27E9'/(n/cell)),
                  rmeanau=expression('\u27E8'*R*'\u27E9'),
-                 ramp=expression(tilde(R)),
+                 ramp=expression(tilde(R)/(n/cell)),
                  rampr=expression(tilde(r)),
                  r=expression(R(t)/(n/cell)),
                  phi=expression(duty~cycle~varphi),

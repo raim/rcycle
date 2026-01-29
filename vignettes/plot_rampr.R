@@ -223,3 +223,133 @@ for ( mod in models ) {
 
     }
 }
+
+
+## vary gamma
+
+gammas <- seq(0, 10, length.out=100)
+
+## absolute amplitude
+rampg <- list()
+for ( mod in models ) 
+    rampg[[mod]] <- get_ramp(gamma=gammas, phi=phi, tau=tau,
+                             k=k, k0=k0, 
+                             model = mod, relative = FALSE)
+rampg <- do.call(cbind, rampg)
+plotdev(file.path(out.path, 'pwm_gamma_ramp'),
+        type='pdf', width=W, height=H)
+par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
+matplot(gammas, rampg, type ='l', lty=1, col=1:ncol(rampg),
+        xlab = axis_labels['gamma'], ylab = axis_labels['ramp'])
+legend('right',
+       colnames(rampg), col=1:ncol(rampg), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
+mtext(bquote(tau==.(tau)~h*';'~phi==.(phi)), 3, 0)
+dev.off()
+
+## relative amplitude
+ramprg <- list()
+for ( mod in models ) 
+    ramprg[[mod]] <- get_ramp(gamma=gammas, phi=phi, tau=tau,
+                             k=k, k0=k0, 
+                             model = mod, relative = TRUE)
+ramprg <- do.call(cbind, ramprg)
+plotdev(file.path(out.path, 'pwm_gamma_rampr'),
+        type='pdf', width=W, height=H)
+par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
+matplot(gammas, ramprg, type ='l', lty=1, col=1:ncol(ramprg),
+        xlab = axis_labels['gamma'], ylab = axis_labels['rampr'])
+legend('bottomright',
+       colnames(ramprg), col=1:ncol(ramprg), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
+mtext(bquote(tau==.(tau)~h*';'~phi==.(phi)), 3, 0)
+dev.off()
+
+## mean abundance
+rmeang <- list()
+for ( mod in models ) 
+    rmeang[[mod]] <- get_rmean(gamma=gammas, phi=phi, tau=tau,
+                               k=k, k0=k0, 
+                               model = mod)
+rmeang <- do.call(cbind, rmeang)
+plotdev(file.path(out.path, 'pwm_gamma_rmean'),
+        type='pdf', width=W, height=H)
+par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
+matplot(gammas, log10(rmeang), type ='l', lty=1, col=1:ncol(rmeang),
+        xlab = axis_labels['gamma'], ylab = axis_labels['rmean'],
+        axes = FALSE)
+logaxis(2)
+axis(1)
+box()
+legend('topright',
+       colnames(rmeang), col=1:ncol(rmeang), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
+mtext(bquote(tau==.(tau)~h*';'~phi==.(phi)), 3, 0)
+dev.off()
+
+## vary k and calculate ramp and rmean
+ks <- seq(0, 1000, length.out=100)
+
+## absolute amplitude
+rampg <- list()
+for ( mod in models ) 
+    rampg[[mod]] <- get_ramp(gamma=gamma, phi=phi, tau=tau,
+                             k=ks, k0=k0, 
+                             model = mod, relative = FALSE)
+rmeang <- list()
+for ( mod in models ) 
+    rmeang[[mod]] <- get_rmean(gamma=gamma, phi=phi, tau=tau,
+                               k=ks, k0=k0, 
+                               model = mod)
+rmeang <- do.call(cbind, rmeang)
+rampg <- do.call(cbind, rampg)
+
+plotdev(file.path(out.path, 'pwm_k_ramp'),
+        type='pdf', width=W, height=H)
+par(mai=c(.5,.5,.25,.15), mgp=c(1.2,0.3,0), tcl=-.25)
+matplot(ks, (rampg), type ='l', lty=1, col=1:ncol(rampg),
+        xlab = axis_labels['k'], ylab = axis_labels['ramp'],
+        axes = FALSE)
+axis(2)
+axis(1)
+box()
+legend('topleft',
+       colnames(rampg), col=1:ncol(rampg), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
+mtext(bquote(tau==.(tau)~h*';'~phi==.(phi)), 3, 0)
+dev.off()
+
+
+plotdev(file.path(out.path, 'pwm_k_rmean'),
+        type='pdf', width=W, height=H)
+par(mai=c(.5,.5,.25,.15), mgp=c(1.2,0.3,0), tcl=-.25)
+matplot(ks, (rmeang), type ='l', lty=1, col=1:ncol(rmeang),
+        xlab = axis_labels['k'], ylab = axis_labels['rmean'],
+        axes = FALSE)
+axis(2)
+axis(1)
+box()
+legend('topleft',
+       colnames(rmeang), col=1:ncol(rmeang), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
+mtext(bquote(tau==.(tau)~h*';'~phi==.(phi)), 3, 0)
+dev.off()
+
+plotdev(file.path(out.path, 'pwm_k_rmean_ramp'),
+        type='pdf', width=W, height=H)
+par(mai=c(.5,.5,.25,.15), mgp=c(1.2,0.3,0), tcl=-.25)
+matplot(log10(rmeang), log10(rampg), log='', type ='l', lty=1, col=1:ncol(rmeang),
+        xlab = axis_labels['rmean'], ylab = axis_labels['ramp'],
+        axes = FALSE)
+logaxis(1)
+logaxis(2)
+box()
+arrows(y0=log10(20), y1=log10(100),
+       x0=log10(50), x1=log10(300), length=.05, col=8, lwd=2, lty=2)
+text(log10(200), log10(30), 'k', col=8, font=2)
+legend('topleft',
+       colnames(rmeang), col=1:ncol(rmeang), lty=1, bty='n',
+       seg.len=.5, y.intersp=.75)         
+mtext(bquote(tau==.(tau)~h*';'~phi==.(phi)), 3, 0)
+##abline(a=0, b=1, lty=2, col=8)
+dev.off()
