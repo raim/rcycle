@@ -2,7 +2,7 @@
 
 A fast and scalable method to determine a `pseudophase` of cyclic transcription processes from single cell transcriptome (snap shot) data.
 
-![vecteezy.com](vignettes/elephant.png){width=25%}
+![vecteezy.com](vignettes/elephant.png |width=100)
 
 TODO:
 
