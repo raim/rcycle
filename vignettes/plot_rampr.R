@@ -191,12 +191,12 @@ for ( mod in models ) {
     facetcol <- cut(zfacet, 100)
     plotdev(file.path(out.path, paste0('pwm_rampr_3d_', mod, '_persp')),
             type='pdf', width=W, height=H)
-    par(mai=c(.5,.5,.25,.15), mgp=c(1.4,0.3,0), tcl=-.25)
-    persp(x=phis, y=taus, z= phta, theta = 30, phi = 0,
+    par(mai=c(.1,.0,.0,.0), mgp=c(2,0.3,0), tcl=-.25)
+    persp(x=phis, y=taus, z= phta, theta = -60, phi = 0,
           col=color[facetcol],
           zlab = 'rel. RNA ampl.',
           xlab = 'duty cycle',
-          ylab = 'period')
+          ylab = 'period', zlim = c(0,10))
     figlabel(mod, pos = 'topleft')
     dev.off()
     
