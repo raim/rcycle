@@ -585,7 +585,7 @@ phaseHist <- function(phase, cls, cls.srt, cls.col, sid="", leg.nrow=1) {
     ## TODO: use -pi,pi for centered data
     brks <- seq(min(phase)-pi/18, max(phase)+pi/18, 2*pi/36)
     
-    hist(phs, breaks=brks, col = NA, border="#00000000", axes=FALSE,
+    hist(phase, breaks=brks, col = NA, border="#00000000", axes=FALSE,
          main=paste0(sid), xlab="pseudophase")
     for ( pid in unique(cls) ) {
         clcol <- "#CCCCCC"

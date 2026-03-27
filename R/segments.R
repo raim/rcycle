@@ -296,7 +296,8 @@ get_segments <- function(phases,
 #'     smoothing effects.
 #' @export
 plotSegments <- function(phases, difference=FALSE, center=TRUE,
-                         method='shoulder', show.cohorts=TRUE) {
+                         method='shoulder', show.cohorts=TRUE,
+                         axis4 = FALSE, legend = FALSE, show.max = TRUE) {
 
     
     ord <- phases$rotation.phase$order
@@ -386,8 +387,13 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
         if ( !is.null(brks) )
             abline(v=brks$phi, lwd=.25, col=bcol) 
 
-        axis(4, col=dcol, col.axis=dcol)
-        mtext(ylab4, 4, par('mgp')[1], col=dcol)
+        if ( axis4 ) {
+            axis(4, col=dcol, col.axis=dcol)
+            mtext(ylab4, 4, par('mgp')[1], col=dcol)
+        }
+        if ( legend )
+            legend('topleft', ylab4, col=dcol, lty=1, seg.len=.5, cex=.9,
+                   bty='n')
         par(new=TRUE)
     }
 
