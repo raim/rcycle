@@ -9,7 +9,10 @@ plotSegments(
   difference = FALSE,
   center = TRUE,
   method = "shoulder",
-  show.cohorts = TRUE
+  show.cohorts = TRUE,
+  axis4 = FALSE,
+  legend = FALSE,
+  show.max = TRUE
 )
 }
 \arguments{
