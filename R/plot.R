@@ -155,8 +155,9 @@ plotStates <- function(phase, states, cls.srt, cls.col,
                        ordered=FALSE, 
                        win=.01, circular=TRUE, ma=TRUE,
                        log=FALSE, norm=FALSE, lines=TRUE, 
-                       sid="", legend=TRUE, leg.nrow=1,
-                       xtype='phase', xlab=expression(phase~phi), xlim, 
+                       sid="", legend=TRUE, leg.nrow=1, leg.pos="topright",
+                       xtype='phase', xlab=expression(phase~phi),
+                       xlim=c(-pi,pi), 
                        lwd=2, axes=TRUE, ylab, ylim, verb=0, ...) {
 
     ## TODO: allow phases object
@@ -234,7 +235,7 @@ plotStates <- function(phase, states, cls.srt, cls.col,
 
     figlabel(paste0(sid), pos=ifelse(legend,"topleft","top"), cex=1.2, font=2)
     if ( legend )
-        legend("topright", sub(".*_", "", cls.srt),
+        legend(leg.pos, sub(".*_", "", cls.srt),
                col=cls.col[cls.srt],
                pch=15, pt.cex=1, cex=.8, ##inset=c(-0.1,-0.1),
                bg="#ffffff00", ncol=ceiling(length(cls.srt)/leg.nrow),
@@ -394,8 +395,8 @@ plotPC <- function(phases, x=1, y=2,
     ## PC names to interface data and for plot labels
     xs <- paste0('PC', x) # Rotated data: cohorts
     ys <- paste0('PC', y)
-    xv <- paste0('EV', x) # Eigenvectors: cells
-    yv <- paste0('EV', y)
+    xv <- paste0('V', x) # Eigenvectors: cells
+    yv <- paste0('V', y)
 
     alls <- grep("^PC",colnames(phases$x))
     allv <- grep("^PC",colnames(phases$rotation))
