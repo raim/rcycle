@@ -14,7 +14,7 @@ gamma <- dr+mu
 k0 <- 0
 
 ## osci and growth params
-phi <- .5
+phi <- .25
 tau <- 5
 
 ## Simulate PWM with the analytical model
@@ -36,7 +36,7 @@ y2 <- pwm_k(t=time, R0=ravg, k=k, dr=dr, k0=k0, mu=mu, phi=phi, tau=tau)$R
 n1 <- jitter(y1, 100)
 n2 <- jitter(y2, 100)
 
-plot(time, n1, type='l', ylim=c(0,80))
+plot(time, n1, type='l', ylim=c(0,80), ylab=axis_labels["r"])
 lines(time, n2, col=2)
 
 ## NOTE: anti-correlation in bins: always -1?
@@ -57,7 +57,7 @@ for ( k in 2:length(bins) ) {
 ## correlation becomes about 0 in steady state
 ## regions, ONLY when noise is added.
 par(mfcol=c(2,1))
-plot(time, n1, type='l', ylim=c(0,80))
+plot(time, n1, type='l', ylim=c(0,80), ylab=axis_labels["r"], xlab='time/h')
 lines(time, n2, col=2)
-plot(bintme, bincor, type='l')
+plot(bintme, bincor, type='l', xlab='time/h', ylab="binned correlation")
 abline(h=0)
