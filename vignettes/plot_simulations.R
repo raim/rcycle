@@ -24,13 +24,16 @@ tau <- 5
 
 mod='k'
 
-ravg <- get_rmean(k=k, gamma=gamma, k0=k0, phi=phi, tau=tau,
+r1 <- get_rmean(k=k, gamma=gamma, k0=k0, phi=1-phi, tau=tau,
+                  model = mod, use.coth = TRUE)
+r2 <- get_rmean(k=k, gamma=gamma, k0=k0, phi=phi, tau=tau,
                   model = mod, use.coth = TRUE)
 
 time <- seq(0,5*tau,.01)
-y1 <- pwm_k(t=time, R0=ravg, k=k, dr=dr, k0=k0, mu=mu, phi=1-phi, tau=tau,
-            theta=pi)$R
-y2 <- pwm_k(t=time, R0=ravg, k=k, dr=dr, k0=k0, mu=mu, phi=phi, tau=tau)$R
+y1 <- pwm_k(t=time, R0=r1, k=k, dr=dr, k0=k0, mu=mu,
+            phi=1-phi, tau=tau, theta=pi)$R
+y2 <- pwm_k(t=time, R0=ravg, k=k, dr=dr, k0=k0, mu=mu,
+            phi=phi, tau=tau, theta=0)$R
 
 ## add noise:
 n1 <- jitter(y1, 100)
@@ -56,7 +59,7 @@ for ( k in 2:length(bins) ) {
 
 ## correlation becomes about 0 in steady state
 ## regions, ONLY when noise is added.
-par(mfcol=c(2,1))
+par(mfcol=c(2,1),mai=c(.5,.5,.1,.1))
 plot(time, n1, type='l', ylim=c(0,80), ylab=axis_labels["r"], xlab='time/h')
 lines(time, n2, col=2)
 plot(bintme, bincor, type='l', xlab='time/h', ylab="binned correlation")
