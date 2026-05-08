@@ -152,7 +152,9 @@ stop('this needs to be udpated')
 #' @export
 plotStates <- function(phase, states, cls.srt, cls.col,
                        ncells,
-                       ordered=FALSE, 
+                       ordered=FALSE,
+                       ## NOTE: same processing options as in get_pseudophase
+                       row.center = FALSE,  scale = FALSE, center = FALSE,
                        win=.01, circular=TRUE, ma=TRUE,
                        log=FALSE, norm=FALSE, lines=TRUE, 
                        sid="", legend=TRUE, leg.nrow=1, leg.pos="topright",
@@ -160,12 +162,25 @@ plotStates <- function(phase, states, cls.srt, cls.col,
                        xlim=c(-pi,pi), 
                        lwd=2, axes=TRUE, ylab, ylim, verb=0, ...) {
 
-    ## TODO: allow phases object
+    ## TODO: allow prcomp/phases object
+    ## and get settings for scaling from there!
 
     ## order by x-value
     if ( ordered ) ord <- 1:length(phase)
     else ord <- order(phase)
 
+    ## PREPROCESS DATA
+    ## TODO: warning for incompatible/meaningless processing?
+    
+    ## center rows first, as in get_pseudophase
+    if ( row.center ) 
+        states <- states - apply(states, 1, mean)
+
+    ## scale and center, as in prcomp prior to SVD
+    if ( scale )    
+        states <- scale(states, scale=scale, center=center)
+
+    ## log2 ratio
     if ( norm )    
         states <- log2(states/apply(states, 1, mean))
 
