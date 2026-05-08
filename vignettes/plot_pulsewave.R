@@ -26,6 +26,37 @@ dr <- 1.7
 gamma <- dr+mu
 k0 <- 10
 
+plotdev(file.path(out.path, 'pwm_cartoon_pulsewave'),
+        type='pdf', width=2.5, height=2.5)
+par(mgp=c(.5,0,0), mai=c(.35,.35,.35,.4))
+plot(1, col=NA, xlim=range(stime), ylim=c(0, length(phocs)), axes=FALSE,
+     xlab='time', ylab=NA)
+text(mean(stime), length(phocs)+.75,
+     labels='Alternating pulse waves\nof gene expression:', font=2, xpd=TRUE)
+mtext('growth rate', 2, .6)
+arrows(x0=-.2, y0=.5, y1=length(phocs)-.5, xpd=TRUE, length=.1)
+arrows(x0=.5, x1=max(stime)-.5, y0=-.5, xpd=TRUE, length=.1)
+for ( i in seq_along(phocs) ) {
+    phoc <- phocs[i]
+    ploc <- 1 - phoc
+    
+    hocon <- as.numeric(pw_fourier(t=stime, k=1,
+                                   phi=phoc, tau=tosc, theta=0*pi,
+                                   N=1e3)>.5)
+    locon <- as.numeric(pw_fourier(t=stime, k=1,
+                                   phi=ploc, tau=tosc, theta=pi,
+                                   N=1e3)>.5)
+    
+    lines(stime, .8*hocon+i-1, type='l', col=2)
+    lines(stime, .8*locon+i-1, col=4, lty=3)
+}
+text(x=rep(max(stime), length(phocs)), y=seq_along(phocs)-.5,
+     labels=phocs, col=2, xpd=TRUE, pos=4)
+##text(x=max(stime), y=-.75, labels=expression(phi), col=2, xpd=TRUE, cex=1.2,
+##     pos=4)
+text(x=max(stime)+1, y=-1.0, labels=expression(atop(duty), cycle~varphi),
+     col=2, xpd=TRUE, cex=1, pos=2)
+dev.off()
 
 plotdev(file.path(out.path, 'pwm_cartoon'), type='pdf', width=5, height=2)
 par(mfcol=c(1,2), mai=c(.35,.5,.35,.1), mgp=c(.5,0,0))
