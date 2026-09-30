@@ -617,8 +617,8 @@ plotPC <- function(phases, x=1, y=2,
     
     if ( zero.axis ) {
         if ( zero.axis.label ) {
-            axis(1, at=0, label=xlab)
-            axis(2, at=0, label=ylab)
+            axis(1, at=0, labels=xlab)
+            axis(2, at=0, labels=ylab)
         }
         abline(h=0)
         abline(v=0)
