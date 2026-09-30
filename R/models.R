@@ -1234,7 +1234,7 @@ get_degradation <- function(a,  R, Rmin,
     solution <- try(stats::uniroot(rootf, a=a, phi=phi, R=R, Rmin=Rmin,
                                    lower = lower, upper = upper, tol = tol),
                     silent = verb==0)
-    if ( class(solution)=="try-error" ) {
+    if ( inherits(solution, "try-error") ) {
         if ( verb>0 )
             cat(paste0('Model <', model, '> failed with:',
                        '\n\ta=', a,
