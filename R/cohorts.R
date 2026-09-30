@@ -6,7 +6,8 @@
 #' Each gene gets the name of its cohort; cohorts must not overlap.
 #' @param cohorts a cohort list, as for \code{\link{get_cohorts}}, or a
 #' cohort matrix (cohorts x genes), as returned by it.
-#' @param n the number of genes (columns of the cohort matrix).
+#' @param n the number of genes; if missing, the maximal index in a cohort
+#' list, or the number of columns of a cohort matrix.
 #' @param na class of genes in no cohort.
 #' @return character vector of length \code{n}.
 #' @seealso \code{\link{clustering2cohorts}}
@@ -16,11 +17,11 @@ cohort2clustering <- function(cohorts, n, na="na") {
     if ( inherits(cohorts, "list") ) {
         if ( missing(n) )  {
             warning("no total matrix size provided, using maximal index")
-            n <- max(unlist(COHORTS))
+            n <- max(unlist(cohorts))
         }
-        cohorts <- get_cohorts(cohorts, n=nrow(genes))
+        cohorts <- get_cohorts(cohorts, n=n)
     }
-    if ( missing(n) ) n <- nrow(cohorts)
+    if ( missing(n) ) n <- ncol(cohorts) # genes
     
     cls <- rep(na, n)
     for ( j in 1:nrow(cohorts) ) {
@@ -67,7 +68,7 @@ get_cohorts <- function(cohorts, n, normalize=FALSE) {
 
     if ( missing(n) ) {
         warning("no total matrix size provided, using maximal index")
-        n <- max(unlist(COHORTS))
+        n <- max(unlist(cohorts))
     }
     
     ## generate boolean cohort matrix: cohort X genes

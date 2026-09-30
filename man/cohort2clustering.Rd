@@ -10,7 +10,8 @@ cohort2clustering(cohorts, n, na = "na")
 \item{cohorts}{a cohort list, as for \code{\link{get_cohorts}}, or a
 cohort matrix (cohorts x genes), as returned by it.}
 
-\item{n}{the number of genes (columns of the cohort matrix).}
+\item{n}{the number of genes; if missing, the maximal index in a cohort
+list, or the number of columns of a cohort matrix.}
 
 \item{na}{class of genes in no cohort.}
 }

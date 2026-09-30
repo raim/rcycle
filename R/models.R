@@ -537,6 +537,8 @@ get_ramp_nogrowth <- function(gamma, dr, mu, phi, tau, relative = TRUE,
                      k, k0, force.relative = FALSE, use.coth = FALSE,
                      model = c('k', 'dr', 'k_dr', 'k_dr_k0'), ...) {
 
+    if ( length(model)>1 ) model <- model[1]
+
     if ( model %in% c('dr', 'k_dr', 'k_dr_k0', 'k_dr_k0_coth') ) {
 
         if ( !missing(k) & !force.relative ) {
@@ -849,6 +851,8 @@ get_times_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       lower = 1e-6, upper = 100, tol = 1e-9,
                       verb = 0, ...) {
 
+    if ( length(model)>1 ) model <- model[1]
+
     if ( all(is.na(gamma)) )
         gamma <- dr + ifelse(is.na(mu), 0, mu) # mu = NA: no growth
 
@@ -1078,6 +1082,8 @@ get_rates_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       k = NA, k0 = NA, gamma = NA, 
                       lower = 1e-6, upper = 20, tol = 1e-9,
                       verb = 0, ...) {
+
+    if ( length(model)>1 ) model <- model[1]
 
     ## REQUIRED:
     ## * period tau and duty cycle phi,

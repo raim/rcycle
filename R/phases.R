@@ -189,7 +189,7 @@ evaluate_order <- function(phases) {
     ## simply compare the order of cohort phases with the input order
     ## of the state matrix, reflect in row order of cohort phases in pca$x
     state_order_distance(reference=rownames(phases$x),
-                         test=rownames(phases$x)[phases$x$order])
+                         test=rownames(phases$x)[phases$x.phase$order])
 }
 
 #' Calibrate phase to a period.
@@ -729,6 +729,10 @@ shift_phase <- function(phi, dphi, center=TRUE) {
 #' @export
 center_phase <- function(phi) {
 
+    ## NOTE: the two steps below wrap once, i.e. from -3*pi:3*pi; angles
+    ## further out are first brought into -pi:pi by whole turns
+    far <- which(phi < -3*pi | phi >= 3*pi)
+    phi[far] <- phi[far] - 2*pi*round(phi[far]/(2*pi))
     phi[phi< pi] <- phi[phi< pi] + 2*pi
     phi[phi>=pi] <- phi[phi>=pi] - 2*pi
     phi
