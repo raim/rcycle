@@ -189,6 +189,69 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
     
 }
 
+#' Exact cycle mean of the pulse width-modulated ODE models.
+#'
+#' Periodic steady-state mean abundance of the ODEs \code{pwmode_k},
+#' \code{pwmode_dr}, \code{pwmode_k_dr} and \code{pwmode_k_dr_k0}, with
+#' dilution \code{mu} acting in both phases. For \code{model="k"} this is
+#' \code{phi*k/gamma}, as in \code{\link{get_rmean}}. For the models with
+#' phase-switched degradation, \code{\link{get_rmean}} is the exact mean of a
+#' model without dilution in the ON phase (\code{gamma = dr + mu} only in the
+#' OFF phase) and is therefore higher; the two agree for \code{mu = 0}.
+#'
+#' Derivation: in the ON phase (duration \code{a = phi*tau}),
+#' \code{dR/dt = k - mu*R}; in the OFF phase (\code{b = (1-phi)*tau}),
+#' \code{dR/dt = k0 - gamma*R}, with \code{k0 = k} for \code{"dr"} and
+#' \code{k0 = 0} for \code{"k_dr"}. With \code{eA = exp(-mu*a)},
+#' \code{eB = exp(-gamma*b)}, \code{iA = (1-eA)/mu} and
+#' \code{iB = (1-eB)/gamma}, the value at the start of the ON phase is
+#' \code{R0 = (k0*iB + k*iA*eB)/(1 - eA*eB)}, at its end
+#' \code{R1 = R0*eA + k*iA}, and the mean is
+#' \code{(R0*iA + k*(a-iA)/mu + R1*iB + k0*(b-iB)/gamma)/tau}, evaluated
+#' stably for small \code{mu} (limit \code{mu = 0}: \code{iA = a},
+#' \code{(a-iA)/mu = a^2/2}).
+#' @param k transcription rate in the ON phase.
+#' @param gamma total loss rate in the OFF phase, \code{dr + mu}; if missing,
+#' calculated from \code{dr} and \code{mu}.
+#' @param k0 basal transcription rate in the OFF phase (model
+#' \code{"k_dr_k0"} only).
+#' @param dr degradation rate.
+#' @param mu growth rate (dilution, both phases).
+#' @param phi duty cycle, the fraction of the period in the ON phase.
+#' @param tau period.
+#' @param model one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+#' \code{"k_dr_k0"}.
+#'@export
+get_rmean_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
+                            model = c('k', 'dr', 'k_dr', 'k_dr_k0')) {
+
+    model <- match.arg(model)
+    if ( missing(gamma) )
+        gamma <- dr + mu
+    if ( model == 'k' ) # recycled over tau, as get_rmean
+        return(unname(rep_len(phi*k/gamma,
+                              max(length(k), length(gamma), length(phi), length(tau)))))
+    if ( model == 'dr' ) k0 <- k
+    if ( model == 'k_dr' ) k0 <- 0
+
+    a <- phi*tau
+    b <- (1-phi)*tau
+    x <- mu*a
+    small <- abs(x) < 1e-8
+    ## (1-exp(-mu*a))/mu and (a - iA)/mu, stable for mu -> 0
+    iA <- ifelse(small, a - mu*a^2/2, -expm1(-x)/ifelse(small, 1, mu))
+    jA <- ifelse(small, a^2/2 - mu*a^3/6, (a - iA)/ifelse(small, 1, mu))
+    eA <- exp(-x)
+    eB <- exp(-gamma*b)
+    iB <- -expm1(-gamma*b)/gamma
+
+    R0 <- (k0*iB + k*iA*eB)/(1 - eA*eB)   # start of ON phase
+    R1 <- R0*eA + k*iA                    # end of ON phase
+    ion <- R0*iA + k*jA                   # integral over ON phase
+    ioff <- R1*iB + k0*(b - iB)/gamma     # integral over OFF phase
+    unname((ion + ioff)/tau)
+}
+
 
 #' Calculate abundance amplitudes from rates and times.
 #'@export
