@@ -29,6 +29,5 @@ the phases object with a new element
 \code{<segment>_class}.
 }
 \description{
-Requires \code{segmenTools} (\code{clusterCluster},
-\code{plotOverlaps}) to be attached.
+Uses \code{segmenTools::clusterCluster} for the overlaps.
 }

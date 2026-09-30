@@ -52,7 +52,7 @@ pwm_k(
 
 \item{N}{Number of Fourier terms to use (default 500).}
 
-\item{P0}{protein abundance at time t\link{1} (!).}
+\item{P0}{protein abundance at time \code{t[1]} (!).}
 
 \item{dp}{protein degradation rate.}
 

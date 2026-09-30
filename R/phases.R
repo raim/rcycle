@@ -476,8 +476,7 @@ get_classes <- function(states) {
 }
 #' Classify segments by their overlap with cell classes.
 #'
-#' Requires \code{segmenTools} (\code{clusterCluster},
-#' \code{plotOverlaps}) to be attached.
+#' Uses \code{segmenTools::clusterCluster} for the overlaps.
 #' @inheritParams revert
 #' @param segment the segmentation, as named in \link{get_segments}.
 #' @param class column of \code{phases$rotation.phase} holding the cell
@@ -501,11 +500,11 @@ segment_state <- function(phases, segment='inflection',
     
     
     ## calculate overlaps between state based and segment-based classes
-    ovl <- clusterCluster(query=phases$rotation.phase[,sid], q.srt=seg.srt,
+    ovl <- segmenTools::clusterCluster(query=phases$rotation.phase[,sid], q.srt=seg.srt,
                           target=phases$rotation.phase[,class], t.srt=cls.srt)
     ## assign to cohort with minimal overlap p.value
     if ( plot )
-        plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, xlab=class, ylab=sid)
+        segmenTools::plotOverlaps(ovl, p.min=1e-10, p.txt=1e-5, xlab=class, ylab=sid)
 
     segs <- apply(ovl$p.value, 1, function(x) names(which.min(x)))
 

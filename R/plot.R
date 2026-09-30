@@ -306,7 +306,7 @@ plotStates <- function(phase, states, cls.srt, cls.col,
             lines(phase[ord], mastates[cls.srt[k],],
                   col=cls.col[cls.srt[k]], lwd=lwd)
 
-    figlabel(paste0(sid), pos=ifelse(legend,"topleft","top"), cex=1.2, font=2)
+    segmenTools::figlabel(paste0(sid), pos=ifelse(legend,"topleft","top"), cex=1.2, font=2)
     if ( legend )
         legend(leg.pos, sub(".*_", "", cls.srt),
                col=cls.col[cls.srt],
@@ -356,7 +356,7 @@ monoplot <- function(x, type='rotation',
     if ( is.null(col) )  { # density plot!
         if ( is.null(colf) )
             colf <- function(n) grey.colors(n, start=0, end=1)
-        dense2d(xy[,xs],
+        segmenTools::dense2d(xy[,xs],
                 xy[,ys],
                 xlim=xlim, ylim=ylim,
                 colf = colf, pch=pch, cex=cex,
@@ -549,7 +549,7 @@ plotPC <- function(phases, x=1, y=2,
     if ( !missing(z) ) {
         zs <- paste0('PC', z) # Rotated data
         if ( missing(col) )
-            col <- num2col(phases$rotation[,zs], q=z.q)
+            col <- segmenTools::num2col(phases$rotation[,zs], q=z.q)
     } else z.legend <- FALSE
     
 
@@ -716,7 +716,7 @@ phcol.legend <- function(leg.pos="topright",
                                    expression(0),
                                    expression(pi)),
                          title=expression(phase~phi), ...) {
-    pcol <- num2col(c(-pi,0,pi), limits=c(-pi,pi))
+    pcol <- segmenTools::num2col(c(-pi,0,pi), limits=c(-pi,pi))
     legend(leg.pos, legend=legend,
            title=title, col=pcol, pch=19, ...)
 }

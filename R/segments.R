@@ -376,7 +376,7 @@ plotSegments <- function(phases, difference=FALSE, center=TRUE,
 
         if ( method=='slope' ) {
             brks <- NULL
-            cl <- num2col(deriv)
+            cl <- segmenTools::num2col(deriv)
             base.cex <- 0
         }
         

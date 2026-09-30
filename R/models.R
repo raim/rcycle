@@ -1363,7 +1363,7 @@ root_k_dr_k0_coth <- function(x, a, phi, R, Rmin) {
 #' @param alpha Fourier damping factor (default 0).
 #' @param theta Phase shift in radians (default 0).
 #' @param N Number of Fourier terms to use (default 500).
-#' @param P0 protein abundance at time t[1] (!).
+#' @param P0 protein abundance at time \code{t[1]} (!).
 #' @param dp protein degradation rate.
 #' @param ell transcript elongation rate.
 #' @param rho translating ribosomes per mRNA.

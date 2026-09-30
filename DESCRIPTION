@@ -7,6 +7,23 @@ Authors@R:
 Description: What the package does (one paragraph).
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
+Imports:
+    graphics,
+    grDevices,
+    pracma,
+    pspline,
+    rootSolve,
+    segmenTools,
+    stats,
+    utils
+Suggests:
+    circular,
+    deSolve,
+    dpseg,
+    testthat,
+    WaveletComp
+Remotes:
+    github::raim/segmenTools
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
