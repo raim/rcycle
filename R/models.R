@@ -812,7 +812,7 @@ get_rates_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                      verb = verb))
     
     gamma <- dr
-    if ( !is.na(mu) ) gamma <- dr + mu
+    gamma <- ifelse(is.na(mu), dr, dr + mu) # element-wise, mu may be a vector
     if ( model %in% c('k') ) {
         k <- get_transcription(R = R, gamma = gamma, phi = phi, model = model)
         if ( length(k)==1 )

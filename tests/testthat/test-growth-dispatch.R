@@ -74,3 +74,15 @@ test_that("get_rates with mixed growth rates: NA counts as 0", {
     expect_equal(r$dr, c(dr, dr), tolerance = 1e-6)
     expect_equal(r$k, c(k, k), tolerance = 1e-6)
 })
+
+test_that("get_rates_nogrowth and get_rates take a growth rate per gene for model k", {
+    mus <- c(0.05, 0.1, NA)
+    cy <- get_rcycle(k = k, dr = dr, mu = ifelse(is.na(mus), 0, mus), phi = phi, tau = tau,
+                     model = "k")
+    a <- (cy$Rmax - cy$Rmin)/cy$mean
+    x <- get_rates_nogrowth(model = "k", a = a, R = cy$mean, phi = phi, tau = tau, mu = mus)
+    expect_equal(x$dr, rep(dr, 3), tolerance = 1e-6)
+    expect_equal(x$k, rep(k, 3), tolerance = 1e-6)
+    y <- get_rates(model = "k", a = a, R = cy$mean, phi = phi, tau = tau, mu = mus)
+    expect_equal(y, x)
+})
