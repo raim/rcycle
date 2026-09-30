@@ -959,7 +959,7 @@ get_tau <- function(a, R = NA, Rmin = NA,  k, gamma, phi,
                         silent = verb==0)
     }
     
-    if ( class(solution)=="try-error" | length(solution)==0 ) {
+    if ( inherits(solution, "try-error") || length(solution)==0 ) {
         if ( verb>0 )
             cat(paste0('Model <', model, '> failed with:',
                        '\n\ta= ', a,
