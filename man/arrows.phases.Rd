@@ -27,7 +27,9 @@ arrows.phases(
 
 \item{y}{unused.}
 
-\item{types}{segmentations (elements of \code{x}) to draw.}
+\item{types}{segmentations (elements of \code{x}) or cohort phases
+(columns of \code{x$x.phase}) to draw; others are omitted with a
+warning.}
 
 \item{phase}{column of the segment table holding the break phases.}
 
@@ -39,7 +41,8 @@ arrows.phases(
 
 \item{labels}{column of the segment table holding the labels.}
 
-\item{labels.top}{only label the segments with the highest amplitudes.}
+\item{labels.top}{only label the segments (or cohorts) with the
+\code{labels.top} highest amplitudes, column \code{amp}.}
 
 \item{lxpd}{allow labels outside the plot region.}
 
@@ -49,9 +52,11 @@ arrows.phases(
 
 \item{verb}{unused.}
 
-\item{...}{further arguments to \code{\link[graphics]{arrows}}.}
+\item{...}{further arguments to \code{\link[graphics]{arrows}}, or for
+cohort phases to \code{segmenTools::shadowtext}.}
 }
 \description{
 Draws double-headed arrows spanning each segment, one row per type,
-onto an existing plot.
+onto an existing plot. A type that is a column of \code{x$x.phase}
+instead (e.g. \code{"phi"}) draws the cohort IDs at those phases.
 }

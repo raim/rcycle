@@ -5,22 +5,27 @@
 #' Add arrows for segments in the phases object.
 #'
 #' Draws double-headed arrows spanning each segment, one row per type,
-#' onto an existing plot.
+#' onto an existing plot. A type that is a column of \code{x$x.phase}
+#' instead (e.g. \code{"phi"}) draws the cohort IDs at those phases.
 #' @param x phases object, see \link{get_pseudophase} and
 #'     \link{get_segments}.
 #' @param y unused.
-#' @param types segmentations (elements of \code{x}) to draw.
+#' @param types segmentations (elements of \code{x}) or cohort phases
+#'     (columns of \code{x$x.phase}) to draw; others are omitted with a
+#'     warning.
 #' @param phase column of the segment table holding the break phases.
 #' @param y0 height of the first row of arrows; default: middle of the plot.
 #' @param dy distance between rows.
 #' @param col column of the segment table holding the colors.
 #' @param labels column of the segment table holding the labels.
-#' @param labels.top only label the segments with the highest amplitudes.
+#' @param labels.top only label the segments (or cohorts) with the
+#'     \code{labels.top} highest amplitudes, column \code{amp}.
 #' @param lxpd allow labels outside the plot region.
 #' @param pos label position, see \code{\link[graphics]{text}}.
 #' @param ticks add the type name on the right axis.
 #' @param verb unused.
-#' @param ... further arguments to \code{\link[graphics]{arrows}}.
+#' @param ... further arguments to \code{\link[graphics]{arrows}}, or for
+#'     cohort phases to \code{segmenTools::shadowtext}.
 #' @export
 arrows.phases <- function(x, y, types='shoulder', phase='phi',
                           y0, dy, col, labels, labels.top, lxpd=par('xpd'),
@@ -30,10 +35,10 @@ arrows.phases <- function(x, y, types='shoulder', phase='phi',
     if ( missing(y0) ) y0 <- mean(par('usr')[3:4])
     if ( missing(dy) ) dy <- diff(par('usr')[3:4])/10 #length(types)
 
-    miss <- which(!types%in%names(x) & !types%in%names(x$x.phases))
+    miss <- which(!types%in%names(x) & !types%in%names(x$x.phase))
     if ( length(miss) ) {
         warning('omitting types not found in data: ',
-                paste(types[miss], sep=';'))
+                paste(types[miss], collapse=';'))
         types <- types[-miss]
     }
 
@@ -86,29 +91,29 @@ arrows.phases <- function(x, y, types='shoulder', phase='phi',
                 if ( lxpd ) par(xpd=oxpd)
             }
 
-        } else if ( type %in% colnames(x$x.phases) ) {
+        } else if ( type %in% colnames(x$x.phase) ) {
 
             ## labels
-            ids <- x$x.phases$ID
+            ids <- x$x.phase$ID
 
             ## AMPLITUDE CUTOFF
             ## only show labels for top X amplitudes
             labs <- ids
             if ( !missing(labels.top) ) 
-                labs[rank(-x$amp) <= labels.top] <- ''
+                labs[rank(-x$x.phase$amp) > labels.top] <- ''
 
             ## arrow colors
-            scol <- setNames(1:nrow(x$x.phases), ids)
+            scol <- setNames(1:nrow(x$x.phase), ids)
             if ( !missing(col) )
-                if ( col%in%colnames(x$x.phases) )
-                    scol <- setNames(x$x.phases[,col], ids)
+                if ( col%in%colnames(x$x.phase) )
+                    scol <- setNames(x$x.phase[,col], ids)
 
             if ( lxpd ) {
                 oxpd <- par('xpd')
                 par(xpd=TRUE)
             }
-            segmenTools::shadowtext(x=x$x.phases[,type],
-                                    y=rep(y0, nrow(x$x.phases)),
+            segmenTools::shadowtext(x=x$x.phase[,type],
+                                    y=rep(y0, nrow(x$x.phase)),
                                     labels=labs, col=scol, ...)
             
             if ( lxpd ) par(xpd=oxpd)
