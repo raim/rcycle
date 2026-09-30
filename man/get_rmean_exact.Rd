@@ -24,7 +24,7 @@ calculated from \code{dr} and \code{mu}.}
 \item{k0}{basal transcription rate in the OFF phase (model
 \code{"k_dr_k0"} only).}
 
-\item{dr}{degradation rate.}
+\item{dr}{degradation rate; if missing, \code{gamma - mu}.}
 
 \item{mu}{growth rate (dilution, both phases).}
 
@@ -38,22 +38,10 @@ calculated from \code{dr} and \code{mu}.}
 \description{
 Periodic steady-state mean abundance of the ODEs \code{pwmode_k},
 \code{pwmode_dr}, \code{pwmode_k_dr} and \code{pwmode_k_dr_k0}, with
-dilution \code{mu} acting in both phases. For \code{model="k"} this is
-\code{phi*k/gamma}, as in \code{\link{get_rmean}}. For the models with
-phase-switched degradation, \code{\link{get_rmean}} is the exact mean of a
-model without dilution in the ON phase (\code{gamma = dr + mu} only in the
-OFF phase) and is therefore higher; the two agree for \code{mu = 0}.
-}
-\details{
-Derivation: in the ON phase (duration \code{a = phi*tau}),
-\code{dR/dt = k - mu*R}; in the OFF phase (\code{b = (1-phi)*tau}),
-\code{dR/dt = k0 - gamma*R}, with \code{k0 = k} for \code{"dr"} and
-\code{k0 = 0} for \code{"k_dr"}. With \code{eA = exp(-mu*a)},
-\code{eB = exp(-gamma*b)}, \code{iA = (1-eA)/mu} and
-\code{iB = (1-eB)/gamma}, the value at the start of the ON phase is
-\code{R0 = (k0*iB + k*iA*eB)/(1 - eA*eB)}, at its end
-\code{R1 = R0*eA + k*iA}, and the mean is
-\code{(R0*iA + k*(a-iA)/mu + R1*iB + k0*(b-iB)/gamma)/tau}, evaluated
-stably for small \code{mu} (limit \code{mu = 0}: \code{iA = a},
-\code{(a-iA)/mu = a^2/2}).
+dilution \code{mu} acting in both phases (see
+\code{\link{get_rcycle_exact}} for the derivation). For \code{model="k"}
+this is \code{phi*k/gamma}, as in \code{\link{get_rmean}}. For the models
+with phase-switched degradation, \code{\link{get_rmean}} is the exact mean
+of a model without dilution in the ON phase (\code{gamma = dr + mu} only in
+the OFF phase) and is therefore higher; the two agree for \code{mu = 0}.
 }

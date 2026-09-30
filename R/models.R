@@ -189,38 +189,87 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
     
 }
 
-#' Exact cycle mean of the pulse width-modulated ODE models.
+#' Exact periodic steady state of the pulse width-modulated ODE models.
 #'
-#' Periodic steady-state mean abundance of the ODEs \code{pwmode_k},
-#' \code{pwmode_dr}, \code{pwmode_k_dr} and \code{pwmode_k_dr_k0}, with
-#' dilution \code{mu} acting in both phases. For \code{model="k"} this is
-#' \code{phi*k/gamma}, as in \code{\link{get_rmean}}. For the models with
-#' phase-switched degradation, \code{\link{get_rmean}} is the exact mean of a
-#' model without dilution in the ON phase (\code{gamma = dr + mu} only in the
-#' OFF phase) and is therefore higher; the two agree for \code{mu = 0}.
+#' Start and end of the ON phase, minimum, maximum and cycle mean of the
+#' periodic steady state of the ODEs \code{pwmode_k}, \code{pwmode_dr},
+#' \code{pwmode_k_dr} and \code{pwmode_k_dr_k0}, with dilution \code{mu}
+#' acting in both phases. Within each phase \code{R} relaxes monotonically
+#' (towards \code{k/mu} in the ON phase, towards \code{k0/gamma} in the OFF
+#' phase), so the extremes lie at the phase boundaries, \code{R0} and
+#' \code{R1}. For the models with phase-switched degradation, \code{R} rises
+#' during the ON phase if \code{k/mu > k0/gamma} (the normal regime) and falls
+#' otherwise (the reversed regime, only possible for \code{"k_dr_k0"} with a
+#' high basal rate); \code{R0} is then the maximum.
 #'
-#' Derivation: in the ON phase (duration \code{a = phi*tau}),
-#' \code{dR/dt = k - mu*R}; in the OFF phase (\code{b = (1-phi)*tau}),
-#' \code{dR/dt = k0 - gamma*R}, with \code{k0 = k} for \code{"dr"} and
-#' \code{k0 = 0} for \code{"k_dr"}. With \code{eA = exp(-mu*a)},
-#' \code{eB = exp(-gamma*b)}, \code{iA = (1-eA)/mu} and
-#' \code{iB = (1-eB)/gamma}, the value at the start of the ON phase is
-#' \code{R0 = (k0*iB + k*iA*eB)/(1 - eA*eB)}, at its end
-#' \code{R1 = R0*eA + k*iA}, and the mean is
-#' \code{(R0*iA + k*(a-iA)/mu + R1*iB + k0*(b-iB)/gamma)/tau}, evaluated
-#' stably for small \code{mu} (limit \code{mu = 0}: \code{iA = a},
-#' \code{(a-iA)/mu = a^2/2}).
+#' Derivation: ON phase (duration \code{a = phi*tau}),
+#' \code{dR/dt = k - lon*R}, with \code{lon = mu} (\code{lon = gamma} for model
+#' \code{"k"}); OFF phase (\code{b = (1-phi)*tau}), \code{dR/dt = k0 - gamma*R},
+#' with \code{k0 = k} for \code{"dr"}, \code{k0 = 0} for \code{"k"} and
+#' \code{"k_dr"}. With \code{eA = exp(-lon*a)}, \code{eB = exp(-gamma*b)},
+#' \code{iA = (1-eA)/lon}, \code{iB = (1-eB)/gamma}:
+#' \code{R0 = (k0*iB + k*iA*eB)/(1 - eA*eB)}, \code{R1 = R0*eA + k*iA}, and
+#' the mean \code{(R0*iA + k*(a-iA)/lon + R1*iB + k0*(b-iB)/gamma)/tau},
+#' evaluated stably for small \code{lon} (limit: \code{iA = a},
+#' \code{(a-iA)/lon = a^2/2}, the ON phase of \code{\link{get_rmean}}).
 #' @param k transcription rate in the ON phase.
 #' @param gamma total loss rate in the OFF phase, \code{dr + mu}; if missing,
 #' calculated from \code{dr} and \code{mu}.
 #' @param k0 basal transcription rate in the OFF phase (model
 #' \code{"k_dr_k0"} only).
-#' @param dr degradation rate.
+#' @param dr degradation rate; if missing, \code{gamma - mu}.
 #' @param mu growth rate (dilution, both phases).
 #' @param phi duty cycle, the fraction of the period in the ON phase.
 #' @param tau period.
 #' @param model one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
 #' \code{"k_dr_k0"}.
+#' @return data frame with columns \code{R0} (start of the ON phase),
+#' \code{R1} (end of the ON phase), \code{Rmin}, \code{Rmax}, \code{mean}.
+#' @seealso \code{\link{get_rmean_exact}}, \code{\link{get_ramp_exact}},
+#' \code{\link{get_rates_exact}}
+#'@export
+get_rcycle_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
+                             model = c('k', 'dr', 'k_dr', 'k_dr_k0')) {
+
+    model <- match.arg(model)
+    if ( missing(gamma) ) gamma <- dr + mu
+    lon <- if ( model == 'k' ) gamma else mu   # loss rate in the ON phase
+    if ( model == 'dr' ) k0 <- k
+    if ( model %in% c('k', 'k_dr') ) k0 <- 0
+
+    a <- phi*tau
+    b <- (1-phi)*tau
+    x <- lon*a
+    small <- abs(x) < 1e-8
+    lon1 <- ifelse(small, 1, lon)
+    ## (1-exp(-lon*a))/lon and (a - iA)/lon, stable for lon -> 0
+    iA <- ifelse(small, a - lon*a^2/2, -expm1(-x)/lon1)
+    jA <- ifelse(small, a^2/2 - lon*a^3/6, (a - iA)/lon1)
+    eA <- exp(-x)
+    eB <- exp(-gamma*b)
+    iB <- -expm1(-gamma*b)/gamma
+
+    R0 <- (k0*iB + k*iA*eB)/(1 - eA*eB)   # start of ON phase
+    R1 <- R0*eA + k*iA                    # end of ON phase
+    ion <- R0*iA + k*jA                   # integral over ON phase
+    ioff <- R1*iB + k0*(b - iB)/gamma     # integral over OFF phase
+    res <- data.frame(R0 = R0, R1 = R1, Rmin = pmin(R0, R1), Rmax = pmax(R0, R1),
+                      mean = (ion + ioff)/tau)
+    rownames(res) <- NULL
+    res
+}
+
+#' Exact cycle mean of the pulse width-modulated ODE models.
+#'
+#' Periodic steady-state mean abundance of the ODEs \code{pwmode_k},
+#' \code{pwmode_dr}, \code{pwmode_k_dr} and \code{pwmode_k_dr_k0}, with
+#' dilution \code{mu} acting in both phases (see
+#' \code{\link{get_rcycle_exact}} for the derivation). For \code{model="k"}
+#' this is \code{phi*k/gamma}, as in \code{\link{get_rmean}}. For the models
+#' with phase-switched degradation, \code{\link{get_rmean}} is the exact mean
+#' of a model without dilution in the ON phase (\code{gamma = dr + mu} only in
+#' the OFF phase) and is therefore higher; the two agree for \code{mu = 0}.
+#' @inheritParams get_rcycle_exact
 #'@export
 get_rmean_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
                             model = c('k', 'dr', 'k_dr', 'k_dr_k0')) {
@@ -231,27 +280,139 @@ get_rmean_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
     if ( model == 'k' ) # recycled over tau, as get_rmean
         return(unname(rep_len(phi*k/gamma,
                               max(length(k), length(gamma), length(phi), length(tau)))))
-    if ( model == 'dr' ) k0 <- k
-    if ( model == 'k_dr' ) k0 <- 0
-
-    a <- phi*tau
-    b <- (1-phi)*tau
-    x <- mu*a
-    small <- abs(x) < 1e-8
-    ## (1-exp(-mu*a))/mu and (a - iA)/mu, stable for mu -> 0
-    iA <- ifelse(small, a - mu*a^2/2, -expm1(-x)/ifelse(small, 1, mu))
-    jA <- ifelse(small, a^2/2 - mu*a^3/6, (a - iA)/ifelse(small, 1, mu))
-    eA <- exp(-x)
-    eB <- exp(-gamma*b)
-    iB <- -expm1(-gamma*b)/gamma
-
-    R0 <- (k0*iB + k*iA*eB)/(1 - eA*eB)   # start of ON phase
-    R1 <- R0*eA + k*iA                    # end of ON phase
-    ion <- R0*iA + k*jA                   # integral over ON phase
-    ioff <- R1*iB + k0*(b - iB)/gamma     # integral over OFF phase
-    unname((ion + ioff)/tau)
+    get_rcycle_exact(k = k, gamma = gamma, k0 = k0, mu = mu, phi = phi, tau = tau,
+                     model = model)$mean
 }
 
+#' Exact amplitude of the pulse width-modulated ODE models.
+#'
+#' Absolute (\code{Rmax - Rmin}) or relative (\code{(Rmax - Rmin)/mean})
+#' amplitude of the periodic steady state, with dilution \code{mu} in both
+#' phases (see \code{\link{get_rcycle_exact}}). For model \code{"k"} this is
+#' the same as \code{\link{get_ramp}}. For the models with phase-switched
+#' degradation, \code{\link{get_ramp}} uses \code{k*phi*tau}, the rise in an ON
+#' phase without dilution; with dilution the rise is
+#' \code{(k/mu - R0)*(1 - exp(-mu*phi*tau))}. The relative amplitude does not
+#' depend on the scale of \code{k} (with \code{k0} given relative to it), so
+#' \code{k} defaults to 1 for it.
+#' @inheritParams get_rcycle_exact
+#' @param relative relative amplitude, \code{(Rmax - Rmin)/mean}; otherwise
+#' absolute.
+#'@export
+get_ramp_exact <- function(k = 1, gamma, k0 = 0, dr, mu, phi, tau,
+                           relative = TRUE,
+                           model = c('k', 'dr', 'k_dr', 'k_dr_k0')) {
+
+    model <- match.arg(model)
+    if ( missing(gamma) )
+        gamma <- dr + mu
+    cy <- get_rcycle_exact(k = k, gamma = gamma, k0 = k0, mu = mu, phi = phi,
+                           tau = tau, model = model)
+    ramp <- cy$Rmax - cy$Rmin
+    if ( relative ) ramp <- ramp/cy$mean
+    unname(ramp)
+}
+
+#' Exact rates of the pulse width-modulated ODE models from abundance data.
+#'
+#' Recovers the transcription rate \code{k}, the degradation rate \code{dr}
+#' and, for model \code{"k_dr_k0"}, the basal rate \code{k0}, from the mean
+#' abundance \code{R}, the relative amplitude \code{a} (or the absolute
+#' amplitude \code{A}) and, for \code{"k_dr_k0"}, the minimum \code{Rmin} (or
+#' maximum \code{Rmax}), given the duty cycle, the period and the growth rate
+#' \code{mu}. The exact counterpart of \code{\link{get_rates}}, with dilution
+#' in both phases (see \code{\link{get_rcycle_exact}}); the two agree for
+#' \code{mu = 0}. Model \code{"k"} is exact in \code{\link{get_rates}} and is
+#' passed on to it.
+#'
+#' The relative quantities \code{a} and \code{Rmin/R} do not depend on the
+#' scale of \code{k}: \code{dr} (and \code{q = k0/k}) are found from them by
+#' root finding, then \code{k = R/mean(k = 1)}. For \code{"dr"} and
+#' \code{"k_dr"}, \code{a} is monotone in \code{dr}. For \code{"k_dr_k0"},
+#' \code{Rmin/R} is monotone in \code{q} within each regime (normal: \code{R}
+#' rises during the ON phase, \code{q < gamma/mu}; reversed: \code{R} falls,
+#' \code{q > gamma/mu}), but not across them, so the regime must be chosen;
+#' for each \code{dr}, \code{q} is matched to \code{Rmin/R}, and \code{dr} to
+#' \code{a} (checked numerically to have a single root over typical YRO
+#' conditions).
+#' @param model one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+#' \code{"k_dr_k0"}.
+#' @param a relative amplitude, \code{(Rmax - Rmin)/R}.
+#' @param A absolute amplitude, used if \code{a} is missing.
+#' @param R mean abundance.
+#' @param Rmin minimal abundance (model \code{"k_dr_k0"}).
+#' @param Rmax maximal abundance, used if \code{Rmin} is missing.
+#' @param phi duty cycle.
+#' @param tau period.
+#' @param mu growth rate (required; may be 0).
+#' @param regime for \code{"k_dr_k0"}: \code{"normal"} (R rises during the ON
+#' phase) or \code{"reversed"}.
+#' @param lower,upper range of \code{dr} searched.
+#' @param n number of grid points on a log scale used to bracket the roots.
+#' @param verb verbosity.
+#' @param ... passed to \code{\link{get_rates}} for model \code{"k"}.
+#' @return data frame with columns \code{k}, \code{dr} and, for
+#' \code{"k_dr_k0"}, \code{k0}; \code{NA} where no solution exists.
+#'@export
+get_rates_exact <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
+                            a = NA, A = NA, R = NA, Rmin = NA, Rmax = NA,
+                            phi, tau, mu,
+                            regime = c('normal', 'reversed'),
+                            lower = 1e-4, upper = 1e3, n = 200,
+                            verb = 0, ...) {
+
+    model <- match.arg(model)
+    regime <- match.arg(regime)
+    if ( all(is.na(a)) ) a <- A/R
+    if ( model == 'k' )
+        return(get_rates(model = 'k', a = a, R = R, phi = phi, tau = tau, mu = mu, ...))
+
+    m <- Rmin/R
+    if ( model == 'k_dr_k0' ) m <- ifelse(is.na(m), Rmax/R - a, m)
+
+    one <- function(a, R, m, phi, tau, mu) {
+        na <- if ( model == 'k_dr_k0' ) c(k = NA, dr = NA, k0 = NA) else c(k = NA, dr = NA)
+        if ( any(!is.finite(c(a, R, phi, tau, mu))) ) return(na)
+        cyc <- function(dr, q) get_rcycle_exact(k = 1, k0 = q, dr = dr, mu = mu,
+                                                phi = phi, tau = tau, model = model)
+        ## k0/k matching Rmin/R for a given dr, in the chosen regime
+        qfit <- function(dr) {
+            if ( !is.finite(m) ) return(NA)
+            qb <- if ( mu > 0 ) (dr + mu)/mu else Inf        # regime boundary
+            rng <- if ( regime == 'normal' ) c(0, min(qb*(1 - 1e-9), 1e8))
+                   else c(qb*(1 + 1e-9), qb*1e6)
+            if ( !all(is.finite(rng)) ) return(NA)
+            h <- function(q) { cy <- cyc(dr, q); cy$Rmin/cy$mean - m }
+            hr <- c(h(rng[1]), h(rng[2]))
+            if ( any(!is.finite(hr)) || sign(hr[1]) == sign(hr[2]) ) return(NA)
+            stats::uniroot(h, rng, tol = 1e-12)$root
+        }
+        f <- function(dr) {
+            q <- if ( model == 'k_dr_k0' ) qfit(dr) else 0
+            if ( is.na(q) ) return(NA)
+            cy <- cyc(dr, q)
+            (cy$Rmax - cy$Rmin)/cy$mean - a
+        }
+        grid <- exp(seq(log(lower), log(upper), length.out = n))
+        fg <- sapply(grid, f)
+        ok <- which(is.finite(fg[-n]) & is.finite(fg[-1]) & sign(fg[-n]) != sign(fg[-1]))
+        if ( length(ok) == 0 ) {
+            if ( verb > 0 ) cat('get_rates_exact: no solution for dr\n')
+            return(na)
+        }
+        if ( length(ok) > 1 & verb > 0 )
+            cat(paste('get_rates_exact:', length(ok), 'roots for dr, taking the largest\n'))
+        j <- max(ok)
+        dr <- stats::uniroot(f, grid[c(j, j + 1)], tol = 1e-12)$root
+        q <- if ( model == 'k_dr_k0' ) qfit(dr) else 0
+        k <- R/cyc(dr, q)$mean
+        if ( model == 'k_dr_k0' ) c(k = k, dr = dr, k0 = q*k) else c(k = k, dr = dr)
+    }
+    res <- do.call(rbind, Map(one, a = a, R = R, m = m, phi = phi, tau = tau, mu = mu))
+    res <- as.data.frame(res)
+    rownames(res) <- NULL
+    res
+}
 
 #' Calculate abundance amplitudes from rates and times.
 #'@export
