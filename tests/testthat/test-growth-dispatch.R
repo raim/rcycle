@@ -100,3 +100,15 @@ test_that("get_rates_nogrowth for model k: one mu (or 0) for many genes", {
         expect_equal(x$k, rep(k, 4), tolerance = 1e-6, label = paste("k, mu =", mu))
     }
 })
+
+test_that("get_rates returns NA where the loss rate is below the growth rate", {
+    ## model k: the relative amplitude of gamma = 0.07 (dr = gamma - mu)
+    a <- get_ramp_nogrowth(gamma = 0.07, phi = phi, tau = tau, relative = TRUE, model = "k")
+    R <- phi*k/0.07
+    x <- get_rates(model = "k", a = c(a, a), R = c(R, R), phi = phi, tau = tau,
+                   mu = c(0.05, 0.1))
+    expect_equal(x$dr[1], 0.02, tolerance = 1e-6)
+    expect_equal(x$k[1], k, tolerance = 1e-6)
+    expect_true(is.na(x$dr[2]))
+    expect_true(is.na(x$k[2]))
+})

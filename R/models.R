@@ -952,14 +952,16 @@ get_rates_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     }
 
     ## NOTE: using Map allows vectorization of input
-    dr <- unlist(Map(get_degradation,
+    dr <- unname(unlist(Map(get_degradation,
                      model = model,
                      a=a, R=R, Rmin=Rmin, 
                      phi = phi, tau = tau, mu = mu,
                      lower = lower, upper = upper, tol = tol,
-                     verb = verb))
-    
-    gamma <- dr
+                     verb = verb)))
+    ## a total loss rate below the dilution rate has no solution: dilution
+    ## alone gives gamma >= mu (model k with growth, where dr = gamma - mu)
+    dr[!is.na(dr) & dr < 0] <- NA
+
     gamma <- dr + ifelse(is.na(mu), 0, mu) # element-wise; mu may be a vector or a scalar
     if ( model %in% c('k') ) {
         k <- get_transcription(R = R, gamma = gamma, phi = phi, model = model)
