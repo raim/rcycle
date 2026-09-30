@@ -812,20 +812,3 @@ CorCircularRad <- function(x, y, test=FALSE) {
    }
    return(result)
 }
-
-ccor <- function(x, y) {
-
-    x <- circular::as.circular(CDC$rotation.phase$theta,
-                               units="radians", type="angles")
-
-    y <- circular::as.circular(jitter(CDC$rotation.phase$phi),
-                               units="radians", type="angles")
-
-    ## NOTE: mean(phi) is NA, since it's equispaced
-    ## along the circle
-
-    mean(x)
-    mean(y)
-
-   
-}

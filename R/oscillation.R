@@ -103,36 +103,6 @@ plot_wavelet <- function(wlet, type = "Power", col, p.min) {
     
 }
 
-## Wavelet coherence analysis between two counts vectors along a
-## circular pseudophase.
-## @param phi a circular pseudophase assignment for the counts matrix.
-## @param counts a vector or matrix of counts where
-##     and order as the pseudophase phi.
-## @param ID1 if counts is a matrix, ID specifies the row number or
-##     row name for which the analysis is to be performed.
-## @param ID2 if counts is a matrix, ID specifies the row number or
-##     row name for which the analysis is to be performed.
-## @param verb verbosity level, set to >2 to also get verbose output
-##     from the wavelet function.
-## @param ... arguments to \code{\link[WavletComp]{analyze.wavelet}}.
-##@export - TODO: implement for ID vector
-get_coherence <- function(phi, counts, ID1, ID2, verb=0, ...) {
-
-
-    clet <- analyze.coherency(df,
-                              my.pair = c(iID, jID),
-                              lowerPeriod = 2*dt, 
-                              upperPeriod = upperPeriod, 
-                              dt = dt, dj = 1/20,
-                              loess.span = LOESS.SPAN,
-                              make.pval = CNPERM>0,
-                              method = "white.noise",
-                              n.sim = CNPERM,
-                              verb = verb>1)
-
-}
-
-
 #' Morlet wavelet function (via chatGPT)
 #' @param t time vector in sec
 #' @param f0 central frequency in Hz
