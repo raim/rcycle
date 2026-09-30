@@ -180,7 +180,7 @@ show_morlet <- function(t = seq(-5, 5, length.out = n), n = 1000,
     lines(t, Im(w$wavelet), col = "red")
     lines(t, Mod(w$wavelet), col = "black", lty = 2)
     if ( legend )
-        legend("topright", legend = c("Re(ψ)", "Im(ψ)", "|ψ|"),
+        legend("topright", legend = c("Re(\u03c8)", "Im(\u03c8)", "|\u03c8|"),
                col = c("blue", "red", "black"), lty = c(1, 1, 2))
     return(w)
 }
