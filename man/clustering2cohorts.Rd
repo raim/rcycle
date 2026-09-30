@@ -2,10 +2,22 @@
 % Please edit documentation in R/cohorts.R
 \name{clustering2cohorts}
 \alias{clustering2cohorts}
-\title{convert a gene clusterng vector to a gene cohort list}
+\title{Convert a gene clustering vector to a gene cohort list.}
 \usage{
 clustering2cohorts(cls, cls.srt)
 }
+\arguments{
+\item{cls}{a vector of gene classes, one per gene.}
+
+\item{cls.srt}{the classes to use, in this order; default: all, in order
+of appearance.}
+}
+\value{
+a named list of index vectors, one per class.
+}
 \description{
-convert a gene clusterng vector to a gene cohort list
+Convert a gene clustering vector to a gene cohort list.
+}
+\seealso{
+\code{\link{cohort2clustering}}
 }

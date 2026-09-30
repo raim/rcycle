@@ -17,12 +17,30 @@ pwm_simple <-  function(time, tau, phi, theta = 0) {
 ## wikipedia: "Note that, for symmetry, the starting time (t = 0)
 ## in this expansion is halfway through the first pulse."
 ## TODO: why do we need to scale?
-#' alpha controls the smoothing by exponentially damping higher harmonics; alpha=0: no smoothing; alpha<=0.5: mild smoothing; alpha>0.5: noticable smoothing; alpha>2: towards sinus
-#' 
-#' t <- seq(0,10, length=100)
-#' plot(t, pwf(t=t, tau=1.5, k=1, phi=.4), type='l', col=2)
-#' lines(t, pwf(t=t, tau=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
+#' Pulse wave, Fourier series.
 #'
+#' A pulse wave between 0 and \code{k} with duty cycle \code{phi} and period
+#' \code{tau}, summed directly from its Fourier series (slow). The series
+#' starts halfway through the first pulse (\code{t = 0} is the pulse centre).
+#' @param t time points.
+#' @param k height of the pulse.
+#' @param phi duty cycle, the fraction of the period in the ON phase.
+#' @param tau period.
+#' @param N number of harmonics summed.
+#' @param shift phase shift, in units of time.
+#' @param theta phase shift, in radians.
+#' @param start.on shift time by half a pulse, to start with the ON phase.
+#' @param alpha smoothing, by exponentially damping higher harmonics:
+#' 0, no smoothing; up to 0.5, mild; above 0.5, noticeable; above 2, towards
+#' a sine.
+#' @return numeric vector of the pulse wave at \code{t}.
+#' @examples
+#' \dontrun{
+#' t <- seq(0,10, length=100)
+#' plot(t, pw_fourier(t=t, tau=1.5, k=1, phi=.4), type='l', col=2)
+#' lines(t, pw_fourier(t=t, tau=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
+#' }
+#' @keywords internal
 pw_fourier <- function(t=0, k, phi, tau, N=1e4, shift=0, theta=0,
                        start.on=FALSE, alpha=0) {
 
@@ -95,6 +113,19 @@ pw_sawtooth <- function(t=0, k=1, tau, thoc=.5, alpha=0, shift=0,
 
 
 #' ODE of pulse width-modulated transcription.
+#'
+#' Right-hand side of \code{dR/dt = kappa*k - (dr+mu)*R}, for
+#' \code{\link[deSolve]{ode}}, with \code{kappa} the ON (1) or OFF (0)
+#' state at \code{time}.
+#' @param time time point.
+#' @param state named state vector, \code{c(R = ...)}.
+#' @param parameters named parameter vector: \code{k}, \code{dr}, \code{mu};
+#' and \code{k0} for \code{pwmode_k_dr_k0}.
+#' @param hocf function of time returning the pulse state \code{kappa}, 0 or
+#' 1 (\emph{not} scaled by \code{k}).
+#' @return list with the derivative \code{dR}, as required by
+#' \code{\link[deSolve]{ode}}.
+#' @seealso \code{\link{get_rcycle}} for the periodic steady state.
 #' @export
 pwmode_k <- function(time, state, parameters, hocf){
     kappa <- hocf(time)
@@ -107,6 +138,10 @@ pwmode_k <- function(time, state, parameters, hocf){
 }
 
 #' ODE of pulse width-modulated degradation.
+#'
+#' \code{dR/dt = k - ((1-kappa)*dr + mu)*R}: constant transcription,
+#' degradation in the OFF phase only.
+#' @inheritParams pwmode_k
 #' @export
 pwmode_dr <- function(time, state, parameters, hocf){
     kappa <- hocf(time)
@@ -118,6 +153,9 @@ pwmode_dr <- function(time, state, parameters, hocf){
 
 #' ODE of pulse width-modulated transcription and anti-phasic
 #' degradation.
+#'
+#' \code{dR/dt = kappa*k - ((1-kappa)*dr + mu)*R}.
+#' @inheritParams pwmode_k
 #' @export
 pwmode_k_dr <- function(time, state, parameters, hocf){
     kappa <- hocf(time)
@@ -129,6 +167,9 @@ pwmode_k_dr <- function(time, state, parameters, hocf){
 
 #' ODE of pulse width-modulated transcription and anti-phasic degradation
 #' and basal transcription.
+#'
+#' \code{dR/dt = kappa*k + (1-kappa)*k0 - ((1-kappa)*dr + mu)*R}.
+#' @inheritParams pwmode_k
 #' @export
 pwmode_k_dr_k0 <- function(time, state, parameters, hocf){
     kappa <- hocf(time)
@@ -149,6 +190,15 @@ pwmode_k_dr_k0 <- function(time, state, parameters, hocf){
 #' model \code{"k"} and, for all models, for \code{mu = 0}. The closed forms
 #' of the slides (\code{pwm_equ.md}); use \code{\link{get_rmean}} for the
 #' exact mean with dilution in both phases.
+#' @inheritParams get_rcycle
+#' @param gamma total loss rate, \code{dr + mu}; if missing, calculated from
+#' \code{dr} and \code{mu}.
+#' @param mu growth rate, used only to calculate a missing \code{gamma}.
+#' @param model one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+#' \code{"k_dr_k0"} (or \code{"k_dr_k0_coth"}); the first is used.
+#' @param use.coth evaluate the OFF-phase term via \code{coth}, otherwise via
+#' \code{expm1}.
+#' @return numeric vector of cycle means.
 #'@export
 get_rmean_nogrowth <- function(k, gamma, k0, dr, mu, phi, tau,
                       model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
@@ -288,7 +338,8 @@ get_rcycle <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
 #' slides) is the exact mean of a model without dilution in the ON phase
 #' (\code{gamma = dr + mu} only in the OFF phase) and is therefore higher; the
 #' two agree for \code{mu = 0} or missing.
-#' @inheritParams get_rcycle_exact
+#' @inheritParams get_rcycle
+#' @return numeric vector of cycle means.
 #'@export
 get_rmean <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
                             model = c('k', 'dr', 'k_dr', 'k_dr_k0')) {
@@ -316,9 +367,10 @@ get_rmean <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
 #' \code{(k/mu - R0)*(1 - exp(-mu*phi*tau))}. The relative amplitude does not
 #' depend on the scale of \code{k} (with \code{k0} given relative to it), so
 #' \code{k} defaults to 1 for it.
-#' @inheritParams get_rcycle_exact
+#' @inheritParams get_rcycle
 #' @param relative relative amplitude, \code{(Rmax - Rmin)/mean}; otherwise
 #' absolute.
+#' @return numeric vector of amplitudes.
 #'@export
 get_ramp <- function(k = 1, gamma, k0 = 0, dr, mu, phi, tau,
                            relative = TRUE,
@@ -467,6 +519,19 @@ get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
 #' \code{mu = 0}; the amplitude of the models with phase-switched degradation
 #' is \code{k*phi*tau}. Use \code{\link{get_ramp}} for the exact amplitude
 #' with dilution in both phases.
+#'
+#' For the models with phase-switched degradation, the absolute amplitude is
+#' calculated first if \code{k} is given (and \code{force.relative} is
+#' \code{FALSE}), and divided by the mean for the relative amplitude;
+#' otherwise the relative amplitude is calculated directly, which requires
+#' \code{k} only for model \code{"k_dr_k0"}.
+#' @inheritParams get_rmean_nogrowth
+#' @param relative relative amplitude, \code{(Rmax - Rmin)/mean}; otherwise
+#' absolute.
+#' @param force.relative calculate the relative amplitude directly, also if
+#' \code{k} is given.
+#' @param ... unused.
+#' @return numeric vector of amplitudes.
 #'@export
 get_ramp_nogrowth <- function(gamma, dr, mu, phi, tau, relative = TRUE,
                      k, k0, force.relative = FALSE, use.coth = FALSE,
@@ -573,7 +638,28 @@ get_rna <- function() {
 }
 
 
-##
+#' Mean protein abundance.
+#'
+#' Steady-state protein abundance \code{P = R*rho*l/(mu + dp)}, from the mean
+#' transcript abundance \code{R}, which is calculated with
+#' \code{\link{get_rmean}} if missing.
+#' @param R mean transcript abundance; if missing, from
+#' \code{\link{get_rmean}} with \code{mu}, \code{phi}, \code{r.model} and
+#' \code{...}.
+#' @param rho translating ribosomes per transcript.
+#' @param l translation elongation rate (per ribosome, protein per time).
+#' @param dp protein degradation rate.
+#' @param mu growth rate.
+#' @param phip duty cycle of translation (\code{p.model = "phi"}).
+#' @param phi duty cycle of transcription, passed to \code{\link{get_rmean}}.
+#' @param r.model transcript model, passed to \code{\link{get_rmean}} as
+#' \code{model}.
+#' @param p.model \code{"const"}: constant translation; \code{"phi"}:
+#' translation in the ON phase only, \code{P} multiplied by \code{phip},
+#' which assumes that translation phase and \code{R} are uncorrelated.
+#' @param ... further arguments to \code{\link{get_rmean}}: \code{k},
+#' \code{dr} or \code{gamma}, \code{tau}, \code{k0}.
+#' @return numeric vector of mean protein abundances.
 #' @export
 get_pmean <- function(R, rho, l, dp, mu, phip, phi,
                       r.model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
@@ -739,6 +825,23 @@ get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
 #' relative amplitude (\code{root_tau_*}), where \code{gamma} is the total loss
 #' rate in the OFF phase. Use \code{\link{get_times}} with the growth rate for
 #' the exact duty cycle and period with dilution in both phases.
+#' @param model one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+#' \code{"k_dr_k0"}; a root function \code{root_tau_<model>} must exist.
+#' @param a relative amplitude, \code{(Rmax - Rmin)/R}.
+#' @param R mean abundance.
+#' @param Rmin minimal abundance (model \code{"k_dr_k0"}).
+#' @param k transcription rate.
+#' @param gamma total loss rate in the OFF phase; if \code{NA}, \code{dr + mu}.
+#' @param dr degradation rate, used if \code{gamma} is \code{NA}.
+#' @param mu growth rate, used if \code{gamma} is \code{NA}; \code{NA}
+#' counts as 0.
+#' @param k0 unused; the closed form of \code{"k_dr_k0"} uses \code{Rmin}.
+#' @param lower,upper range of \code{tau} searched.
+#' @param tol tolerance of the root finding.
+#' @param verb verbosity.
+#' @param ... unused.
+#' @return data frame with columns \code{phi} and \code{tau}.
+#' @seealso \code{\link{get_tau}}
 #' @export
 get_times_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, R = NA, Rmin = NA, 
@@ -792,6 +895,27 @@ get_times_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     ## fit ton=phi*tau and untangel via absolute amplitude
 }
 
+#' Period from abundance data, closed form without dilution in the ON phase.
+#'
+#' Finds the period \code{tau} as the root of the model's relative amplitude
+#' equation, \code{root_tau_<model>}, with
+#' \code{\link[rootSolve]{uniroot.all}}; where several roots exist, the
+#' largest is taken. For the models with phase-switched degradation,
+#' \code{phi = A/(k*tau)}, so only \code{tau > A/k} is searched. Called by
+#' \code{\link{get_times_nogrowth}} for one set of values.
+#' @param a relative amplitude, \code{(Rmax - Rmin)/R}.
+#' @param R mean abundance.
+#' @param Rmin minimal abundance (model \code{"k_dr_k0"}).
+#' @param k transcription rate.
+#' @param gamma total loss rate in the OFF phase.
+#' @param phi duty cycle (model \code{"k"}); for the other models calculated
+#' from \code{A/(k*tau)}.
+#' @param model model name; a function \code{root_tau_<model>} must exist.
+#' @param lower,upper range of \code{tau} searched.
+#' @param tol tolerance of the root finding.
+#' @param verb verbosity; with 0, errors of the root finding are silent.
+#' @param ... unused.
+#' @return the period, or \code{NA} if no root was found.
 #' @export
 get_tau <- function(a, R = NA, Rmin = NA,  k, gamma, phi,
                     model, ## must exist as root finding function
@@ -920,6 +1044,33 @@ root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k, R, Rmin) {
 #' the OFF phase (degradation and dilution). \code{lower}, \code{upper} bound
 #' \code{gamma*tau}. Use \code{\link{get_rates}} with the growth rate for the
 #' exact rates with dilution in both phases.
+#'
+#' For the models with phase-switched degradation, \code{k = A/(phi*tau)}
+#' (\code{\link{get_transcription}}) and \code{gamma*tau} from the relative
+#' amplitude (\code{\link{get_degradation}}); for model \code{"k"},
+#' \code{gamma*tau} first and then \code{k = R*gamma/phi}. For
+#' \code{"k_dr_k0"}, \code{k0} from \code{Rmin} or \code{Rmax}.
+#' @param model one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+#' \code{"k_dr_k0"}, or the variants \code{"k_dr_coth"}, \code{"dr_coth"},
+#' \code{"k_dr_k0_coth"}; a function \code{root_<model>} must exist.
+#' @param a relative amplitude, \code{(Rmax - Rmin)/R}.
+#' @param A absolute amplitude, used if \code{a} is missing.
+#' @param R mean abundance.
+#' @param Rmin minimal abundance (model \code{"k_dr_k0"}).
+#' @param Rmax maximal abundance, used for \code{Rmin} if that is missing.
+#' @param phi duty cycle.
+#' @param tau period.
+#' @param mu growth rate, subtracted from \code{gamma} to give \code{dr};
+#' \code{NA} counts as 0. A \code{dr} below 0 is returned as \code{NA}.
+#' @param k transcription rate; if \code{NA}, calculated.
+#' @param k0 unused.
+#' @param gamma unused; overwritten by the fitted loss rate.
+#' @param lower,upper range of \code{gamma*tau} searched.
+#' @param tol tolerance of the root finding.
+#' @param verb verbosity.
+#' @param ... unused.
+#' @return data frame with columns \code{k}, \code{dr} and, for
+#' \code{"k_dr_k0"}, \code{k0}.
 #'@export
 get_rates_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
@@ -988,11 +1139,23 @@ get_rates_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     res
 }
 
-#' Calculate transcription rate from average abundance and degradation rates.
-#' from base equation for average abundance
-#' TODO: map fluorescence to a rough transcript/cell number
-#' @param R average abundance
-#' @param A absolute amplitude, for biphasic models
+## TODO: map fluorescence to a rough transcript/cell number
+#' Transcription rate from abundance data, closed form.
+#'
+#' For model \code{"k"}, from the mean abundance, \code{k = R*gamma/phi};
+#' for the models with phase-switched degradation, from the absolute
+#' amplitude, \code{k = A/(phi*tau)}.
+#' @param R mean abundance (model \code{"k"}).
+#' @param A absolute amplitude (models with phase-switched degradation).
+#' @param phi duty cycle.
+#' @param dr degradation rate (model \code{"k"}, with \code{mu} replaces
+#' \code{gamma}).
+#' @param mu growth rate (model \code{"k"}, see \code{dr}).
+#' @param gamma total loss rate (model \code{"k"}).
+#' @param tau period (models with phase-switched degradation).
+#' @param model model name.
+#' @return the transcription rate.
+#' @keywords internal
 get_transcription <- function(R = NA, A = NA, phi = NA,
                               dr = NA, mu = NA, gamma = NA, tau = NA,
                               model = c('k', 'dr','k_dr', 'k_dr_k0')) {
@@ -1032,18 +1195,21 @@ get_basal <- function(k, gamma, tau, phi, Rmin, Rmax, verb = 1) {
 #' Fit a transcript degradation rate from relative amplitude and
 #' oscillation parameters, using the \code{\link[stats]{uniroot}}  function
 #'
-#' @param a relative abundance amplitude (max(x)-min(x)/mean(x)).
+#' @param a relative abundance amplitude, (max(x)-min(x))/mean(x).
 #' @param R mean abundance, required for model with basal transcription.
 #' @param Rmin minimal abundance, required for model with basal transcription.
-#' @param k transcription rate, required for model with basal transcription.
 #' @param phi duty cycle.
 #' @param tau period.
 #' @param mu growth rate, used only for correction (gamma=growth+degradation).
 #' @param lower the lower end point of the interval to be  searched by \code{\link[stats]{uniroot}}.
 #' @param upper the upper end point of the interval to be  searched by \code{\link[stats]{uniroot}}.
-#' @param model 
+#' @param model model name; a function \code{root_<model>} must exist.
 #' @param tol error tolerance of the \code{\link[stats]{uniroot}}  call.
-#' @param ... further parameters to \code{\link[stats]{uniroot}} 
+#' @param verb verbosity; with 0, errors of the root finding are silent.
+#' @param ... unused.
+#' @return the degradation rate \code{gamma - mu} (or \code{gamma} if
+#' \code{mu} is missing or \code{NA}), \code{NA} if no root was found.
+#' @keywords internal
 get_degradation <- function(a,  R, Rmin, 
                             phi, tau, mu,
                             model, ## must exist as root finding function
@@ -1195,6 +1361,8 @@ root_k_dr_k0_coth <- function(x, a, phi, R, Rmin) {
 #' @param dp protein degradation rate.
 #' @param ell transcript elongation rate.
 #' @param rho translating ribosomes per mRNA.
+#' @param shift phase shift, in units of time; this currently also shifts
+#' \code{R0} (with a warning).
 #'
 #' @return Data frame with columns:
 #'   - `time`: original time points

@@ -21,6 +21,38 @@ get_times_nogrowth(
   ...
 )
 }
+\arguments{
+\item{model}{one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+\code{"k_dr_k0"}; a root function \code{root_tau_<model>} must exist.}
+
+\item{a}{relative amplitude, \code{(Rmax - Rmin)/R}.}
+
+\item{R}{mean abundance.}
+
+\item{Rmin}{minimal abundance (model \code{"k_dr_k0"}).}
+
+\item{k}{transcription rate.}
+
+\item{gamma}{total loss rate in the OFF phase; if \code{NA}, \code{dr + mu}.}
+
+\item{dr}{degradation rate, used if \code{gamma} is \code{NA}.}
+
+\item{mu}{growth rate, used if \code{gamma} is \code{NA}; \code{NA}
+counts as 0.}
+
+\item{k0}{unused; the closed form of \code{"k_dr_k0"} uses \code{Rmin}.}
+
+\item{lower, upper}{range of \code{tau} searched.}
+
+\item{tol}{tolerance of the root finding.}
+
+\item{verb}{verbosity.}
+
+\item{...}{unused.}
+}
+\value{
+data frame with columns \code{phi} and \code{tau}.
+}
 \description{
 The inverse of \code{\link{get_rmean_nogrowth}} and
 \code{\link{get_ramp_nogrowth}} for the duty cycle and period, given the
@@ -29,4 +61,7 @@ phase-switched degradation, \code{phi = A/(k*tau)} and \code{tau} from the
 relative amplitude (\code{root_tau_*}), where \code{gamma} is the total loss
 rate in the OFF phase. Use \code{\link{get_times}} with the growth rate for
 the exact duty cycle and period with dilution in both phases.
+}
+\seealso{
+\code{\link{get_tau}}
 }

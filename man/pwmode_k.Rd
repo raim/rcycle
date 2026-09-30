@@ -6,6 +6,26 @@
 \usage{
 pwmode_k(time, state, parameters, hocf)
 }
+\arguments{
+\item{time}{time point.}
+
+\item{state}{named state vector, \code{c(R = ...)}.}
+
+\item{parameters}{named parameter vector: \code{k}, \code{dr}, \code{mu};
+and \code{k0} for \code{pwmode_k_dr_k0}.}
+
+\item{hocf}{function of time returning the pulse state \code{kappa}, 0 or
+1 (\emph{not} scaled by \code{k}).}
+}
+\value{
+list with the derivative \code{dR}, as required by
+\code{\link[deSolve]{ode}}.
+}
 \description{
-ODE of pulse width-modulated transcription.
+Right-hand side of \code{dR/dt = kappa*k - (dr+mu)*R}, for
+\code{\link[deSolve]{ode}}, with \code{kappa} the ON (1) or OFF (0)
+state at \code{time}.
+}
+\seealso{
+\code{\link{get_rcycle}} for the periodic steady state.
 }

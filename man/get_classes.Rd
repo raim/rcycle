@@ -6,6 +6,15 @@
 \usage{
 get_classes(states)
 }
+\arguments{
+\item{states}{a cohort expression state table, with cohort mean
+counts as rows and cells as columns, as provided by
+\link{get_states}.}
+}
+\value{
+character vector, the cohort of maximal log2 fold change over
+its mean, for each cell.
+}
 \description{
 Classify cells by maximal state log2 fold change.
 }

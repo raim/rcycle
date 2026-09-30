@@ -19,7 +19,11 @@ name for which the analysis is to be performed.}
 \item{verb}{verbosity level, set to >2 to also get verbose output
 from the wavelet function.}
 
-\item{...}{arguments to \code{\link[WavletComp]{analyze.wavelet}}.}
+\item{...}{arguments to \code{\link[WaveletComp]{analyze.wavelet}}.}
+}
+\value{
+list of the wavelet object, \code{wlet}, and the circularly
+padded data it was computed on, \code{data}.
 }
 \description{
 Wavelet analysis of counts along a circular pseudophase.

@@ -3,6 +3,24 @@
 
 
 #' Add arrows for segments in the phases object.
+#'
+#' Draws double-headed arrows spanning each segment, one row per type,
+#' onto an existing plot.
+#' @param x phases object, see \link{get_pseudophase} and
+#'     \link{get_segments}.
+#' @param y unused.
+#' @param types segmentations (elements of \code{x}) to draw.
+#' @param phase column of the segment table holding the break phases.
+#' @param y0 height of the first row of arrows; default: middle of the plot.
+#' @param dy distance between rows.
+#' @param col column of the segment table holding the colors.
+#' @param labels column of the segment table holding the labels.
+#' @param labels.top only label the segments with the highest amplitudes.
+#' @param lxpd allow labels outside the plot region.
+#' @param pos label position, see \code{\link[graphics]{text}}.
+#' @param ticks add the type name on the right axis.
+#' @param verb unused.
+#' @param ... further arguments to \code{\link[graphics]{arrows}}.
 #' @export
 arrows.phases <- function(x, y, types='shoulder', phase='phi',
                           y0, dy, col, labels, labels.top, lxpd=par('xpd'),
@@ -107,6 +125,15 @@ arrows.phases <- function(x, y, types='shoulder', phase='phi',
 ## TODO: why is the moving average in some cases, Urea, below the curve?
 
 #' Plot genes of interest time series
+#'
+#' Currently stops: needs to be updated to the phases object.
+#' @param phases phases.
+#' @param counts count table, genes x cells.
+#' @param goi genes of interest, rows of \code{counts}.
+#' @param names legend names.
+#' @param col colors.
+#' @param win fraction of cells for the moving average.
+#' @param xlab,ylab axis labels.
 #' @export
 plotGOI <- function(phases, counts, goi, names, col,
                     win=.05,
@@ -149,6 +176,32 @@ stop('this needs to be udpated')
 ## * polygon: moving average +/- quantiles, sd, etc.
 
 #' Plot cohort state time series.
+#'
+#' Each state along the phase of the cells, as raw lines and a moving
+#' average.
+#' @param phase phase of each cell (column of \code{states}).
+#' @param states a cohort expression state table, see \link{get_states}.
+#' @param cls.srt states to plot, in this order.
+#' @param cls.col colors, named by state.
+#' @param ncells width of the moving average in cells; default:
+#'     \code{win} times the number of cells.
+#' @param ordered \code{phase} and the columns of \code{states} are
+#'     ordered already.
+#' @param row.center,scale,center processing as in \link{get_pseudophase}.
+#' @param win fraction of cells for the moving average.
+#' @param circular circular moving average.
+#' @param ma plot the moving average.
+#' @param log unused.
+#' @param norm plot the log2 ratio to the state mean.
+#' @param lines plot the raw data.
+#' @param sid plot label, see \code{segmenTools::figlabel}.
+#' @param legend add a legend.
+#' @param leg.nrow number of legend rows.
+#' @param leg.pos legend position.
+#' @param xtype \code{"phase"} or \code{"angle"}: circular x axis.
+#' @param xlab,ylab,xlim,ylim,lwd,axes graphics parameters.
+#' @param verb verbosity.
+#' @param ... further arguments to \code{\link[graphics]{plot}}.
 #' @export
 plotStates <- function(phase, states, cls.srt, cls.col,
                        ncells,
@@ -378,6 +431,33 @@ monoplot <- function(x, type='rotation',
 #' @param sarrows draw origin-based arrows for transformed data.
 #' @param slines connect transformed data by a line, useful for
 #'     circular data.
+#' @param z.q quantiles of PC \code{z} spanning the color scale.
+#' @param z.legend add a legend for the PC \code{z} colors.
+#' @param vlabels,slabels label the eigenvectors (cells) or scores
+#'     (cohorts).
+#' @param vlabels.top,slabels.top only label the largest vectors.
+#' @param colf,scolf color functions for a density plot, used when no
+#'     colors are given.
+#' @param col,scol colors of the eigenvectors and scores.
+#' @param lwd,slwd,pch,spch,cex,scex graphics parameters of eigenvectors
+#'     and scores.
+#' @param vaxis,saxis draw the axes of the eigenvectors (top, right) and
+#'     scores (bottom, left).
+#' @param txt.cex label size.
+#' @param pc.biplot as in \code{\link[stats]{biplot.prcomp}}.
+#' @param xlim,ylim axis limits of the scores.
+#' @param expand expansion of the eigenvector axes relative to the scores,
+#'     as in \code{\link[stats]{biplot}}.
+#' @param arcsinh arcsinh-transform all coordinates, to spread crowded
+#'     data.
+#' @param zero.axis draw lines through the origin.
+#' @param zero.axis.label label the axes at the origin.
+#' @param pc.arrows draw arrows whose lengths show the variance explained.
+#' @param pc.lwd,pc.scale width and length scale of those arrows.
+#' @param show.var add the variance explained to the axis labels.
+#' @param ... further arguments to the plot functions.
+#' @return the phases object with the scaled coordinates, invisibly; for
+#'     adding to the plot only, it can not be plotted again.
 #' @export
 plotPC <- function(phases, x=1, y=2,
                    z, z.q = c(.05,.95), z.legend = FALSE, # color by PCz
@@ -593,6 +673,12 @@ plotPC <- function(phases, x=1, y=2,
 
 ## overlaid phase histograms of cell classes 
 #' Plot a phase histogram by cell classes.
+#' @param phase phase of each cell.
+#' @param cls class of each cell.
+#' @param cls.srt classes, in legend order.
+#' @param cls.col colors (hex, without alpha), named by class.
+#' @param sid plot title.
+#' @param leg.nrow number of legend rows.
 #' @export
 phaseHist <- function(phase, cls, cls.srt, cls.col, sid="", leg.nrow=1) {
 
@@ -631,6 +717,9 @@ phcol.legend <- function(leg.pos="topright",
 }
 
 #' generate circular plot axis in radian
+#' @param x side(s) of the plot, as in \code{\link[graphics]{axis}}.
+#' @param at,labels tick positions and labels, multiples of pi/2.
+#' @param ... further arguments to \code{\link[graphics]{axis}}.
 #' @export
 circ.axis <- function(x,
                       at=c(-2*pi,  -pi,

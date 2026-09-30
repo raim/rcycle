@@ -16,6 +16,9 @@ counts as rows and cells as columns, as provided by
 \item{window}{fraction of cells to be used for the moving average
 of states.}
 }
+\value{
+\code{TRUE} if the phases should be reverted.
+}
 \description{
 Establish whether the phases should be reverted wrt state order.
 }

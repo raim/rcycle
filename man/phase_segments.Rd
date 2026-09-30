@@ -6,6 +6,16 @@
 \usage{
 phase_segments(phi, breaks, lim = c(-pi, pi))
 }
+\arguments{
+\item{phi}{phase angles.}
+
+\item{breaks}{segment borders.}
+
+\item{lim}{range of the phase angles.}
+}
+\value{
+integer segment number for each phase.
+}
 \description{
-Classify phases into segments.
+The first and last segment, both ends of the circle, are fused.
 }

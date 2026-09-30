@@ -9,8 +9,19 @@ morlet_wavelets(t, f0 = 6, s0 = 1, dj = 1/12, j = 0)
 \arguments{
 \item{t}{time vector in sec}
 
-\item{central}{frequency in Hz}
+\item{f0}{central frequency in Hz}
+
+\item{s0}{smallest scale.}
+
+\item{dj}{scale resolution, in octaves.}
+
+\item{j}{scale index; the scale is \code{s0*2^(j*dj)}.}
+}
+\value{
+list of the complex \code{wavelet} at \code{t}, its
+\code{scale} and the corresponding \code{period}.
 }
 \description{
 Morlet wavelet function (via chatGPT)
 }
+\keyword{internal}

@@ -15,6 +15,9 @@ will be shifted.}
 \item{center}{re-center the shifted theta (align is true)
 between -pi:pi.}
 }
+\value{
+the shifted phases.
+}
 \description{
 Shift a phase vector by a certain phase.
 }

@@ -12,11 +12,17 @@ shift(phases, dphi, align = FALSE, center = FALSE, verb = 1)
 \item{dphi}{phase angle by which the phase phi in the phases object
 will be shifted.}
 
-\item{center}{re-center the shifted theta (align is true)
-between -pi:pi.}
+\item{align}{align all \code{theta*} angles to the shifted \code{phi}
+at 0, with \link{align_phase}.}
 
-\item{verb}{output verbosity level.}
+\item{center}{re-center the aligned \code{theta*} in -pi:pi.}
+
+\item{verb}{verbosity.}
+}
+\value{
+the phases object.
 }
 \description{
-Shift all phases in a phase object.
+Shifts \code{phi} of every element that has one, re-orders, and
+optionally aligns the \code{theta*} angles at the new 0.
 }

@@ -2,10 +2,25 @@
 % Please edit documentation in R/phases.R
 \name{state_order_distance}
 \alias{state_order_distance}
-\title{calculate Levenshtein distance between state/test and a reference order}
+\title{Calculate Levenshtein distance between state/test and a reference order.}
 \usage{
 state_order_distance(states, test, reference, ...)
 }
+\arguments{
+\item{states}{a state matrix whose order is found by
+\link{get_state_order}; used if \code{test} or \code{reference}
+is missing.}
+
+\item{test}{the state names in the test order.}
+
+\item{reference}{the state names in the reference order; default: the
+row names of \code{states}.}
+
+\item{...}{further arguments to \link{get_state_order}.}
+}
+\value{
+the distance.
+}
 \description{
-calculate Levenshtein distance between state/test and a reference order
+The minimal distance over all circular rotations of \code{test}.
 }

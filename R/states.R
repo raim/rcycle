@@ -2,7 +2,13 @@
 ## CALCULATE THE COHORT STATE MATRIX
 
 #' Normalize count table by total counts per cell
-#' @param count table with genes in rows and cells in columns
+#' @param counts count table with genes in rows and cells in columns.
+#' @param scale multiply by the mean of the total counts, to stay on the
+#'     original scale.
+#' @param check skip normalization (with a message) if the table appears
+#'     normalized already: equal totals per cell, or negative values.
+#' @return the normalized table, with the total counts per cell as
+#'     attribute \code{"total"} (not set if skipped).
 #' @export
 normalize_counts <- function(counts, scale=FALSE, check=TRUE) {
 
@@ -45,6 +51,7 @@ normalize_counts <- function(counts, scale=FALSE, check=TRUE) {
 #' @param cohorts cohort definition: a list where each list entry is a
 #'     vector of indices in the count table.
 #' @inheritParams get_cohorts
+#' @return the state matrix, cohorts x cells.
 #' @export
 get_states <- function(counts, cohorts, normalize=TRUE) {
 

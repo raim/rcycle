@@ -6,6 +6,20 @@
 \usage{
 cohort2clustering(cohorts, n, na = "na")
 }
+\arguments{
+\item{cohorts}{a cohort list, as for \code{\link{get_cohorts}}, or a
+cohort matrix (cohorts x genes), as returned by it.}
+
+\item{n}{the number of genes (columns of the cohort matrix).}
+
+\item{na}{class of genes in no cohort.}
+}
+\value{
+character vector of length \code{n}.
+}
 \description{
-Convert a gene cohort list or matrix to a vector of unique gene classes.
+Each gene gets the name of its cohort; cohorts must not overlap.
+}
+\seealso{
+\code{\link{clustering2cohorts}}
 }

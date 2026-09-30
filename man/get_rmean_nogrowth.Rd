@@ -16,6 +16,32 @@ get_rmean_nogrowth(
   use.coth = TRUE
 )
 }
+\arguments{
+\item{k}{transcription rate in the ON phase.}
+
+\item{gamma}{total loss rate, \code{dr + mu}; if missing, calculated from
+\code{dr} and \code{mu}.}
+
+\item{k0}{basal transcription rate in the OFF phase (model
+\code{"k_dr_k0"} only).}
+
+\item{dr}{degradation rate; if missing, \code{gamma - mu}.}
+
+\item{mu}{growth rate, used only to calculate a missing \code{gamma}.}
+
+\item{phi}{duty cycle, the fraction of the period in the ON phase.}
+
+\item{tau}{period.}
+
+\item{model}{one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+\code{"k_dr_k0"} (or \code{"k_dr_k0_coth"}); the first is used.}
+
+\item{use.coth}{evaluate the OFF-phase term via \code{coth}, otherwise via
+\code{expm1}.}
+}
+\value{
+numeric vector of cycle means.
+}
 \description{
 The cycle mean of the pulse width-modulated models without any loss in
 the ON phase (\code{gamma = dr + mu} acts in the OFF phase only); exact for

@@ -21,7 +21,7 @@ get_degradation(
 )
 }
 \arguments{
-\item{a}{relative abundance amplitude (max(x)-min(x)/mean(x)).}
+\item{a}{relative abundance amplitude, (max(x)-min(x))/mean(x).}
 
 \item{R}{mean abundance, required for model with basal transcription.}
 
@@ -33,7 +33,7 @@ get_degradation(
 
 \item{mu}{growth rate, used only for correction (gamma=growth+degradation).}
 
-\item{model}{}
+\item{model}{model name; a function \code{root_<model>} must exist.}
 
 \item{lower}{the lower end point of the interval to be  searched by \code{\link[stats]{uniroot}}.}
 
@@ -41,11 +41,16 @@ get_degradation(
 
 \item{tol}{error tolerance of the \code{\link[stats]{uniroot}}  call.}
 
-\item{...}{further parameters to \code{\link[stats]{uniroot}}}
+\item{verb}{verbosity; with 0, errors of the root finding are silent.}
 
-\item{k}{transcription rate, required for model with basal transcription.}
+\item{...}{unused.}
+}
+\value{
+the degradation rate \code{gamma - mu} (or \code{gamma} if
+\code{mu} is missing or \code{NA}), \code{NA} if no root was found.
 }
 \description{
 Fit a transcript degradation rate from relative amplitude and
 oscillation parameters, using the \code{\link[stats]{uniroot}}  function
 }
+\keyword{internal}

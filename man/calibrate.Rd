@@ -15,6 +15,10 @@ time.}
 \item{phase}{the phase ID in the phases object to use for calibration
 to the transcription cycle period.}
 }
+\value{
+the phases object, with a column \code{time} added to each
+element holding \code{phase}.
+}
 \description{
 Calibrate phase to a period.
 }

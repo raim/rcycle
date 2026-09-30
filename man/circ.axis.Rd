@@ -11,6 +11,13 @@ circ.axis(
   ...
 )
 }
+\arguments{
+\item{x}{side(s) of the plot, as in \code{\link[graphics]{axis}}.}
+
+\item{at, labels}{tick positions and labels, multiples of pi/2.}
+
+\item{...}{further arguments to \code{\link[graphics]{axis}}.}
+}
 \description{
 generate circular plot axis in radian
 }

@@ -6,6 +6,18 @@
 \usage{
 pwmode_dr(time, state, parameters, hocf)
 }
+\arguments{
+\item{time}{time point.}
+
+\item{state}{named state vector, \code{c(R = ...)}.}
+
+\item{parameters}{named parameter vector: \code{k}, \code{dr}, \code{mu};
+and \code{k0} for \code{pwmode_k_dr_k0}.}
+
+\item{hocf}{function of time returning the pulse state \code{kappa}, 0 or
+1 (\emph{not} scaled by \code{k}).}
+}
 \description{
-ODE of pulse width-modulated degradation.
+\code{dR/dt = k - ((1-kappa)*dr + mu)*R}: constant transcription,
+degradation in the OFF phase only.
 }

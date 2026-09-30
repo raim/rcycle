@@ -2,10 +2,20 @@
 % Please edit documentation in R/phases.R
 \name{detect_jumps}
 \alias{detect_jumps}
-\title{Return the position of a jump}
+\title{Return the position of a jump.}
 \usage{
 detect_jumps(py, max = -pi, verb = 0)
 }
+\arguments{
+\item{py}{ordered phase angles.}
+
+\item{max}{a difference between neighbours below this counts as a jump.}
+
+\item{verb}{unused.}
+}
+\value{
+indices of the elements before a jump.
+}
 \description{
-Return the position of a jump
+Return the position of a jump.
 }

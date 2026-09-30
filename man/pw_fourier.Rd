@@ -2,7 +2,7 @@
 % Please edit documentation in R/models.R
 \name{pw_fourier}
 \alias{pw_fourier}
-\title{alpha controls the smoothing by exponentially damping higher harmonics; alpha=0: no smoothing; alpha<=0.5: mild smoothing; alpha>0.5: noticable smoothing; alpha>2: towards sinus}
+\title{Pulse wave, Fourier series.}
 \usage{
 pw_fourier(
   t = 0,
@@ -16,8 +16,40 @@ pw_fourier(
   alpha = 0
 )
 }
-\description{
-t <- seq(0,10, length=100)
-plot(t, pwf(t=t, tau=1.5, k=1, phi=.4), type='l', col=2)
-lines(t, pwf(t=t, tau=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
+\arguments{
+\item{t}{time points.}
+
+\item{k}{height of the pulse.}
+
+\item{phi}{duty cycle, the fraction of the period in the ON phase.}
+
+\item{tau}{period.}
+
+\item{N}{number of harmonics summed.}
+
+\item{shift}{phase shift, in units of time.}
+
+\item{theta}{phase shift, in radians.}
+
+\item{start.on}{shift time by half a pulse, to start with the ON phase.}
+
+\item{alpha}{smoothing, by exponentially damping higher harmonics:
+0, no smoothing; up to 0.5, mild; above 0.5, noticeable; above 2, towards
+a sine.}
 }
+\value{
+numeric vector of the pulse wave at \code{t}.
+}
+\description{
+A pulse wave between 0 and \code{k} with duty cycle \code{phi} and period
+\code{tau}, summed directly from its Fourier series (slow). The series
+starts halfway through the first pulse (\code{t = 0} is the pulse centre).
+}
+\examples{
+\dontrun{
+t <- seq(0,10, length=100)
+plot(t, pw_fourier(t=t, tau=1.5, k=1, phi=.4), type='l', col=2)
+lines(t, pw_fourier(t=t, tau=1.5, k=1, phi=.6, theta=pi), type='l', col=4)
+}
+}
+\keyword{internal}

@@ -10,7 +10,9 @@
 #'     name for which the analysis is to be performed.
 #' @param verb verbosity level, set to >2 to also get verbose output
 #'     from the wavelet function.
-#' @param ... arguments to \code{\link[WavletComp]{analyze.wavelet}}.
+#' @param ... arguments to \code{\link[WaveletComp]{analyze.wavelet}}.
+#' @return list of the wavelet object, \code{wlet}, and the circularly
+#'     padded data it was computed on, \code{data}.
 #'@export
 get_wavelet <- function(phi, counts, ID, verb=1, ...) {
 
@@ -133,7 +135,13 @@ get_coherence <- function(phi, counts, ID1, ID2, verb=0, ...) {
 
 #' Morlet wavelet function (via chatGPT)
 #' @param t time vector in sec
-#' @param central frequency in Hz
+#' @param f0 central frequency in Hz
+#' @param s0 smallest scale.
+#' @param dj scale resolution, in octaves.
+#' @param j scale index; the scale is \code{s0*2^(j*dj)}.
+#' @return list of the complex \code{wavelet} at \code{t}, its
+#'     \code{scale} and the corresponding \code{period}.
+#' @keywords internal
 morlet_wavelets <- function(t, f0 = 6, s0 = 1, dj = 1/12, j = 0) {
     
     ## Convert scale index j to scale value

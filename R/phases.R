@@ -42,6 +42,13 @@ phase_rank <- function(theta, align=TRUE, center=TRUE) {
 }
 
 #' Align two phase vectors at 0.
+#'
+#' Shifts \code{phi} by its value where \code{target} is 0 (linear
+#' interpolation).
+#' @param phi phase angles to be shifted (radian).
+#' @param target phase angles of the same elements, where 0 is the anchor.
+#' @param center re-center the shifted phases in -pi:pi.
+#' @return the shifted \code{phi}.
 #' @export
 align_phase <- function(phi, target, center=TRUE) {
 
@@ -72,6 +79,11 @@ approx_phase <- function(x, y, xout, ...) {
 #' input order, all phases are reverted.
 #'
 #' @param phases phases object as returned by \link{get_pseudophase}.
+#' @param srt optional names of the states (cohorts) to use for the order
+#'     test.
+#' @param force revert without testing.
+#' @param verb verbosity.
+#' @return the phases object.
 #' @export
 revert <- function(phases, srt, force=FALSE, verb=1) {
 
@@ -109,9 +121,15 @@ revert <- function(phases, srt, force=FALSE, verb=1) {
 }
 
 #' Shift all phases in a phase object.
-#' @inheritParams get_pseudophase
-#' @inheritParams shift_phase
+#'
+#' Shifts \code{phi} of every element that has one, re-orders, and
+#' optionally aligns the \code{theta*} angles at the new 0.
 #' @inheritParams revert
+#' @inheritParams shift_phase
+#' @param align align all \code{theta*} angles to the shifted \code{phi}
+#'     at 0, with \link{align_phase}.
+#' @param center re-center the aligned \code{theta*} in -pi:pi.
+#' @return the phases object.
 #' @export
 shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
 
@@ -164,6 +182,7 @@ shift <- function(phases, dphi, align=FALSE, center=FALSE, verb=1) {
 #' The differences are calculated as Levenshtein distances, using a
 #' simple circular extension of the base R \link{adist} function.
 #' @inheritParams revert
+#' @return the distance, see \link{state_order_distance}.
 #' @export
 evaluate_order <- function(phases) {
 
@@ -179,6 +198,8 @@ evaluate_order <- function(phases) {
 #' @param phase the phase ID in the phases object to use for calibration
 #'     to the transcription cycle period.
 #' @inheritParams revert
+#' @return the phases object, with a column \code{time} added to each
+#'     element holding \code{phase}.
 #' @export
 calibrate <- function(phases, period, phase='phi') {
 
@@ -196,6 +217,14 @@ calibrate <- function(phases, period, phase='phi') {
 #'
 #' High-level interface for the \link{shift} function that allows to
 #' specify how to select the anchor point.
+#' @inheritParams revert
+#' @param method \code{"slope"}: the phase of maximal slope of
+#'     \code{theta - phi} (via \link{get_segments}); \code{"cohort"}: the
+#'     phase of a cohort, \code{phases$x.phase[params$cohort, params$phase]}.
+#' @param params list of parameters: \code{spar} for \code{"slope"};
+#'     \code{cohort} and \code{phase} for \code{"cohort"}.
+#' @param ... further arguments to \link{get_segments}.
+#' @return the phases object.
 #' @export
 center <- function(phases, method='slope', params=list(spar=.001), ...) {
 
@@ -223,6 +252,14 @@ center <- function(phases, method='slope', params=list(spar=.001), ...) {
 classify <- function(phases) {}
 
 #' Add colors to cohorts or segments.
+#' @inheritParams revert
+#' @param col a color vector, named by the IDs.
+#' @param type the table in the phases object to color, e.g. \code{"x.phase"}
+#'     or a segment table.
+#' @param ID column holding the IDs; default: the row names.
+#' @param colid name of the new color column.
+#' @param warn warn if the color column exists already.
+#' @return the phases object.
 #' @export
 add_colors <- function(phases, col, type='x', ID, colid='col', warn=TRUE) {
 
@@ -261,7 +298,23 @@ add_colors <- function(phases, col, type='x', ID, colid='col', warn=TRUE) {
 #' @param states a cohort expression state table, with cohort mean
 #'     counts as rows and cells as columns, as provided by
 #'     \link{get_states}.
+#' @param revert.phase revert all phases if the cohort order runs
+#'     backwards, see \link{revert_phase}.
+#' @param segments unused.
+#' @param spar unused.
+#' @param classify add the cell class by maximal state fold change
+#'     (\link{get_classes}).
+#' @param validate unused.
+#' @param log log10(x+1)-transform the states, before row centering.
+#' @param row.center center the rows (cohorts), before column scaling.
+#' @param scale,center passed to \code{\link[stats]{prcomp}} as
+#'     \code{scale.} and \code{center}.
 #' @param verb output verbosity level.
+#' @return a \code{\link[stats]{prcomp}} object of class
+#'     \code{"phases"}, with the added tables \code{rotation.phase} (cells)
+#'     and \code{x.phase} (cohorts): the phase angle \code{theta} in PC1/PC2,
+#'     the rank phase \code{phi}, amplitude and 3D angles; and
+#'     \code{summary}.
 #' @export
 get_pseudophase <- function(states,
                             revert.phase=FALSE, 
@@ -402,6 +455,9 @@ get_pseudophase <- function(states,
 
 
 #' Classify cells by maximal state log2 fold change.
+#' @inheritParams get_pseudophase
+#' @return character vector, the cohort of maximal log2 fold change over
+#'     its mean, for each cell.
 #' @export
 get_classes <- function(states) {
 
@@ -419,6 +475,17 @@ get_classes <- function(states) {
     cls[ccls]
 }
 #' Classify segments by their overlap with cell classes.
+#'
+#' Requires \code{segmenTools} (\code{clusterCluster},
+#' \code{plotOverlaps}) to be attached.
+#' @inheritParams revert
+#' @param segment the segmentation, as named in \link{get_segments}.
+#' @param class column of \code{phases$rotation.phase} holding the cell
+#'     classes.
+#' @param col optional color vector, named by class.
+#' @param plot plot the overlaps.
+#' @return the phases object with a new element
+#'     \code{<segment>_class}.
 #' @export
 segment_state <- function(phases, segment='inflection',
                           class='class', col, plot=FALSE) {
@@ -457,6 +524,7 @@ segment_state <- function(phases, segment='inflection',
 #' @param phi a vector of phase angles (in radian).
 #' @param ... parameters passed to \link{revert_phase_state}.
 #' @inheritParams get_pseudophase
+#' @return \code{TRUE} if the phases should be reverted.
 #' @export
 revert_phase <- function(phi, states, ...) {
 
@@ -475,6 +543,7 @@ revert_phase <- function(phi, states, ...) {
 #' @inheritParams get_pseudophase
 #' @inheritParams revert_phase
 #' @inheritParams get_state_order
+#' @return \code{TRUE} if the phases should be reverted.
 #' @export
 revert_phase_state <- function(states, phi, window=.05) {
 
@@ -489,7 +558,17 @@ revert_phase_state <- function(states, phi, window=.05) {
 
 
 
-#' calculate Levenshtein distance between state/test and a reference order
+#' Calculate Levenshtein distance between state/test and a reference order.
+#'
+#' The minimal distance over all circular rotations of \code{test}.
+#' @param states a state matrix whose order is found by
+#'     \link{get_state_order}; used if \code{test} or \code{reference}
+#'     is missing.
+#' @param test the state names in the test order.
+#' @param reference the state names in the reference order; default: the
+#'     row names of \code{states}.
+#' @param ... further arguments to \link{get_state_order}.
+#' @return the distance.
 #' @export
 state_order_distance <- function(states, test, reference,  ...) {
 
@@ -541,8 +620,11 @@ state_order_distance <- function(states, test, reference,  ...) {
 #'     average calculation.
 #' @param window fraction of cells to be used for the moving average
 #'     of states.
+#' @param sides passed to \code{\link[stats]{filter}}.
 #' @param circular treat the data as circular in the moving average
 #'     calculation.
+#' @param names return the state names instead of their row indices.
+#' @return the order of the states by the position of their maximum.
 #' @export
 get_state_order <- function(states, window=.05,
                             sides=2, circular=TRUE, names=FALSE) {
@@ -580,6 +662,15 @@ get_state_order <- function(states, window=.05,
 
 
 #' Get the phase of a cohort state.
+#'
+#' The phase at which the moving average of each state over phase-sorted
+#' cells peaks.
+#' @param states a cohort expression state table, see \link{get_states}.
+#' @param phase the phase of each cell (column of \code{states}).
+#' @param center unused (a state, by name or index, to center at).
+#' @param window fraction of cells for the moving average.
+#' @param verb unused.
+#' @return the peak phase for each state, named.
 #' @export
 state_phase <- function(states, phase, center, window=0.05, verb=0) {
 
@@ -622,6 +713,7 @@ state_phase <- function(states, phase, center, window=0.05, verb=0) {
 #'     will be shifted.
 #' @param center re-center the shifted theta (align is true)
 #'     between -pi:pi.
+#' @return the shifted phases.
 #' @export
 shift_phase <- function(phi, dphi, center=TRUE) {
 
@@ -644,7 +736,11 @@ center_phase <- function(phi) {
 
 ## TODO: more general solution?
 
-#' Return the position of a jump
+#' Return the position of a jump.
+#' @param py ordered phase angles.
+#' @param max a difference between neighbours below this counts as a jump.
+#' @param verb unused.
+#' @return indices of the elements before a jump.
 #' @export
 detect_jumps <- function(py, max=-pi, verb=0) {
     which(diff(py) < max) 
@@ -652,6 +748,10 @@ detect_jumps <- function(py, max=-pi, verb=0) {
 
 #' Remove a jump in phases by shift all phases.
 #' @param phi ordered list of phases
+#' @param idx position of the jump; default: \link{detect_jumps}.
+#' @param center shift the result into -pi:pi.
+#' @param verb verbosity.
+#' @return the phases without the jump.
 #' @export
 remove_jumps <- function(phi, idx, center=TRUE, verb=1) {
 

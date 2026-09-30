@@ -15,6 +15,9 @@ counts as rows and cells as columns, as provided by
 
 \item{...}{parameters passed to \link{revert_phase_state}.}
 }
+\value{
+\code{TRUE} if the phases should be reverted.
+}
 \description{
 Establish whether the phases should be reverted wrt state order.
 }

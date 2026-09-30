@@ -15,6 +15,21 @@ plotGOI(
   ylab = "mov. avg. of counts/total"
 )
 }
+\arguments{
+\item{phases}{phases.}
+
+\item{counts}{count table, genes x cells.}
+
+\item{goi}{genes of interest, rows of \code{counts}.}
+
+\item{names}{legend names.}
+
+\item{col}{colors.}
+
+\item{win}{fraction of cells for the moving average.}
+
+\item{xlab, ylab}{axis labels.}
+}
 \description{
-Plot genes of interest time series
+Currently stops: needs to be updated to the phases object.
 }

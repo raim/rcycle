@@ -19,9 +19,50 @@ get_ramp_nogrowth(
   ...
 )
 }
+\arguments{
+\item{gamma}{total loss rate, \code{dr + mu}; if missing, calculated from
+\code{dr} and \code{mu}.}
+
+\item{dr}{degradation rate; if missing, \code{gamma - mu}.}
+
+\item{mu}{growth rate, used only to calculate a missing \code{gamma}.}
+
+\item{phi}{duty cycle, the fraction of the period in the ON phase.}
+
+\item{tau}{period.}
+
+\item{relative}{relative amplitude, \code{(Rmax - Rmin)/mean}; otherwise
+absolute.}
+
+\item{k}{transcription rate in the ON phase.}
+
+\item{k0}{basal transcription rate in the OFF phase (model
+\code{"k_dr_k0"} only).}
+
+\item{force.relative}{calculate the relative amplitude directly, also if
+\code{k} is given.}
+
+\item{use.coth}{evaluate the OFF-phase term via \code{coth}, otherwise via
+\code{expm1}.}
+
+\item{model}{one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+\code{"k_dr_k0"} (or \code{"k_dr_k0_coth"}); the first is used.}
+
+\item{...}{unused.}
+}
+\value{
+numeric vector of amplitudes.
+}
 \description{
 As \code{\link{get_rmean_nogrowth}}: exact for model \code{"k"} and for
 \code{mu = 0}; the amplitude of the models with phase-switched degradation
 is \code{k*phi*tau}. Use \code{\link{get_ramp}} for the exact amplitude
 with dilution in both phases.
+}
+\details{
+For the models with phase-switched degradation, the absolute amplitude is
+calculated first if \code{k} is given (and \code{force.relative} is
+\code{FALSE}), and divided by the mean for the relative amplitude;
+otherwise the relative amplitude is calculated directly, which requires
+\code{k} only for model \code{"k_dr_k0"}.
 }

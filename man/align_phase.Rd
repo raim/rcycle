@@ -6,6 +6,17 @@
 \usage{
 align_phase(phi, target, center = TRUE)
 }
+\arguments{
+\item{phi}{phase angles to be shifted (radian).}
+
+\item{target}{phase angles of the same elements, where 0 is the anchor.}
+
+\item{center}{re-center the shifted phases in -pi:pi.}
+}
+\value{
+the shifted \code{phi}.
+}
 \description{
-Align two phase vectors at 0.
+Shifts \code{phi} by its value where \code{target} is 0 (linear
+interpolation).
 }

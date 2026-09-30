@@ -6,6 +6,23 @@
 \usage{
 add_colors(phases, col, type = "x", ID, colid = "col", warn = TRUE)
 }
+\arguments{
+\item{phases}{phases object as returned by \link{get_pseudophase}.}
+
+\item{col}{a color vector, named by the IDs.}
+
+\item{type}{the table in the phases object to color, e.g. \code{"x.phase"}
+or a segment table.}
+
+\item{ID}{column holding the IDs; default: the row names.}
+
+\item{colid}{name of the new color column.}
+
+\item{warn}{warn if the color column exists already.}
+}
+\value{
+the phases object.
+}
 \description{
 Add colors to cohorts or segments.
 }

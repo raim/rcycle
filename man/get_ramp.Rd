@@ -17,8 +17,32 @@ get_ramp(
 )
 }
 \arguments{
+\item{k}{transcription rate in the ON phase.}
+
+\item{gamma}{total loss rate in the OFF phase, \code{dr + mu}; if missing,
+calculated from \code{dr} and \code{mu}.}
+
+\item{k0}{basal transcription rate in the OFF phase (model
+\code{"k_dr_k0"} only).}
+
+\item{dr}{degradation rate; if missing, \code{gamma - mu}.}
+
+\item{mu}{growth rate (dilution, both phases); if missing or \code{NA}, 0
+(no growth: \code{gamma} or \code{dr} is then the total loss rate in the OFF
+phase, and the result equals the closed forms, \code{\link{get_rmean_nogrowth}}).}
+
+\item{phi}{duty cycle, the fraction of the period in the ON phase.}
+
+\item{tau}{period.}
+
 \item{relative}{relative amplitude, \code{(Rmax - Rmin)/mean}; otherwise
 absolute.}
+
+\item{model}{one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+\code{"k_dr_k0"}.}
+}
+\value{
+numeric vector of amplitudes.
 }
 \description{
 Absolute (\code{Rmax - Rmin}) or relative (\code{(Rmax - Rmin)/mean})

@@ -7,7 +7,17 @@ and basal transcription.}
 \usage{
 pwmode_k_dr_k0(time, state, parameters, hocf)
 }
+\arguments{
+\item{time}{time point.}
+
+\item{state}{named state vector, \code{c(R = ...)}.}
+
+\item{parameters}{named parameter vector: \code{k}, \code{dr}, \code{mu};
+and \code{k0} for \code{pwmode_k_dr_k0}.}
+
+\item{hocf}{function of time returning the pulse state \code{kappa}, 0 or
+1 (\emph{not} scaled by \code{k}).}
+}
 \description{
-ODE of pulse width-modulated transcription and anti-phasic degradation
-and basal transcription.
+\code{dR/dt = kappa*k + (1-kappa)*k0 - ((1-kappa)*dr + mu)*R}.
 }

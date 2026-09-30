@@ -9,6 +9,9 @@ evaluate_order(phases)
 \arguments{
 \item{phases}{phases object as returned by \link{get_pseudophase}.}
 }
+\value{
+the distance, see \link{state_order_distance}.
+}
 \description{
 The differences are calculated as Levenshtein distances, using a
 simple circular extension of the base R \link{adist} function.

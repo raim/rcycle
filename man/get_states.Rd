@@ -13,7 +13,12 @@ cells as columns.}
 \item{cohorts}{cohort definition: a list where each list entry is a
 vector of indices in the count table.}
 
-\item{normalize}{divide each boolean entry (1) by the cohort size; if true, _get_states will return the cohort means and if false, the total cohort counts.}
+\item{normalize}{divide each boolean entry (1) by the cohort size; if
+true, \code{\link{get_states}} will return the cohort means and if false,
+the total cohort counts.}
+}
+\value{
+the state matrix, cohorts x cells.
 }
 \description{
 Generate a cohort expression state matrix.

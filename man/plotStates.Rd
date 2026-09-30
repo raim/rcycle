@@ -35,6 +35,52 @@ plotStates(
   ...
 )
 }
+\arguments{
+\item{phase}{phase of each cell (column of \code{states}).}
+
+\item{states}{a cohort expression state table, see \link{get_states}.}
+
+\item{cls.srt}{states to plot, in this order.}
+
+\item{cls.col}{colors, named by state.}
+
+\item{ncells}{width of the moving average in cells; default:
+\code{win} times the number of cells.}
+
+\item{ordered}{\code{phase} and the columns of \code{states} are
+ordered already.}
+
+\item{row.center, scale, center}{processing as in \link{get_pseudophase}.}
+
+\item{win}{fraction of cells for the moving average.}
+
+\item{circular}{circular moving average.}
+
+\item{ma}{plot the moving average.}
+
+\item{log}{unused.}
+
+\item{norm}{plot the log2 ratio to the state mean.}
+
+\item{lines}{plot the raw data.}
+
+\item{sid}{plot label, see \code{segmenTools::figlabel}.}
+
+\item{legend}{add a legend.}
+
+\item{leg.nrow}{number of legend rows.}
+
+\item{leg.pos}{legend position.}
+
+\item{xtype}{\code{"phase"} or \code{"angle"}: circular x axis.}
+
+\item{xlab, ylab, xlim, ylim, lwd, axes}{graphics parameters.}
+
+\item{verb}{verbosity.}
+
+\item{...}{further arguments to \code{\link[graphics]{plot}}.}
+}
 \description{
-Plot cohort state time series.
+Each state along the phase of the cells, as raw lines and a moving
+average.
 }

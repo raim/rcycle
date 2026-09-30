@@ -2,6 +2,14 @@
 ## GENERATE COHORT LISTS AND MATRIXES
 
 #' Convert a gene cohort list or matrix to a vector of unique gene classes.
+#'
+#' Each gene gets the name of its cohort; cohorts must not overlap.
+#' @param cohorts a cohort list, as for \code{\link{get_cohorts}}, or a
+#' cohort matrix (cohorts x genes), as returned by it.
+#' @param n the number of genes (columns of the cohort matrix).
+#' @param na class of genes in no cohort.
+#' @return character vector of length \code{n}.
+#' @seealso \code{\link{clustering2cohorts}}
 #' @export
 cohort2clustering <- function(cohorts, n, na="na") {
 
@@ -24,7 +32,12 @@ cohort2clustering <- function(cohorts, n, na="na") {
     cls    
 }
 
-#' convert a gene clusterng vector to a gene cohort list
+#' Convert a gene clustering vector to a gene cohort list.
+#' @param cls a vector of gene classes, one per gene.
+#' @param cls.srt the classes to use, in this order; default: all, in order
+#' of appearance.
+#' @return a named list of index vectors, one per class.
+#' @seealso \code{\link{cohort2clustering}}
 #' @export
 clustering2cohorts <- function(cls, cls.srt) {
 
@@ -45,7 +58,10 @@ clustering2cohorts <- function(cls, cls.srt) {
 #' of the genes in the count table.
 #' @param n the number of rows (genes) in the count table, if not provided
 #' the maximal index will be used
-#' @param normalize divide each boolean entry (1) by the cohort size; if true, _get_states will return the cohort means and if false, the total cohort counts.
+#' @param normalize divide each boolean entry (1) by the cohort size; if
+#' true, \code{\link{get_states}} will return the cohort means and if false,
+#' the total cohort counts.
+#' @return a matrix, cohorts x genes.
 #' @export
 get_cohorts <- function(cohorts, n, normalize=FALSE) {
 

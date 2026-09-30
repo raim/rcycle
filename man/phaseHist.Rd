@@ -6,6 +6,19 @@
 \usage{
 phaseHist(phase, cls, cls.srt, cls.col, sid = "", leg.nrow = 1)
 }
+\arguments{
+\item{phase}{phase of each cell.}
+
+\item{cls}{class of each cell.}
+
+\item{cls.srt}{classes, in legend order.}
+
+\item{cls.col}{colors (hex, without alpha), named by class.}
+
+\item{sid}{plot title.}
+
+\item{leg.nrow}{number of legend rows.}
+}
 \description{
 Plot a phase histogram by cell classes.
 }

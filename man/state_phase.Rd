@@ -6,6 +6,21 @@
 \usage{
 state_phase(states, phase, center, window = 0.05, verb = 0)
 }
+\arguments{
+\item{states}{a cohort expression state table, see \link{get_states}.}
+
+\item{phase}{the phase of each cell (column of \code{states}).}
+
+\item{center}{unused (a state, by name or index, to center at).}
+
+\item{window}{fraction of cells for the moving average.}
+
+\item{verb}{unused.}
+}
+\value{
+the peak phase for each state, named.
+}
 \description{
-Get the phase of a cohort state.
+The phase at which the moving average of each state over phase-sorted
+cells peaks.
 }

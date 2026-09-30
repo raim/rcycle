@@ -2,9 +2,7 @@
 % Please edit documentation in R/models.R
 \name{get_transcription}
 \alias{get_transcription}
-\title{Calculate transcription rate from average abundance and degradation rates.
-from base equation for average abundance
-TODO: map fluorescence to a rough transcript/cell number}
+\title{Transcription rate from abundance data, closed form.}
 \usage{
 get_transcription(
   R = NA,
@@ -18,12 +16,29 @@ get_transcription(
 )
 }
 \arguments{
-\item{R}{average abundance}
+\item{R}{mean abundance (model \code{"k"}).}
 
-\item{A}{absolute amplitude, for biphasic models}
+\item{A}{absolute amplitude (models with phase-switched degradation).}
+
+\item{phi}{duty cycle.}
+
+\item{dr}{degradation rate (model \code{"k"}, with \code{mu} replaces
+\code{gamma}).}
+
+\item{mu}{growth rate (model \code{"k"}, see \code{dr}).}
+
+\item{gamma}{total loss rate (model \code{"k"}).}
+
+\item{tau}{period (models with phase-switched degradation).}
+
+\item{model}{model name.}
+}
+\value{
+the transcription rate.
 }
 \description{
-Calculate transcription rate from average abundance and degradation rates.
-from base equation for average abundance
-TODO: map fluorescence to a rough transcript/cell number
+For model \code{"k"}, from the mean abundance, \code{k = R*gamma/phi};
+for the models with phase-switched degradation, from the absolute
+amplitude, \code{k = A/(phi*tau)}.
 }
+\keyword{internal}

@@ -6,6 +6,21 @@
 \usage{
 center(phases, method = "slope", params = list(spar = 0.001), ...)
 }
+\arguments{
+\item{phases}{phases object as returned by \link{get_pseudophase}.}
+
+\item{method}{\code{"slope"}: the phase of maximal slope of
+\code{theta - phi} (via \link{get_segments}); \code{"cohort"}: the
+phase of a cohort, \code{phases$x.phase[params$cohort, params$phase]}.}
+
+\item{params}{list of parameters: \code{spar} for \code{"slope"};
+\code{cohort} and \code{phase} for \code{"cohort"}.}
+
+\item{...}{further arguments to \link{get_segments}.}
+}
+\value{
+the phases object.
+}
 \description{
 High-level interface for the \link{shift} function that allows to
 specify how to select the anchor point.

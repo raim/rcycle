@@ -21,8 +21,15 @@ average calculation.}
 \item{window}{fraction of cells to be used for the moving average
 of states.}
 
+\item{sides}{passed to \code{\link[stats]{filter}}.}
+
 \item{circular}{treat the data as circular in the moving average
 calculation.}
+
+\item{names}{return the state names instead of their row indices.}
+}
+\value{
+the order of the states by the position of their maximum.
 }
 \description{
 NOTE: cells (columns of the state matrix) must be ordered!

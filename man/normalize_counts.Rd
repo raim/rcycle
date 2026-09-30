@@ -7,7 +7,17 @@
 normalize_counts(counts, scale = FALSE, check = TRUE)
 }
 \arguments{
-\item{count}{table with genes in rows and cells in columns}
+\item{counts}{count table with genes in rows and cells in columns.}
+
+\item{scale}{multiply by the mean of the total counts, to stay on the
+original scale.}
+
+\item{check}{skip normalization (with a message) if the table appears
+normalized already: equal totals per cell, or negative values.}
+}
+\value{
+the normalized table, with the total counts per cell as
+attribute \code{"total"} (not set if skipped).
 }
 \description{
 Normalize count table by total counts per cell

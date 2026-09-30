@@ -21,6 +21,37 @@ arrows.phases(
   ...
 )
 }
+\arguments{
+\item{x}{phases object, see \link{get_pseudophase} and
+\link{get_segments}.}
+
+\item{y}{unused.}
+
+\item{types}{segmentations (elements of \code{x}) to draw.}
+
+\item{phase}{column of the segment table holding the break phases.}
+
+\item{y0}{height of the first row of arrows; default: middle of the plot.}
+
+\item{dy}{distance between rows.}
+
+\item{col}{column of the segment table holding the colors.}
+
+\item{labels}{column of the segment table holding the labels.}
+
+\item{labels.top}{only label the segments with the highest amplitudes.}
+
+\item{lxpd}{allow labels outside the plot region.}
+
+\item{pos}{label position, see \code{\link[graphics]{text}}.}
+
+\item{ticks}{add the type name on the right axis.}
+
+\item{verb}{unused.}
+
+\item{...}{further arguments to \code{\link[graphics]{arrows}}.}
+}
 \description{
-Add arrows for segments in the phases object.
+Draws double-headed arrows spanning each segment, one row per type,
+onto an existing plot.
 }

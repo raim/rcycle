@@ -24,6 +24,46 @@ get_rates_nogrowth(
   ...
 )
 }
+\arguments{
+\item{model}{one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+\code{"k_dr_k0"}, or the variants \code{"k_dr_coth"}, \code{"dr_coth"},
+\code{"k_dr_k0_coth"}; a function \code{root_<model>} must exist.}
+
+\item{a}{relative amplitude, \code{(Rmax - Rmin)/R}.}
+
+\item{A}{absolute amplitude, used if \code{a} is missing.}
+
+\item{R}{mean abundance.}
+
+\item{Rmin}{minimal abundance (model \code{"k_dr_k0"}).}
+
+\item{Rmax}{maximal abundance, used for \code{Rmin} if that is missing.}
+
+\item{phi}{duty cycle.}
+
+\item{tau}{period.}
+
+\item{mu}{growth rate, subtracted from \code{gamma} to give \code{dr};
+\code{NA} counts as 0. A \code{dr} below 0 is returned as \code{NA}.}
+
+\item{k}{transcription rate; if \code{NA}, calculated.}
+
+\item{k0}{unused.}
+
+\item{gamma}{unused; overwritten by the fitted loss rate.}
+
+\item{lower, upper}{range of \code{gamma*tau} searched.}
+
+\item{tol}{tolerance of the root finding.}
+
+\item{verb}{verbosity.}
+
+\item{...}{unused.}
+}
+\value{
+data frame with columns \code{k}, \code{dr} and, for
+\code{"k_dr_k0"}, \code{k0}.
+}
 \description{
 The inverse of \code{\link{get_rmean_nogrowth}} and
 \code{\link{get_ramp_nogrowth}}: exact for model \code{"k"} and for
@@ -31,4 +71,11 @@ The inverse of \code{\link{get_rmean_nogrowth}} and
 the OFF phase (degradation and dilution). \code{lower}, \code{upper} bound
 \code{gamma*tau}. Use \code{\link{get_rates}} with the growth rate for the
 exact rates with dilution in both phases.
+}
+\details{
+For the models with phase-switched degradation, \code{k = A/(phi*tau)}
+(\code{\link{get_transcription}}) and \code{gamma*tau} from the relative
+amplitude (\code{\link{get_degradation}}); for model \code{"k"},
+\code{gamma*tau} first and then \code{k = R*gamma/phi}. For
+\code{"k_dr_k0"}, \code{k0} from \code{Rmin} or \code{Rmax}.
 }

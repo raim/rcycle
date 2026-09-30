@@ -12,6 +12,23 @@ segment_state(
   plot = FALSE
 )
 }
+\arguments{
+\item{phases}{phases object as returned by \link{get_pseudophase}.}
+
+\item{segment}{the segmentation, as named in \link{get_segments}.}
+
+\item{class}{column of \code{phases$rotation.phase} holding the cell
+classes.}
+
+\item{col}{optional color vector, named by class.}
+
+\item{plot}{plot the overlaps.}
+}
+\value{
+the phases object with a new element
+\code{<segment>_class}.
+}
 \description{
-Classify segments by their overlap with cell classes.
+Requires \code{segmenTools} (\code{clusterCluster},
+\code{plotOverlaps}) to be attached.
 }

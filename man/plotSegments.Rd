@@ -16,9 +16,24 @@ plotSegments(
 )
 }
 \arguments{
+\item{phases}{phases object as returned by \link{get_pseudophase}.}
+
 \item{difference}{plot the difference theta-phi instead of
 theta. This emphasizes the noise in the original data and the
 smoothing effects.}
+
+\item{center}{remove the jump in theta and center it in -pi:pi.}
+
+\item{method}{the segmentation to show, by its name in
+\link{get_segments}.}
+
+\item{show.cohorts}{label the cohort phases on the top axis.}
+
+\item{axis4}{add an axis for the derivative on the right.}
+
+\item{legend}{add a legend for the derivative.}
+
+\item{show.max}{unused.}
 }
 \description{
 Plot the curve sketching of theta=f(phi).

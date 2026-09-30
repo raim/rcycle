@@ -8,6 +8,15 @@ remove_jumps(phi, idx, center = TRUE, verb = 1)
 }
 \arguments{
 \item{phi}{ordered list of phases}
+
+\item{idx}{position of the jump; default: \link{detect_jumps}.}
+
+\item{center}{shift the result into -pi:pi.}
+
+\item{verb}{verbosity.}
+}
+\value{
+the phases without the jump.
 }
 \description{
 Remove a jump in phases by shift all phases.

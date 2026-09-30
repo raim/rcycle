@@ -58,12 +58,32 @@ annotated version via rcycle::pseudophase.}
 \item{z}{use the zth PC component for coloring between quantiles
 given in z.q}
 
+\item{z.q}{quantiles of PC \code{z} spanning the color scale.}
+
+\item{z.legend}{add a legend for the PC \code{z} colors.}
+
 \item{vectors}{plot eigenvectors.}
 
 \item{vlines}{connect eigenvector tips by a line, useful for
 circular data.}
 
 \item{varrows}{draw origin-based arrows for eigenvectors (as in a biplot).}
+
+\item{vlabels, slabels}{label the eigenvectors (cells) or scores
+(cohorts).}
+
+\item{vlabels.top, slabels.top}{only label the largest vectors.}
+
+\item{colf, scolf}{color functions for a density plot, used when no
+colors are given.}
+
+\item{col, scol}{colors of the eigenvectors and scores.}
+
+\item{lwd, slwd, pch, spch, cex, scex}{graphics parameters of eigenvectors
+and scores.}
+
+\item{vaxis, saxis}{draw the axes of the eigenvectors (top, right) and
+scores (bottom, left).}
 
 \item{scores}{plot transformed data.}
 
@@ -72,8 +92,36 @@ circular data.}
 
 \item{sarrows}{draw origin-based arrows for transformed data.}
 
+\item{txt.cex}{label size.}
+
 \item{scale}{scale parameter, if provided it converts the plot to a
 true biplot}
+
+\item{pc.biplot}{as in \code{\link[stats]{biplot.prcomp}}.}
+
+\item{xlim, ylim}{axis limits of the scores.}
+
+\item{expand}{expansion of the eigenvector axes relative to the scores,
+as in \code{\link[stats]{biplot}}.}
+
+\item{arcsinh}{arcsinh-transform all coordinates, to spread crowded
+data.}
+
+\item{zero.axis}{draw lines through the origin.}
+
+\item{zero.axis.label}{label the axes at the origin.}
+
+\item{pc.arrows}{draw arrows whose lengths show the variance explained.}
+
+\item{pc.lwd, pc.scale}{width and length scale of those arrows.}
+
+\item{show.var}{add the variance explained to the axis labels.}
+
+\item{...}{further arguments to the plot functions.}
+}
+\value{
+the phases object with the scaled coordinates, invisibly; for
+adding to the plot only, it can not be plotted again.
 }
 \description{
 NOTE: scale = 1, pc.biplot = FALSE is equivalent to the defaults

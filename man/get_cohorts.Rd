@@ -13,7 +13,12 @@ of the genes in the count table.}
 \item{n}{the number of rows (genes) in the count table, if not provided
 the maximal index will be used}
 
-\item{normalize}{divide each boolean entry (1) by the cohort size; if true, _get_states will return the cohort means and if false, the total cohort counts.}
+\item{normalize}{divide each boolean entry (1) by the cohort size; if
+true, \code{\link{get_states}} will return the cohort means and if false,
+the total cohort counts.}
+}
+\value{
+a matrix, cohorts x genes.
 }
 \description{
 Convert a gene cohort list to a boolean or size-normalized cohort matrix

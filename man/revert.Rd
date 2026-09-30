@@ -8,6 +8,16 @@ revert(phases, srt, force = FALSE, verb = 1)
 }
 \arguments{
 \item{phases}{phases object as returned by \link{get_pseudophase}.}
+
+\item{srt}{optional names of the states (cohorts) to use for the order
+test.}
+
+\item{force}{revert without testing.}
+
+\item{verb}{verbosity.}
+}
+\value{
+the phases object.
 }
 \description{
 This function compares the calculated order of states to the input

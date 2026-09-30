@@ -45,6 +45,9 @@ pwm_k(
 
 \item{alpha}{Fourier damping factor (default 0).}
 
+\item{shift}{phase shift, in units of time; this currently also shifts
+\code{R0} (with a warning).}
+
 \item{theta}{Phase shift in radians (default 0).}
 
 \item{N}{Number of Fourier terms to use (default 500).}

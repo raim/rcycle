@@ -23,7 +23,33 @@ get_pseudophase(
 counts as rows and cells as columns, as provided by
 \link{get_states}.}
 
+\item{revert.phase}{revert all phases if the cohort order runs
+backwards, see \link{revert_phase}.}
+
+\item{segments}{unused.}
+
+\item{spar}{unused.}
+
+\item{classify}{add the cell class by maximal state fold change
+(\link{get_classes}).}
+
+\item{validate}{unused.}
+
+\item{log}{log10(x+1)-transform the states, before row centering.}
+
+\item{row.center}{center the rows (cohorts), before column scaling.}
+
+\item{scale, center}{passed to \code{\link[stats]{prcomp}} as
+\code{scale.} and \code{center}.}
+
 \item{verb}{output verbosity level.}
+}
+\value{
+a \code{\link[stats]{prcomp}} object of class
+\code{"phases"}, with the added tables \code{rotation.phase} (cells)
+and \code{x.phase} (cohorts): the phase angle \code{theta} in PC1/PC2,
+the rank phase \code{phi}, amplitude and 3D angles; and
+\code{summary}.
 }
 \description{
 get the pseudophase from a cohort state matrix

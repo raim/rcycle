@@ -2,6 +2,12 @@
 ## CALCULATE PHASE SEGMENTS
 
 #' Classify phases into segments.
+#'
+#' The first and last segment, both ends of the circle, are fused.
+#' @param phi phase angles.
+#' @param breaks segment borders.
+#' @param lim range of the phase angles.
+#' @return integer segment number for each phase.
 #' @export
 phase_segments <- function(phi, breaks, lim=c(-pi, pi)) {
 
@@ -86,6 +92,31 @@ find_roots <- function(phi, dtheta) {
 
 
 
+#' Segment the pseudophase by the curve of theta = f(phi).
+#'
+#' Fits \code{theta - phi} along the rank phase \code{phi} of the cells
+#' and segments it: by the extrema of the smoothed curve
+#' (\code{"shoulder"}), by its points of maximal slope (\code{"inflection"}),
+#' or piecewise linearly (\code{"dpseg"}, package \code{dpseg}). Adds the
+#' segment, smoothed theta and its derivatives to
+#' \code{phases$rotation.phase} (columns prefixed by the name) and the
+#' break table as element \code{phases[[name]]}.
+#' @inheritParams revert
+#' @param method one or more of \code{"shoulder"}, \code{"inflection"},
+#'     \code{"dpseg"}.
+#' @param names names under which the segmentations are stored, one per
+#'     method.
+#' @param spar smoothing parameter of \code{\link[pspline]{sm.spline}};
+#'     low values are required to find the segments.
+#' @param P penalty of \code{\link[dpseg]{dpseg}}; default: estimated with
+#'     \code{\link[dpseg]{estimateP}}, times \code{Pscale}.
+#' @param Pscale scales the estimated penalty.
+#' @param L minimal segment length for \code{\link[dpseg]{dpseg}}.
+#' @param jumps allow discontinuous segments in \code{\link[dpseg]{dpseg}}.
+#' @param plot plot the result with \link{plotSegments}.
+#' @param verb verbosity.
+#' @param ... further arguments to \link{plotSegments}.
+#' @return the phases object, invisibly.
 #' @export
 get_segments <- function(phases, 
                          method=c('shoulder', 'inflection', 'dpseg'),
@@ -291,9 +322,17 @@ get_segments <- function(phases,
 
 
 #' Plot the curve sketching of theta=f(phi).
+#' @inheritParams revert
 #' @param difference plot the difference theta-phi instead of
 #'     theta. This emphasizes the noise in the original data and the
 #'     smoothing effects.
+#' @param center remove the jump in theta and center it in -pi:pi.
+#' @param method the segmentation to show, by its name in
+#'     \link{get_segments}.
+#' @param show.cohorts label the cohort phases on the top axis.
+#' @param axis4 add an axis for the derivative on the right.
+#' @param legend add a legend for the derivative.
+#' @param show.max unused.
 #' @export
 plotSegments <- function(phases, difference=FALSE, center=TRUE,
                          method='shoulder', show.cohorts=TRUE,
