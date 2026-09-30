@@ -2,20 +2,27 @@
 % Please edit documentation in R/models.R
 \name{get_rmean}
 \alias{get_rmean}
-\title{Calculate mean abundance from rates and times.}
+\title{Exact cycle mean of the pulse width-modulated ODE models.}
 \usage{
 get_rmean(
   k,
   gamma,
-  k0,
+  k0 = 0,
   dr,
   mu,
   phi,
   tau,
-  model = c("k", "dr", "k_dr", "k_dr_k0"),
-  use.coth = TRUE
+  model = c("k", "dr", "k_dr", "k_dr_k0")
 )
 }
 \description{
-Calculate mean abundance from rates and times.
+Periodic steady-state mean abundance of the ODEs \code{pwmode_k},
+\code{pwmode_dr}, \code{pwmode_k_dr} and \code{pwmode_k_dr_k0}, with
+dilution \code{mu} acting in both phases (see
+\code{\link{get_rcycle}} for the derivation). For \code{model="k"}
+this is \code{phi*k/gamma}. For the models with phase-switched
+degradation, \code{\link{get_rmean_nogrowth}} (the closed forms of the
+slides) is the exact mean of a model without dilution in the ON phase
+(\code{gamma = dr + mu} only in the OFF phase) and is therefore higher; the
+two agree for \code{mu = 0} or missing.
 }

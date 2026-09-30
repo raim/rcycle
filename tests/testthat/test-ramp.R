@@ -35,20 +35,20 @@ models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
 for ( mod in models ) {
 
     test_that("relative and absolute amplitudes agree", {
-        ampr_f <- get_ramp(gamma=gamma, phi=phis,
+        ampr_f <- get_ramp_nogrowth(gamma=gamma, phi=phis,
                            tau=tau, model = mod, relative = TRUE,
                            k=k, k0=k0, force.relative = TRUE)
-        amp_f <- get_ramp(gamma=gamma, phi=phis,
+        amp_f <- get_ramp_nogrowth(gamma=gamma, phi=phis,
                           tau=tau, model = mod, relative = FALSE,
                           k=k, k0=k0, force.relative = TRUE)
 
-        ampr <- get_ramp(gamma=gamma, phi=phis,
+        ampr <- get_ramp_nogrowth(gamma=gamma, phi=phis,
                          tau=tau, model = mod, relative = TRUE,
                          k=k, k0=k0, force.relative = FALSE)
-        amp <- get_ramp(gamma=gamma, phi=phis,
+        amp <- get_ramp_nogrowth(gamma=gamma, phi=phis,
                         tau=tau, model = mod, relative = FALSE,
                         k=k, k0=k0, force.relative = FALSE)
-        mn <- get_rmean(k=k, k0=k0, gamma=gamma, phi=phis, tau=tau, model = mod)
+        mn <- get_rmean_nogrowth(k=k, k0=k0, gamma=gamma, phi=phis, tau=tau, model = mod)
     
         ## manual relative amplitude
         ampm <- (amp/mn)

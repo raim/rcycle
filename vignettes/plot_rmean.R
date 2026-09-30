@@ -49,7 +49,7 @@ tmns <- matrix(NA, nrow=length(taus), ncol=length(models))
 colnames(tmns) <- models
 for ( mod in models ) {
     tmns[,mod] <- get_rmean(k=k, gamma=gamma, k0=k0, phi=phi, tau=taus,
-                            model = mod, use.coth = TRUE)
+                            model = mod)
 }
 
 plotdev(file.path(out.path, 'pwm_rmean_tau'),
@@ -86,7 +86,7 @@ pmns <- matrix(NA, nrow=length(phis), ncol=length(models))
 colnames(pmns) <- models
 for ( mod in models ) {
     pmns[,mod] <- get_rmean(k=k, gamma=gamma, k0=k0, phi=phis, tau=tau,
-                            model = mod, use.coth = TRUE)
+                            model = mod)
 }
 
 plotdev(file.path(out.path, 'pwm_rmean_phi'),

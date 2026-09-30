@@ -25,9 +25,9 @@ tau <- 5
 mod='k'
 
 r1 <- get_rmean(k=k, gamma=gamma, k0=k0, phi=1-phi, tau=tau,
-                  model = mod, use.coth = TRUE)
+                  model = mod)
 r2 <- get_rmean(k=k, gamma=gamma, k0=k0, phi=phi, tau=tau,
-                  model = mod, use.coth = TRUE)
+                  model = mod)
 
 time <- seq(0,5*tau,.01)
 y1 <- pwm_k(t=time, R0=r1, k=k, dr=dr, k0=k0, mu=mu,

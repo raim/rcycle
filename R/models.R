@@ -142,9 +142,15 @@ pwmode_k_dr_k0 <- function(time, state, parameters, hocf){
 ### ANALYTIC
 
 
-#' Calculate mean abundance from rates and times.
+#' Mean abundance, closed form without dilution in the ON phase.
+#'
+#' The cycle mean of the pulse width-modulated models without any loss in
+#' the ON phase (\code{gamma = dr + mu} acts in the OFF phase only); exact for
+#' model \code{"k"} and, for all models, for \code{mu = 0}. The closed forms
+#' of the slides (\code{pwm_equ.md}); use \code{\link{get_rmean}} for the
+#' exact mean with dilution in both phases.
 #'@export
-get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
+get_rmean_nogrowth <- function(k, gamma, k0, dr, mu, phi, tau,
                       model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       use.coth = TRUE) {
 
@@ -211,27 +217,31 @@ get_rmean <- function(k, gamma, k0, dr, mu, phi, tau,
 #' \code{R0 = (k0*iB + k*iA*eB)/(1 - eA*eB)}, \code{R1 = R0*eA + k*iA}, and
 #' the mean \code{(R0*iA + k*(a-iA)/lon + R1*iB + k0*(b-iB)/gamma)/tau},
 #' evaluated stably for small \code{lon} (limit: \code{iA = a},
-#' \code{(a-iA)/lon = a^2/2}, the ON phase of \code{\link{get_rmean}}).
+#' \code{(a-iA)/lon = a^2/2}, the ON phase of \code{\link{get_rmean_nogrowth}}).
 #' @param k transcription rate in the ON phase.
 #' @param gamma total loss rate in the OFF phase, \code{dr + mu}; if missing,
 #' calculated from \code{dr} and \code{mu}.
 #' @param k0 basal transcription rate in the OFF phase (model
 #' \code{"k_dr_k0"} only).
 #' @param dr degradation rate; if missing, \code{gamma - mu}.
-#' @param mu growth rate (dilution, both phases).
+#' @param mu growth rate (dilution, both phases); if missing or \code{NA}, 0
+#' (no growth: \code{gamma} or \code{dr} is then the total loss rate in the OFF
+#' phase, and the result equals the closed forms, \code{\link{get_rmean_nogrowth}}).
 #' @param phi duty cycle, the fraction of the period in the ON phase.
 #' @param tau period.
 #' @param model one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
 #' \code{"k_dr_k0"}.
 #' @return data frame with columns \code{R0} (start of the ON phase),
 #' \code{R1} (end of the ON phase), \code{Rmin}, \code{Rmax}, \code{mean}.
-#' @seealso \code{\link{get_rmean_exact}}, \code{\link{get_ramp_exact}},
-#' \code{\link{get_rates_exact}}
+#' @seealso \code{\link{get_rmean}}, \code{\link{get_ramp}},
+#' \code{\link{get_rates}}
 #'@export
-get_rcycle_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
+get_rcycle <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
                              model = c('k', 'dr', 'k_dr', 'k_dr_k0')) {
 
     model <- match.arg(model)
+    if ( missing(mu) ) mu <- 0
+    mu[is.na(mu)] <- 0                          # no growth
     if ( missing(gamma) ) gamma <- dr + mu
     lon <- if ( model == 'k' ) gamma else mu   # loss rate in the ON phase
     if ( model == 'dr' ) k0 <- k
@@ -264,23 +274,26 @@ get_rcycle_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
 #' Periodic steady-state mean abundance of the ODEs \code{pwmode_k},
 #' \code{pwmode_dr}, \code{pwmode_k_dr} and \code{pwmode_k_dr_k0}, with
 #' dilution \code{mu} acting in both phases (see
-#' \code{\link{get_rcycle_exact}} for the derivation). For \code{model="k"}
-#' this is \code{phi*k/gamma}, as in \code{\link{get_rmean}}. For the models
-#' with phase-switched degradation, \code{\link{get_rmean}} is the exact mean
-#' of a model without dilution in the ON phase (\code{gamma = dr + mu} only in
-#' the OFF phase) and is therefore higher; the two agree for \code{mu = 0}.
+#' \code{\link{get_rcycle}} for the derivation). For \code{model="k"}
+#' this is \code{phi*k/gamma}. For the models with phase-switched
+#' degradation, \code{\link{get_rmean_nogrowth}} (the closed forms of the
+#' slides) is the exact mean of a model without dilution in the ON phase
+#' (\code{gamma = dr + mu} only in the OFF phase) and is therefore higher; the
+#' two agree for \code{mu = 0} or missing.
 #' @inheritParams get_rcycle_exact
 #'@export
-get_rmean_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
+get_rmean <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
                             model = c('k', 'dr', 'k_dr', 'k_dr_k0')) {
 
     model <- match.arg(model)
+    if ( missing(mu) ) mu <- 0
+    mu[is.na(mu)] <- 0                          # no growth
     if ( missing(gamma) )
         gamma <- dr + mu
-    if ( model == 'k' ) # recycled over tau, as get_rmean
+    if ( model == 'k' ) # recycled over tau
         return(unname(rep_len(phi*k/gamma,
                               max(length(k), length(gamma), length(phi), length(tau)))))
-    get_rcycle_exact(k = k, gamma = gamma, k0 = k0, mu = mu, phi = phi, tau = tau,
+    get_rcycle(k = k, gamma = gamma, k0 = k0, mu = mu, phi = phi, tau = tau,
                      model = model)$mean
 }
 
@@ -288,9 +301,9 @@ get_rmean_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
 #'
 #' Absolute (\code{Rmax - Rmin}) or relative (\code{(Rmax - Rmin)/mean})
 #' amplitude of the periodic steady state, with dilution \code{mu} in both
-#' phases (see \code{\link{get_rcycle_exact}}). For model \code{"k"} this is
-#' the same as \code{\link{get_ramp}}. For the models with phase-switched
-#' degradation, \code{\link{get_ramp}} uses \code{k*phi*tau}, the rise in an ON
+#' phases (see \code{\link{get_rcycle}}). For model \code{"k"} this is
+#' the same as \code{\link{get_ramp_nogrowth}}. For the models with phase-switched
+#' degradation, \code{\link{get_ramp_nogrowth}} uses \code{k*phi*tau}, the rise in an ON
 #' phase without dilution; with dilution the rise is
 #' \code{(k/mu - R0)*(1 - exp(-mu*phi*tau))}. The relative amplitude does not
 #' depend on the scale of \code{k} (with \code{k0} given relative to it), so
@@ -299,14 +312,16 @@ get_rmean_exact <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
 #' @param relative relative amplitude, \code{(Rmax - Rmin)/mean}; otherwise
 #' absolute.
 #'@export
-get_ramp_exact <- function(k = 1, gamma, k0 = 0, dr, mu, phi, tau,
+get_ramp <- function(k = 1, gamma, k0 = 0, dr, mu, phi, tau,
                            relative = TRUE,
                            model = c('k', 'dr', 'k_dr', 'k_dr_k0')) {
 
     model <- match.arg(model)
+    if ( missing(mu) ) mu <- 0
+    mu[is.na(mu)] <- 0                          # no growth
     if ( missing(gamma) )
         gamma <- dr + mu
-    cy <- get_rcycle_exact(k = k, gamma = gamma, k0 = k0, mu = mu, phi = phi,
+    cy <- get_rcycle(k = k, gamma = gamma, k0 = k0, mu = mu, phi = phi,
                            tau = tau, model = model)
     ramp <- cy$Rmax - cy$Rmin
     if ( relative ) ramp <- ramp/cy$mean
@@ -320,10 +335,13 @@ get_ramp_exact <- function(k = 1, gamma, k0 = 0, dr, mu, phi, tau,
 #' abundance \code{R}, the relative amplitude \code{a} (or the absolute
 #' amplitude \code{A}) and, for \code{"k_dr_k0"}, the minimum \code{Rmin} (or
 #' maximum \code{Rmax}), given the duty cycle, the period and the growth rate
-#' \code{mu}. The exact counterpart of \code{\link{get_rates}}, with dilution
-#' in both phases (see \code{\link{get_rcycle_exact}}); the two agree for
-#' \code{mu = 0}. Model \code{"k"} is exact in \code{\link{get_rates}} and is
-#' passed on to it.
+#' \code{mu}, with dilution in both phases (see \code{\link{get_rcycle}}).
+#' Without growth (\code{mu} missing, \code{NA} or 0 for all inputs), the
+#' closed forms, \code{\link{get_rates_nogrowth}}, are exact and are used;
+#' \code{dr} is then the total loss rate in the OFF phase (degradation and
+#' any dilution), and \code{lower}, \code{upper} default to its range for
+#' \code{gamma*tau}. Model \code{"k"} is exact in
+#' \code{\link{get_rates_nogrowth}} for any \code{mu} and is passed on to it.
 #'
 #' The relative quantities \code{a} and \code{Rmin/R} do not depend on the
 #' scale of \code{k}: \code{dr} (and \code{q = k0/k}) are found from them by
@@ -344,28 +362,44 @@ get_ramp_exact <- function(k = 1, gamma, k0 = 0, dr, mu, phi, tau,
 #' @param Rmax maximal abundance, used if \code{Rmin} is missing.
 #' @param phi duty cycle.
 #' @param tau period.
-#' @param mu growth rate (required; may be 0).
+#' @param mu growth rate; if missing, \code{NA} or 0, no growth (see above);
+#' an element that is \code{NA} counts as 0.
 #' @param regime for \code{"k_dr_k0"}: \code{"normal"} (R rises during the ON
 #' phase) or \code{"reversed"}.
-#' @param lower,upper range of \code{dr} searched.
+#' @param lower,upper range of \code{dr} searched (without growth: of
+#' \code{gamma*tau}, as in \code{\link{get_rates_nogrowth}}, default 1e-6 and 20).
 #' @param n number of grid points on a log scale used to bracket the roots.
 #' @param verb verbosity.
-#' @param ... passed to \code{\link{get_rates}} for model \code{"k"}.
+#' @param ... passed to \code{\link{get_rates_nogrowth}} (model \code{"k"}
+#' or no growth).
 #' @return data frame with columns \code{k}, \code{dr} and, for
 #' \code{"k_dr_k0"}, \code{k0}; \code{NA} where no solution exists.
 #'@export
-get_rates_exact <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
+get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                             a = NA, A = NA, R = NA, Rmin = NA, Rmax = NA,
                             phi, tau, mu,
                             regime = c('normal', 'reversed'),
                             lower = 1e-4, upper = 1e3, n = 200,
                             verb = 0, ...) {
 
-    model <- match.arg(model)
+    ## NOTE: model is not matched against the choices here, so that the
+    ## variants of the closed forms (e.g. 'k_dr_coth', 'k_dr_k0_coth') can be
+    ## passed on to get_rates_nogrowth without growth
+    model <- model[1]
     regime <- match.arg(regime)
     if ( all(is.na(a)) ) a <- A/R
-    if ( model == 'k' )
-        return(get_rates(model = 'k', a = a, R = R, phi = phi, tau = tau, mu = mu, ...))
+    if ( missing(mu) ) mu <- NA
+    nogrowth <- all(is.na(mu) | mu == 0)
+    if ( model == 'k' | nogrowth ) {
+        args <- list(model = model, a = a, R = R, Rmin = Rmin, Rmax = Rmax,
+                     phi = phi, tau = tau, mu = mu, verb = verb, ...)
+        if ( !missing(lower) ) args$lower <- lower
+        if ( !missing(upper) ) args$upper <- upper
+        return(do.call(get_rates_nogrowth, args))
+    }
+    if ( !model %in% c('dr', 'k_dr', 'k_dr_k0') )
+        stop("model '", model, "' is only available without growth, see get_rates_nogrowth")
+    mu[is.na(mu)] <- 0
 
     m <- Rmin/R
     if ( model == 'k_dr_k0' ) m <- ifelse(is.na(m), Rmax/R - a, m)
@@ -373,7 +407,7 @@ get_rates_exact <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     one <- function(a, R, m, phi, tau, mu) {
         na <- if ( model == 'k_dr_k0' ) c(k = NA, dr = NA, k0 = NA) else c(k = NA, dr = NA)
         if ( any(!is.finite(c(a, R, phi, tau, mu))) ) return(na)
-        cyc <- function(dr, q) get_rcycle_exact(k = 1, k0 = q, dr = dr, mu = mu,
+        cyc <- function(dr, q) get_rcycle(k = 1, k0 = q, dr = dr, mu = mu,
                                                 phi = phi, tau = tau, model = model)
         ## k0/k matching Rmin/R for a given dr, in the chosen regime
         qfit <- function(dr) {
@@ -397,11 +431,11 @@ get_rates_exact <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
         fg <- sapply(grid, f)
         ok <- which(is.finite(fg[-n]) & is.finite(fg[-1]) & sign(fg[-n]) != sign(fg[-1]))
         if ( length(ok) == 0 ) {
-            if ( verb > 0 ) cat('get_rates_exact: no solution for dr\n')
+            if ( verb > 0 ) cat('get_rates: no solution for dr\n')
             return(na)
         }
         if ( length(ok) > 1 & verb > 0 )
-            cat(paste('get_rates_exact:', length(ok), 'roots for dr, taking the largest\n'))
+            cat(paste('get_rates:', length(ok), 'roots for dr, taking the largest\n'))
         j <- max(ok)
         dr <- stats::uniroot(f, grid[c(j, j + 1)], tol = 1e-12)$root
         q <- if ( model == 'k_dr_k0' ) qfit(dr) else 0
@@ -414,9 +448,14 @@ get_rates_exact <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     res
 }
 
-#' Calculate abundance amplitudes from rates and times.
+#' Abundance amplitudes, closed form without dilution in the ON phase.
+#'
+#' As \code{\link{get_rmean_nogrowth}}: exact for model \code{"k"} and for
+#' \code{mu = 0}; the amplitude of the models with phase-switched degradation
+#' is \code{k*phi*tau}. Use \code{\link{get_ramp}} for the exact amplitude
+#' with dilution in both phases.
 #'@export
-get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE,
+get_ramp_nogrowth <- function(gamma, dr, mu, phi, tau, relative = TRUE,
                      k, k0, force.relative = FALSE, use.coth = FALSE,
                      model = c('k', 'dr', 'k_dr', 'k_dr_k0'), ...) {
 
@@ -436,7 +475,7 @@ get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE,
                 if ( missing(gamma) )
                     gamma <- dr+mu
 
-                rmean <- get_rmean(
+                rmean <- get_rmean_nogrowth(
                     k = k,
                     gamma = gamma,
                     phi = phi,
@@ -485,7 +524,7 @@ get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE,
 
             ## for absolute amplitude we need to multiple by the mean
             if ( !relative ) {
-                rmean <- get_rmean(
+                rmean <- get_rmean_nogrowth(
                     k = k,
                     gamma = gamma,
                     phi = phi,
@@ -547,6 +586,11 @@ get_pmean <- function(R, rho, l, dp, mu, phip, phi,
     unname(p)
 }
 
+#' Duty cycle and period from abundance data and rates.
+#'
+#' NOTE: for the models with phase-switched degradation this uses the closed
+#' forms without dilution in the ON phase (see \code{\link{get_rates_nogrowth}});
+#' there is no version with dilution in both phases yet.
 #' @export
 get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, R = NA, Rmin = NA, 
@@ -720,7 +764,16 @@ root_tau_k_dr_k0 <- function(x, a, gamma, phi = NA, A, k, R, Rmin) {
     return(lhs - rhs)
 }
 
-get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
+#' Rates from abundance data, closed form without dilution in the ON phase.
+#'
+#' The inverse of \code{\link{get_rmean_nogrowth}} and
+#' \code{\link{get_ramp_nogrowth}}: exact for model \code{"k"} and for
+#' \code{mu = 0} or \code{mu = NA}, where \code{dr} is the total loss rate in
+#' the OFF phase (degradation and dilution). \code{lower}, \code{upper} bound
+#' \code{gamma*tau}. Use \code{\link{get_rates}} with the growth rate for the
+#' exact rates with dilution in both phases.
+#'@export
+get_rates_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, A = NA, R = NA, Rmin = NA, Rmax =NA,
                       phi = NA, tau = NA, mu = NA,
                       k = NA, k0 = NA, gamma = NA, 
@@ -877,7 +930,7 @@ get_degradation <- function(a,  R, Rmin,
 
     ## correct for growth
     ## gamma = degradation + growth
-    if ( !missing(mu) )
+    if ( !missing(mu) && !is.na(mu) )
         gamma <- gamma - mu
 
     gamma

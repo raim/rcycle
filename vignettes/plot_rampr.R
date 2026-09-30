@@ -37,7 +37,7 @@ colnames(tmns) <- models
 for ( mod in models ) {
     tmns[,mod] <- get_ramp(gamma=gamma, phi=phi, tau=taus,
                            k=k, k0=k0, # only required with basal expression!
-                           model = mod, relative = TRUE, force.relative = FALSE)
+                           model = mod, relative = TRUE)
 }
 
 plotdev(file.path(out.path, 'pwm_rampr_tau'),
@@ -76,12 +76,10 @@ for ( mod in models )
     for ( i in 1:length(phis) ) {
         pmns[i,mod] <- get_ramp(gamma=gamma, phi=phis[i], tau=tau,
                                k=k, k0=k0, 
-                               model = mod, relative = TRUE,
-                               force.relative = TRUE)
+                               model = mod, relative = TRUE)
         amps[i,mod] <- get_ramp(gamma=gamma, phi=phis[i], tau=tau,
                                 k=k, k0=k0, 
-                                model = mod, relative = FALSE,
-                                force.relative = FALSE)
+                                model = mod, relative = FALSE)
         mns[i,mod] <- get_rmean(k=k, gamma=gamma, k0=k0, phi=phis[i], tau=tau,
                                 model = mod)
     }

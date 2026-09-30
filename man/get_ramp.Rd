@@ -2,23 +2,32 @@
 % Please edit documentation in R/models.R
 \name{get_ramp}
 \alias{get_ramp}
-\title{Calculate abundance amplitudes from rates and times.}
+\title{Exact amplitude of the pulse width-modulated ODE models.}
 \usage{
 get_ramp(
+  k = 1,
   gamma,
+  k0 = 0,
   dr,
   mu,
   phi,
   tau,
   relative = TRUE,
-  k,
-  k0,
-  force.relative = FALSE,
-  use.coth = FALSE,
-  model = c("k", "dr", "k_dr", "k_dr_k0"),
-  ...
+  model = c("k", "dr", "k_dr", "k_dr_k0")
 )
 }
+\arguments{
+\item{relative}{relative amplitude, \code{(Rmax - Rmin)/mean}; otherwise
+absolute.}
+}
 \description{
-Calculate abundance amplitudes from rates and times.
+Absolute (\code{Rmax - Rmin}) or relative (\code{(Rmax - Rmin)/mean})
+amplitude of the periodic steady state, with dilution \code{mu} in both
+phases (see \code{\link{get_rcycle}}). For model \code{"k"} this is
+the same as \code{\link{get_ramp_nogrowth}}. For the models with phase-switched
+degradation, \code{\link{get_ramp_nogrowth}} uses \code{k*phi*tau}, the rise in an ON
+phase without dilution; with dilution the rise is
+\code{(k/mu - R0)*(1 - exp(-mu*phi*tau))}. The relative amplitude does not
+depend on the scale of \code{k} (with \code{k0} given relative to it), so
+\code{k} defaults to 1 for it.
 }

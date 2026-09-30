@@ -38,9 +38,9 @@ phis <- 0:100/100
 models <- c('k', 'dr', 'k_dr', 'k_dr_k0')
 for ( mod in models ) {
     test_that("coth and emp1m based rmean implementations agree", {
-        x <- get_rmean(k=k, k0=k0, dr=dr, mu=mu, phi=.5, tau=taus,
+        x <- get_rmean_nogrowth(k=k, k0=k0, dr=dr, mu=mu, phi=.5, tau=taus,
                        model = mod, use.coth = TRUE)
-        y <- get_rmean(k=k, k0=k0, dr=dr, mu=mu, phi=.5, tau=taus,
+        y <- get_rmean_nogrowth(k=k, k0=k0, dr=dr, mu=mu, phi=.5, tau=taus,
                               model = mod, use.coth = FALSE)
         expect_equal(x, y, tolerance = 1e-10)
     })

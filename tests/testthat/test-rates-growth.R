@@ -1,7 +1,7 @@
 ## Exact periodic steady state, amplitude and rate inversion with dilution in
-## both phases (get_rcycle_exact, get_ramp_exact, get_rates_exact), tested
-## against numerical integration of the pwmode_* ODEs, and against the
-## closed forms (get_ramp, get_rates) at mu = 0, where those are exact.
+## both phases (get_rcycle, get_ramp, get_rates), tested against numerical
+## integration of the pwmode_* ODEs, and against the closed forms
+## (get_ramp_nogrowth, get_rates_nogrowth) at mu -> 0, where those are exact.
 
 library(testthat)
 library(rcycle)
@@ -34,11 +34,11 @@ PARS <- list(c(k = 10, k0 = 2, dr = 1, mu = 0.1, phi = 0.3, tau = 4),
              c(k = 5, k0 = 20, dr = 0.3, mu = 0.05, phi = 0.2, tau = 8),
              c(k = 1, k0 = 20, dr = 0.3, mu = 0.2, phi = 0.3, tau = 6))
 
-test_that("get_rcycle_exact agrees with the ODEs, incl. the reversed regime", {
+test_that("get_rcycle agrees with the ODEs, incl. the reversed regime", {
     skip_if_not_installed("deSolve")
     for ( p in PARS ) for ( mod in c("k", "dr", "k_dr", "k_dr_k0") ) {
         num <- ode_cycle(mod, p[["k"]], p[["k0"]], p[["dr"]], p[["mu"]], p[["phi"]], p[["tau"]])
-        ana <- get_rcycle_exact(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
+        ana <- get_rcycle(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
                                 phi = p[["phi"]], tau = p[["tau"]], model = mod)
         lab <- paste(mod, paste(names(p), p, sep = "=", collapse = " "))
         ## the values exactly at the (discontinuous) switches carry an
@@ -50,45 +50,45 @@ test_that("get_rcycle_exact agrees with the ODEs, incl. the reversed regime", {
     }
     ## the last parameter set is reversed for k_dr_k0: R falls during ON
     p <- PARS[[4]]
-    cy <- get_rcycle_exact(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
+    cy <- get_rcycle(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
                            phi = p[["phi"]], tau = p[["tau"]], model = "k_dr_k0")
     expect_gt(cy$R0, cy$R1)
 })
 
-test_that("get_ramp_exact agrees with the ODEs and with get_ramp for mu = 0", {
+test_that("get_ramp agrees with the ODEs and with get_ramp_nogrowth for mu = 0", {
     skip_if_not_installed("deSolve")
     for ( p in PARS[1:3] ) for ( mod in c("k", "dr", "k_dr", "k_dr_k0") ) {
         num <- ode_cycle(mod, p[["k"]], p[["k0"]], p[["dr"]], p[["mu"]], p[["phi"]], p[["tau"]])
-        A <- get_ramp_exact(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
+        A <- get_ramp(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
                             phi = p[["phi"]], tau = p[["tau"]], relative = FALSE, model = mod)
-        a <- get_ramp_exact(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
+        a <- get_ramp(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
                             phi = p[["phi"]], tau = p[["tau"]], model = mod)
         expect_equal(A, num[["Rmax"]] - num[["Rmin"]], tolerance = 1e-3)
         expect_equal(a, (num[["Rmax"]] - num[["Rmin"]])/num[["mean"]], tolerance = 1e-3)
     }
     for ( mod in c("dr", "k_dr", "k_dr_k0") ) for ( rel in c(TRUE, FALSE) ) {
-        x <- get_ramp_exact(k = 10, k0 = 2, dr = 1, mu = 0, phi = 0.3, tau = c(1, 4, 8),
+        x <- get_ramp(k = 10, k0 = 2, dr = 1, mu = 0, phi = 0.3, tau = c(1, 4, 8),
                             relative = rel, model = mod)
-        y <- get_ramp(k = 10, k0 = 2, dr = 1, mu = 0, phi = 0.3, tau = c(1, 4, 8),
+        y <- get_ramp_nogrowth(k = 10, k0 = 2, dr = 1, mu = 0, phi = 0.3, tau = c(1, 4, 8),
                       relative = rel, model = mod)
         expect_equal(x, y, tolerance = 1e-8)
     }
     ## model k: get_ramp is exact for any mu
-    expect_equal(get_ramp_exact(k = 10, dr = 1, mu = 0.2, phi = 0.3, tau = 4, model = "k"),
-                 get_ramp(k = 10, dr = 1, mu = 0.2, phi = 0.3, tau = 4, model = "k"),
+    expect_equal(get_ramp(k = 10, dr = 1, mu = 0.2, phi = 0.3, tau = 4, model = "k"),
+                 get_ramp_nogrowth(k = 10, dr = 1, mu = 0.2, phi = 0.3, tau = 4, model = "k"),
                  tolerance = 1e-8)
 })
 
 ## The inversion is tested on exact forward values (the forward solution is
 ## tested against the ODEs above): for k_dr_k0 it is ill-conditioned, a 0.1%
 ## error in Rmin or a can move k0 by several percent (short periods, high dr)
-test_that("get_rates_exact inverts get_rcycle_exact, incl. the reversed regime", {
+test_that("get_rates inverts get_rcycle, incl. the reversed regime", {
     for ( i in seq_along(PARS) ) for ( mod in c("k", "dr", "k_dr", "k_dr_k0") ) {
         p <- PARS[[i]]
-        cy <- get_rcycle_exact(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
+        cy <- get_rcycle(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
                                phi = p[["phi"]], tau = p[["tau"]], model = mod)
         reg <- if ( mod == "k_dr_k0" && i == 4 ) "reversed" else "normal"
-        r <- get_rates_exact(model = mod, a = (cy$Rmax - cy$Rmin)/cy$mean, R = cy$mean,
+        r <- get_rates(model = mod, a = (cy$Rmax - cy$Rmin)/cy$mean, R = cy$mean,
                              Rmin = cy$Rmin, phi = p[["phi"]], tau = p[["tau"]],
                              mu = p[["mu"]], regime = reg, upper = 1e3)
         lab <- paste(mod, reg, paste(names(p), p, sep = "=", collapse = " "))
@@ -99,34 +99,35 @@ test_that("get_rates_exact inverts get_rcycle_exact, incl. the reversed regime",
     }
 })
 
-test_that("get_rates_exact agrees with get_rates for mu = 0, and takes Rmax or A", {
+test_that("get_rates agrees with get_rates_nogrowth for mu -> 0, and takes Rmax or A", {
+    ## mu = 1e-9, not 0: for mu = 0, get_rates passes on to get_rates_nogrowth
     p <- PARS[[1]]
     for ( mod in c("dr", "k_dr", "k_dr_k0") ) {
-        cy <- get_rcycle_exact(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = 0,
+        cy <- get_rcycle(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = 0,
                                phi = p[["phi"]], tau = p[["tau"]], model = mod)
         a <- (cy$Rmax - cy$Rmin)/cy$mean
-        x <- get_rates_exact(model = mod, a = a, R = cy$mean, Rmin = cy$Rmin,
-                             phi = p[["phi"]], tau = p[["tau"]], mu = 0)
-        y <- get_rates(model = mod, a = a, R = cy$mean, Rmin = cy$Rmin, Rmax = cy$Rmax,
+        x <- get_rates(model = mod, a = a, R = cy$mean, Rmin = cy$Rmin,
+                             phi = p[["phi"]], tau = p[["tau"]], mu = 1e-9)
+        y <- get_rates_nogrowth(model = mod, a = a, R = cy$mean, Rmin = cy$Rmin, Rmax = cy$Rmax,
                        phi = p[["phi"]], tau = p[["tau"]], mu = 0)
         expect_equal(x$k, y$k, tolerance = 1e-6)
         expect_equal(x$dr, y$dr, tolerance = 1e-6)
         if ( mod == "k_dr_k0" ) {
             expect_equal(x$k0, y$k0, tolerance = 1e-6)
-            z <- get_rates_exact(model = mod, A = cy$Rmax - cy$Rmin, R = cy$mean,
-                                 Rmax = cy$Rmax, phi = p[["phi"]], tau = p[["tau"]], mu = 0)
+            z <- get_rates(model = mod, A = cy$Rmax - cy$Rmin, R = cy$mean,
+                                 Rmax = cy$Rmax, phi = p[["phi"]], tau = p[["tau"]], mu = 1e-9)
             expect_equal(z$k0, x$k0, tolerance = 1e-6)
         }
     }
 })
 
-test_that("get_rates_exact is vectorised and returns NA without a solution", {
-    cy <- get_rcycle_exact(k = 10, dr = c(0.5, 1, 2), mu = 0.1, phi = 0.3, tau = 4, model = "k_dr")
-    r <- get_rates_exact(model = "k_dr", a = (cy$Rmax - cy$Rmin)/cy$mean, R = cy$mean,
+test_that("get_rates is vectorised and returns NA without a solution", {
+    cy <- get_rcycle(k = 10, dr = c(0.5, 1, 2), mu = 0.1, phi = 0.3, tau = 4, model = "k_dr")
+    r <- get_rates(model = "k_dr", a = (cy$Rmax - cy$Rmin)/cy$mean, R = cy$mean,
                          phi = 0.3, tau = 4, mu = 0.1)
     expect_equal(r$dr, c(0.5, 1, 2), tolerance = 1e-6)
     expect_equal(r$k, rep(10, 3), tolerance = 1e-6)
     ## a relative amplitude no dr can produce
-    r <- get_rates_exact(model = "k_dr", a = 100, R = 1, phi = 0.3, tau = 4, mu = 0.1)
+    r <- get_rates(model = "k_dr", a = 100, R = 1, phi = 0.3, tau = 4, mu = 0.1)
     expect_true(is.na(r$dr))
 })

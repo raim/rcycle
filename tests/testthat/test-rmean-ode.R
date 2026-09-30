@@ -1,10 +1,10 @@
 ## Test the analytic cycle means against numerical integration of the
 ## pulse width-modulated ODEs (pwmode_*), with growth dilution mu > 0.
 ##
-## * get_rmean_exact: the periodic mean of the ODEs as coded, where mu dilutes
+## * get_rmean: the periodic mean of the ODEs as coded, where mu dilutes
 ##   in both phases;
-## * get_rmean: for the models with phase-switched degradation, the exact mean
-##   of a model WITHOUT dilution in the ON phase (gamma = dr + mu only in OFF);
+## * get_rmean_nogrowth (closed forms): for the models with phase-switched
+##   degradation, the exact mean of a model WITHOUT dilution in the ON phase (gamma = dr + mu only in OFF);
 ##   it agrees with the coded ODEs only for mu = 0.
 
 library(testthat)
@@ -39,42 +39,42 @@ PARS <- list(c(k = 10, k0 = 2, dr = 1, mu = 0.1, phi = 0.3, tau = 4),
              c(k = 264, k0 = 26.4, dr = 1.7, mu = 0.1, phi = 0.5, tau = 2))
 FUNS <- list(k = pwmode_k, dr = pwmode_dr, k_dr = pwmode_k_dr, k_dr_k0 = pwmode_k_dr_k0)
 
-test_that("get_rmean_exact agrees with the ODEs for mu > 0", {
+test_that("get_rmean agrees with the ODEs for mu > 0", {
     skip_if_not_installed("deSolve")
     for ( p in PARS ) for ( mod in names(FUNS) ) {
         parms <- p[c("k", "k0", "dr", "mu")]
         num <- ode_mean(FUNS[[mod]], parms, p[["phi"]], p[["tau"]])
-        ana <- get_rmean_exact(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
+        ana <- get_rmean(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
                                phi = p[["phi"]], tau = p[["tau"]], model = mod)
         expect_equal(ana, num, tolerance = 1e-3,
                      label = paste(mod, paste(names(p), p, sep = "=", collapse = " ")))
     }
 })
 
-test_that("get_rmean is exact for the model without dilution in the ON phase", {
+test_that("get_rmean_nogrowth is exact for the model without dilution in the ON phase", {
     skip_if_not_installed("deSolve")
     for ( p in PARS ) {
         parms <- p[c("k", "k0", "dr", "mu")]
         num <- ode_mean(pwmode_k_dr_k0_noondil, parms, p[["phi"]], p[["tau"]])
-        ana <- get_rmean(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
+        ana <- get_rmean_nogrowth(k = p[["k"]], k0 = p[["k0"]], dr = p[["dr"]], mu = p[["mu"]],
                          phi = p[["phi"]], tau = p[["tau"]], model = "k_dr_k0")
         expect_equal(ana, num, tolerance = 1e-3)
     }
 })
 
-test_that("get_rmean_exact and get_rmean agree for mu = 0 and for model k", {
+test_that("get_rmean and get_rmean_nogrowth agree for mu = 0 and for model k", {
     taus <- seq(0.5, 8, 0.5)
     for ( mod in c("k", "dr", "k_dr", "k_dr_k0") ) {
-        x <- get_rmean_exact(k = 264, k0 = 26.4, dr = 1.7, mu = 0, phi = 0.5, tau = taus, model = mod)
-        y <- get_rmean(k = 264, k0 = 26.4, dr = 1.7, mu = 0, phi = 0.5, tau = taus, model = mod)
+        x <- get_rmean(k = 264, k0 = 26.4, dr = 1.7, mu = 0, phi = 0.5, tau = taus, model = mod)
+        y <- get_rmean_nogrowth(k = 264, k0 = 26.4, dr = 1.7, mu = 0, phi = 0.5, tau = taus, model = mod)
         expect_equal(x, y, tolerance = 1e-8)
     }
-    x <- get_rmean_exact(k = 10, dr = 1, mu = 0.2, phi = 0.3, tau = 4, model = "k")
+    x <- get_rmean(k = 10, dr = 1, mu = 0.2, phi = 0.3, tau = 4, model = "k")
     expect_equal(x, 0.3*10/1.2)
 })
 
-test_that("get_rmean_exact is stable for very small mu", {
-    x <- get_rmean_exact(k = 10, k0 = 2, dr = 1, mu = c(0, 1e-12, 1e-9, 1e-6), phi = 0.3, tau = 4,
+test_that("get_rmean is stable for very small mu", {
+    x <- get_rmean(k = 10, k0 = 2, dr = 1, mu = c(0, 1e-12, 1e-9, 1e-6), phi = 0.3, tau = 4,
                          model = "k_dr_k0")
     expect_true(all(is.finite(x)))
     expect_equal(x[-1], rep(x[1], 3), tolerance = 1e-5)

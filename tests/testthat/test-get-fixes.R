@@ -1,7 +1,7 @@
 ## Tests for four fixes in the get_* functions (2026-09-30):
-## 1. get_basal/get_rates: an Rmax (or Rmin) that is NA counts as not given;
+## 1. get_basal/get_rates_nogrowth: an Rmax (or Rmin) that is NA counts as not given;
 ##    get_rates returned k0 = NA whenever only Rmin was given
-## 2. get_ramp: gamma from dr + mu also when k is not given
+## 2. get_ramp_nogrowth: gamma from dr + mu also when k is not given
 ## 3. get_pmean: RNA rates are passed to get_rmean via ..., not taken from
 ##    the calling environment
 ## 4. get_tau/get_times: the root search for the models with phase-switched
@@ -32,7 +32,7 @@ test_that("get_basal returns k0 from Rmin, Rmax or both, ignoring NA", {
 })
 
 test_that("get_rates recovers k0 of K_DR_K0 from Rmin alone", {
-    r <- get_rates(model = "k_dr_k0", a = (Rmax - Rmin)/Rmean, R = Rmean, Rmin = Rmin,
+    r <- get_rates_nogrowth(model = "k_dr_k0", a = (Rmax - Rmin)/Rmean, R = Rmean, Rmin = Rmin,
                    phi = phi, tau = tau, mu = 0)
     expect_equal(r$k, k, tolerance = 1e-6)
     expect_equal(r$dr, dr, tolerance = 1e-6)
@@ -41,8 +41,8 @@ test_that("get_rates recovers k0 of K_DR_K0 from Rmin alone", {
 
 test_that("get_ramp without k computes gamma from dr and mu", {
     for ( mod in c("k_dr", "dr") ) {
-        x <- get_ramp(dr = 1, mu = 0.1, phi = phi, tau = tau, relative = TRUE, model = mod)
-        y <- get_ramp(gamma = 1.1, phi = phi, tau = tau, relative = TRUE, model = mod)
+        x <- get_ramp_nogrowth(dr = 1, mu = 0.1, phi = phi, tau = tau, relative = TRUE, model = mod)
+        y <- get_ramp_nogrowth(gamma = 1.1, phi = phi, tau = tau, relative = TRUE, model = mod)
         expect_equal(x, y)
     }
 })
