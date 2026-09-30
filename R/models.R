@@ -243,6 +243,16 @@ get_rcycle <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
     if ( missing(mu) ) mu <- 0
     mu[is.na(mu)] <- 0                          # no growth
     if ( missing(gamma) ) gamma <- dr + mu
+    cy <- .pwm_cycle(k = k, k0 = k0, gamma = gamma, mu = mu, phi = phi, tau = tau,
+                     model = model)
+    res <- as.data.frame(cy)
+    rownames(res) <- NULL
+    res
+}
+
+## internal: get_rcycle without argument handling and data frame, for the
+## root finding in get_rates and get_times (called thousands of times per gene)
+.pwm_cycle <- function(k, k0, gamma, mu, phi, tau, model) {
     lon <- if ( model == 'k' ) gamma else mu   # loss rate in the ON phase
     if ( model == 'dr' ) k0 <- k
     if ( model %in% c('k', 'k_dr') ) k0 <- 0
@@ -263,10 +273,8 @@ get_rcycle <- function(k, gamma, k0 = 0, dr, mu, phi, tau,
     R1 <- R0*eA + k*iA                    # end of ON phase
     ion <- R0*iA + k*jA                   # integral over ON phase
     ioff <- R1*iB + k0*(b - iB)/gamma     # integral over OFF phase
-    res <- data.frame(R0 = R0, R1 = R1, Rmin = pmin(R0, R1), Rmax = pmax(R0, R1),
-                      mean = (ion + ioff)/tau)
-    rownames(res) <- NULL
-    res
+    list(R0 = R0, R1 = R1, Rmin = pmin(R0, R1), Rmax = pmax(R0, R1),
+         mean = (ion + ioff)/tau)
 }
 
 #' Exact cycle mean of the pulse width-modulated ODE models.
@@ -397,6 +405,10 @@ get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
         if ( !missing(upper) ) args$upper <- upper
         return(do.call(get_rates_nogrowth, args))
     }
+    ## model k (exact in the closed form for any mu) and all models without
+    ## growth were passed on above; what is left with growth are the models
+    ## with phase-switched degradation. Other names (the _coth variants of the
+    ## closed forms) exist only without growth.
     if ( !model %in% c('dr', 'k_dr', 'k_dr_k0') )
         stop("model '", model, "' is only available without growth, see get_rates_nogrowth")
     mu[is.na(mu)] <- 0
@@ -407,8 +419,9 @@ get_rates <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
     one <- function(a, R, m, phi, tau, mu) {
         na <- if ( model == 'k_dr_k0' ) c(k = NA, dr = NA, k0 = NA) else c(k = NA, dr = NA)
         if ( any(!is.finite(c(a, R, phi, tau, mu))) ) return(na)
-        cyc <- function(dr, q) get_rcycle(k = 1, k0 = q, dr = dr, mu = mu,
-                                                phi = phi, tau = tau, model = model)
+        cyc <- function(dr, q) .pwm_cycle(k = 1, k0 = if ( model == 'dr' ) 1 else q,
+                                          gamma = dr + mu, mu = mu, phi = phi, tau = tau,
+                                          model = model)
         ## k0/k matching Rmin/R for a given dr, in the chosen regime
         qfit <- function(dr) {
             if ( !is.finite(m) ) return(NA)
@@ -586,20 +599,155 @@ get_pmean <- function(R, rho, l, dp, mu, phip, phi,
     unname(p)
 }
 
-#' Duty cycle and period from abundance data and rates.
+#' Exact duty cycle and period of the pulse width-modulated ODE models.
 #'
-#' NOTE: for the models with phase-switched degradation this uses the closed
-#' forms without dilution in the ON phase (see \code{\link{get_rates_nogrowth}});
-#' there is no version with dilution in both phases yet.
-#' @export
+#' Recovers the duty cycle \code{phi} and the period \code{tau} from the mean
+#' abundance \code{R} and the relative amplitude \code{a} (or the absolute
+#' amplitude \code{A}), given the rates \code{k}, \code{dr} (and \code{k0}) and
+#' the growth rate \code{mu}, with dilution in both phases (see
+#' \code{\link{get_rcycle}}). The counterpart of \code{\link{get_rates}}, which
+#' recovers the rates given the times. Without growth (\code{mu} missing,
+#' \code{NA} or 0 for all inputs) and for model \code{"k"} (exact for any
+#' \code{mu}), the closed forms of \code{\link{get_times_nogrowth}} are used,
+#' with \code{gamma = dr + mu}; \code{lower}, \code{upper} are then passed on.
+#'
+#' For a given \code{tau}, the mean is monotone in \code{phi} (increasing, or
+#' decreasing where the basal rate \code{k0} dominates), so \code{phi(tau)} is
+#' found from \code{R}; then \code{tau} from \code{a(phi(tau), tau)}. Roots
+#' with \code{phi} at its bounds are discarded; where several remain, the
+#' largest \code{tau} is taken (as \code{get_times_nogrowth}). This happens
+#' when \code{R} hardly oscillates (e.g. \code{k0/gamma} close to
+#' \code{k/mu} for \code{"k_dr_k0"}), and the amplitude then carries no
+#' information about \code{tau}.
+#'
+#' For \code{"k_dr_k0"}, \code{k0} is used if given; otherwise \code{Rmin} is
+#' used instead: for given \code{phi} and \code{tau} the mean is linear in
+#' \code{k0}, \code{k0 = (R - R(k0=0))/R(k=0, k0=1)}, and \code{phi} is then
+#' found from \code{Rmin}.
+#' @param model one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+#' \code{"k_dr_k0"}.
+#' @param a relative amplitude, \code{(Rmax - Rmin)/R}.
+#' @param A absolute amplitude, used if \code{a} is missing.
+#' @param R mean abundance, in the units of \code{k}.
+#' @param Rmin minimal abundance (model \code{"k_dr_k0"} without \code{k0}).
+#' @param k transcription rate.
+#' @param k0 basal transcription rate (model \code{"k_dr_k0"}).
+#' @param dr degradation rate.
+#' @param mu growth rate; if missing, \code{NA} or 0, no growth (see above);
+#' an element that is \code{NA} counts as 0.
+#' @param gamma total loss rate in the OFF phase, \code{dr + mu}; used for
+#' \code{dr} if that is missing.
+#' @param lower,upper range of \code{tau} searched (without growth: as in
+#' \code{\link{get_times_nogrowth}}, default 1e-6 and 100).
+#' @param n number of grid points on a log scale used to bracket the roots.
+#' @param verb verbosity.
+#' @param ... passed to \code{\link{get_times_nogrowth}} (model \code{"k"} or
+#' no growth).
+#' @return data frame with columns \code{phi} and \code{tau}; \code{NA} where
+#' no solution exists.
+#'@export
 get_times <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
+                      a = NA, A = NA, R = NA, Rmin = NA,
+                      k = NA, k0 = NA, dr = NA, mu = NA, gamma = NA,
+                      lower = 1e-3, upper = 100, n = 200, verb = 0, ...) {
+
+    model <- model[1]
+    if ( all(is.na(a)) ) a <- A/R
+    if ( missing(mu) ) mu <- NA
+    nogrowth <- all(is.na(mu) | mu == 0)
+    mu0 <- ifelse(is.na(mu), 0, mu)
+    if ( all(is.na(dr)) ) dr <- gamma - mu0
+    if ( model == 'k' | nogrowth ) {
+        args <- list(model = model, a = a, R = R, Rmin = Rmin, k = k,
+                     gamma = dr + mu0, k0 = k0, verb = verb, ...)
+        if ( !missing(lower) ) args$lower <- lower
+        if ( !missing(upper) ) args$upper <- upper
+        return(do.call(get_times_nogrowth, args))
+    }
+    ## model k (exact in the closed form for any mu) and all models without
+    ## growth were passed on above; other names exist only without growth
+    if ( !model %in% c('dr', 'k_dr', 'k_dr_k0') )
+        stop("model '", model, "' is only available without growth, see get_times_nogrowth")
+
+    one <- function(a, R, Rmin, k, k0, dr, mu) {
+        na <- c(phi = NA, tau = NA)
+        if ( any(!is.finite(c(a, R, k, dr, mu))) ) return(na)
+        usek0 <- model != 'k_dr_k0' || is.finite(k0)
+        if ( !usek0 && !is.finite(Rmin) ) return(na)
+        cyc <- function(phi, tau, k, k0) .pwm_cycle(k = k, k0 = if ( model == 'dr' ) k else
+                                                       if ( model == 'k_dr' ) 0 else k0,
+                                                    gamma = dr + mu, mu = mu, phi = phi,
+                                                    tau = tau, model = model)
+        eps <- 1e-6
+        pgrid <- c(eps, seq(0.01, 0.99, length.out = 50), 1 - eps)
+        k0of <- function(phi, tau) {
+            if ( usek0 ) return(ifelse(is.finite(k0), k0, 0))
+            ## the mean is linear in k0 (NA where k0 would be negative)
+            k0 <- (R - cyc(phi, tau, k, 0)$mean)/cyc(phi, tau, 0, 1)$mean
+            ifelse(k0 < 0, NA, k0)
+        }
+        ## phi(tau) from R (k0 given) or from R and Rmin (k0 unknown); h is
+        ## evaluated on a phi grid in one vectorised call, then refined in the
+        ## bracket
+        phifit <- function(tau) {
+            h <- function(phi) { k0x <- k0of(phi, tau)
+                cy <- cyc(phi, tau, k, k0x)
+                if ( usek0 ) cy$mean - R else cy$Rmin - Rmin }
+            hg <- h(pgrid)
+            j <- which(is.finite(hg[-length(hg)]) & is.finite(hg[-1]) &
+                       sign(hg[-length(hg)]) != sign(hg[-1]))
+            if ( length(j) == 0 ) return(NA)
+            j <- j[1]
+            stats::uniroot(h, pgrid[c(j, j + 1)], tol = 1e-12)$root
+        }
+        f <- function(tau) {
+            phi <- phifit(tau)
+            if ( is.na(phi) ) return(NA)
+            cy <- cyc(phi, tau, k, k0of(phi, tau))
+            (cy$Rmax - cy$Rmin)/cy$mean - a
+        }
+        grid <- exp(seq(log(lower), log(upper), length.out = n))
+        fg <- sapply(grid, f)
+        ok <- which(is.finite(fg[-n]) & is.finite(fg[-1]) & sign(fg[-n]) != sign(fg[-1]))
+        if ( length(ok) == 0 ) {
+            if ( verb > 0 ) cat('get_times: no solution for tau\n')
+            return(na)
+        }
+        taus <- sapply(ok, function(j) stats::uniroot(f, grid[c(j, j + 1)], tol = 1e-12)$root)
+        phis <- sapply(taus, phifit)
+        keep <- is.finite(phis) & phis > 1e-4 & phis < 1 - 1e-4
+        if ( !any(keep) ) return(na)
+        taus <- taus[keep]; phis <- phis[keep]
+        if ( length(taus) > 1 & verb > 0 )
+            cat(paste('get_times:', length(taus), 'roots for tau, taking the largest\n'))
+        j <- which.max(taus)
+        c(phi = phis[j], tau = taus[j])
+    }
+    res <- do.call(rbind, Map(one, a = a, R = R, Rmin = Rmin, k = k, k0 = k0,
+                              dr = dr, mu = mu0))
+    res <- as.data.frame(res)
+    rownames(res) <- NULL
+    res
+}
+
+#' Duty cycle and period, closed form without dilution in the ON phase.
+#'
+#' The inverse of \code{\link{get_rmean_nogrowth}} and
+#' \code{\link{get_ramp_nogrowth}} for the duty cycle and period, given the
+#' rates: exact for model \code{"k"} and without growth; for the models with
+#' phase-switched degradation, \code{phi = A/(k*tau)} and \code{tau} from the
+#' relative amplitude (\code{root_tau_*}), where \code{gamma} is the total loss
+#' rate in the OFF phase. Use \code{\link{get_times}} with the growth rate for
+#' the exact duty cycle and period with dilution in both phases.
+#' @export
+get_times_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       a = NA, R = NA, Rmin = NA, 
                       k = NA, gamma = NA, dr = NA, mu = NA, k0 = NA, 
                       lower = 1e-6, upper = 100, tol = 1e-9,
                       verb = 0, ...) {
 
     if ( all(is.na(gamma)) )
-        gamma <- dr+mu
+        gamma <- dr + ifelse(is.na(mu), 0, mu) # mu = NA: no growth
 
 
     ## model k:
@@ -812,7 +960,7 @@ get_rates_nogrowth <- function(model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                      verb = verb))
     
     gamma <- dr
-    gamma <- ifelse(is.na(mu), dr, dr + mu) # element-wise, mu may be a vector
+    gamma <- dr + ifelse(is.na(mu), 0, mu) # element-wise; mu may be a vector or a scalar
     if ( model %in% c('k') ) {
         k <- get_transcription(R = R, gamma = gamma, phi = phi, model = model)
         if ( length(k)==1 )

@@ -4,7 +4,7 @@
 ## 2. get_ramp_nogrowth: gamma from dr + mu also when k is not given
 ## 3. get_pmean: RNA rates are passed to get_rmean via ..., not taken from
 ##    the calling environment
-## 4. get_tau/get_times: the root search for the models with phase-switched
+## 4. get_tau/get_times_nogrowth: the root search for the models with phase-switched
 ##    degradation starts above the pole tau = A/k (phi = 1)
 ## Reference values: the analytic solutions at mu = 0, where they are exact
 ## for the pwmode_* ODEs (see test-rmean-ode.R).
@@ -60,14 +60,14 @@ test_that("get_pmean with R missing uses the rates passed, not the environment",
     })
 })
 
-test_that("get_times finds tau above the pole tau = A/k", {
+test_that("get_times_nogrowth finds tau above the pole tau = A/k", {
     ## short period, long duty cycle: tau = 1, phi = 0.6, gamma = 3
     for ( mod in c("k_dr", "dr", "k_dr_k0") ) {
         kk <- 10; g <- 3; ph <- 0.6; ta <- 1; kk0 <- if ( mod == "dr" ) kk else if ( mod == "k_dr" ) 0 else 5
         R <- get_rmean(k = kk, k0 = kk0, dr = g, mu = 0, phi = ph, tau = ta, model = mod)
         Rmn <- kk*ph*ta/expm1(g*ta*(1 - ph)) + kk0/g
         a <- kk*ph*ta/R
-        tm <- get_times(model = mod, a = a, R = R, Rmin = Rmn, k = kk, gamma = g)
+        tm <- get_times_nogrowth(model = mod, a = a, R = R, Rmin = Rmn, k = kk, gamma = g)
         expect_equal(tm$tau, ta, tolerance = 1e-5, label = mod)
         expect_equal(tm$phi, ph, tolerance = 1e-5, label = mod)
     }

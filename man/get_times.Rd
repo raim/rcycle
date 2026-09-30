@@ -2,27 +2,87 @@
 % Please edit documentation in R/models.R
 \name{get_times}
 \alias{get_times}
-\title{Duty cycle and period from abundance data and rates.}
+\title{Exact duty cycle and period of the pulse width-modulated ODE models.}
 \usage{
 get_times(
   model = c("k", "dr", "k_dr", "k_dr_k0"),
   a = NA,
+  A = NA,
   R = NA,
   Rmin = NA,
   k = NA,
-  gamma = NA,
+  k0 = NA,
   dr = NA,
   mu = NA,
-  k0 = NA,
-  lower = 1e-06,
+  gamma = NA,
+  lower = 0.001,
   upper = 100,
-  tol = 1e-09,
+  n = 200,
   verb = 0,
   ...
 )
 }
+\arguments{
+\item{model}{one of \code{"k"}, \code{"dr"}, \code{"k_dr"},
+\code{"k_dr_k0"}.}
+
+\item{a}{relative amplitude, \code{(Rmax - Rmin)/R}.}
+
+\item{A}{absolute amplitude, used if \code{a} is missing.}
+
+\item{R}{mean abundance, in the units of \code{k}.}
+
+\item{Rmin}{minimal abundance (model \code{"k_dr_k0"} without \code{k0}).}
+
+\item{k}{transcription rate.}
+
+\item{k0}{basal transcription rate (model \code{"k_dr_k0"}).}
+
+\item{dr}{degradation rate.}
+
+\item{mu}{growth rate; if missing, \code{NA} or 0, no growth (see above);
+an element that is \code{NA} counts as 0.}
+
+\item{gamma}{total loss rate in the OFF phase, \code{dr + mu}; used for
+\code{dr} if that is missing.}
+
+\item{lower, upper}{range of \code{tau} searched (without growth: as in
+\code{\link{get_times_nogrowth}}, default 1e-6 and 100).}
+
+\item{n}{number of grid points on a log scale used to bracket the roots.}
+
+\item{verb}{verbosity.}
+
+\item{...}{passed to \code{\link{get_times_nogrowth}} (model \code{"k"} or
+no growth).}
+}
+\value{
+data frame with columns \code{phi} and \code{tau}; \code{NA} where
+no solution exists.
+}
 \description{
-NOTE: for the models with phase-switched degradation this uses the closed
-forms without dilution in the ON phase (see \code{\link{get_rates_nogrowth}});
-there is no version with dilution in both phases yet.
+Recovers the duty cycle \code{phi} and the period \code{tau} from the mean
+abundance \code{R} and the relative amplitude \code{a} (or the absolute
+amplitude \code{A}), given the rates \code{k}, \code{dr} (and \code{k0}) and
+the growth rate \code{mu}, with dilution in both phases (see
+\code{\link{get_rcycle}}). The counterpart of \code{\link{get_rates}}, which
+recovers the rates given the times. Without growth (\code{mu} missing,
+\code{NA} or 0 for all inputs) and for model \code{"k"} (exact for any
+\code{mu}), the closed forms of \code{\link{get_times_nogrowth}} are used,
+with \code{gamma = dr + mu}; \code{lower}, \code{upper} are then passed on.
+}
+\details{
+For a given \code{tau}, the mean is monotone in \code{phi} (increasing, or
+decreasing where the basal rate \code{k0} dominates), so \code{phi(tau)} is
+found from \code{R}; then \code{tau} from \code{a(phi(tau), tau)}. Roots
+with \code{phi} at its bounds are discarded; where several remain, the
+largest \code{tau} is taken (as \code{get_times_nogrowth}). This happens
+when \code{R} hardly oscillates (e.g. \code{k0/gamma} close to
+\code{k/mu} for \code{"k_dr_k0"}), and the amplitude then carries no
+information about \code{tau}.
+
+For \code{"k_dr_k0"}, \code{k0} is used if given; otherwise \code{Rmin} is
+used instead: for given \code{phi} and \code{tau} the mean is linear in
+\code{k0}, \code{k0 = (R - R(k0=0))/R(k=0, k0=1)}, and \code{phi} is then
+found from \code{Rmin}.
 }

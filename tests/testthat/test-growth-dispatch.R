@@ -86,3 +86,17 @@ test_that("get_rates_nogrowth and get_rates take a growth rate per gene for mode
     y <- get_rates(model = "k", a = a, R = cy$mean, phi = phi, tau = tau, mu = mus)
     expect_equal(y, x)
 })
+
+test_that("get_rates_nogrowth for model k: one mu (or 0) for many genes", {
+    ## regression: an ifelse() on a scalar mu returned a single gamma for all
+    ## genes, so k was wrong for all but the first gene
+    drs <- c(0.5, 1, 2, 4)
+    for ( mu in c(0, 0.1, NA) ) {
+        m0 <- ifelse(is.na(mu), 0, mu)
+        cy <- get_rcycle(k = k, dr = drs, mu = m0, phi = phi, tau = tau, model = "k")
+        x <- get_rates_nogrowth(model = "k", a = (cy$Rmax - cy$Rmin)/cy$mean, R = cy$mean,
+                                phi = phi, tau = tau, mu = mu)
+        expect_equal(x$dr, drs, tolerance = 1e-6, label = paste("dr, mu =", mu))
+        expect_equal(x$k, rep(k, 4), tolerance = 1e-6, label = paste("k, mu =", mu))
+    }
+})
