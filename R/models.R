@@ -292,6 +292,8 @@ get_ramp <- function(gamma, dr, mu, phi, tau, relative = TRUE,
             ## NOTE: k for relative amplitude is only
             ##       required for model with basal expression
             
+            if ( missing(gamma) )
+                gamma <- dr+mu
 
             gt <- gamma*tau
 
@@ -360,18 +362,24 @@ get_rna <- function() {
 
 ##
 #' @export
-get_pmean <- function(R, rho, l, dp, mu, phip,
+get_pmean <- function(R, rho, l, dp, mu, phip, phi,
                       r.model = c('k', 'dr', 'k_dr', 'k_dr_k0'),
                       p.model = c('const', 'phi'), ...)  { # P(mu)
 
     if ( length(r.model)>1 ) r.model <- r.model[1]
     if ( length(p.model)>1 ) p.model <- p.model[1]
 
+    ## NOTE: the RNA duty cycle phi and the rates (k, dr or gamma, tau, k0)
+    ## are passed on to get_rmean; they used to be referenced as free
+    ## variables here, which silently took them from the calling environment.
+    ## phi is a formal argument, since phi= in ... would partially match phip
     if ( missing(R) )
-        R <- get_rmean(dr=dr, k=k, phi=phi, mu=mu,
-                       model = r.model, ...)
+        R <- get_rmean(mu = mu, phi = phi, model = r.model, ...)
     p <- R*rho*l/(mu+dp)
     
+    ## NOTE: translation in HOC only; multiplying by phip assumes that the
+    ## translation phase and R are uncorrelated, an approximation when R
+    ## oscillates with the same phases
     if ( p.model %in% c('phi') ) # translation in HOC only
         p <- p*phip
 
@@ -447,6 +455,13 @@ get_tau <- function(a, R = NA, Rmin = NA,  k, gamma, phi,
     ## TODO: omit A from arguments and solve this
     ## in root functions?
     A <- a*R
+
+    ## NOTE: for the models with phase-switched degradation, phi = A/(k*tau)
+    ## so tau > A/k; the root functions have a pole at tau = A/k (phi = 1)
+    ## and are not defined below it, and uniroot.all's grid could step over
+    ## the root; search above the pole
+    if ( model %in% c('dr', 'k_dr', 'k_dr_k0') && is.finite(A/k) && A/k > 0 )
+        lower <- max(lower, A/k*(1 + 1e-6))
     
     ## TODO: find better solution or test whether taking the
     ## the highest root is always appropriate. 
@@ -634,15 +649,18 @@ get_basal <- function(k, gamma, tau, phi, Rmin, Rmax, verb = 1) {
     ##beta <- exp(gamma*tau*(1-phi))
     betam1 <- expm1(gamma*tau*(1-phi)) 
     
+    ## NOTE: an Rmin or Rmax that is NA counts as not given (get_rates
+    ## passes both, with NA defaults); where both are available, their
+    ## basal rates are averaged, element-wise
+    k0min <- k0max <- NA
     if ( !missing(Rmin) ) 
-        k0min <- k0 <- (Rmin - k*phi*tau/betam1)*gamma
+        k0min <- (Rmin - k*phi*tau/betam1)*gamma
     if ( !missing(Rmax) ) 
-        k0max <- k0 <- (Rmax - k*phi*tau*(1 + 1/betam1))*gamma
-    if ( exists('k0min', mode = 'numeric') &
-         exists('k0max', mode = 'numeric') ) {
-        if ( verb>0 ) cat(paste('mean of rmin- and rmax-based basal rates\n'))
-        k0 <- (k0min+k0max)/2    
-    }
+        k0max <- (Rmax - k*phi*tau*(1 + 1/betam1))*gamma
+    both <- !is.na(k0min) & !is.na(k0max)
+    if ( verb>0 & any(both) )
+        cat(paste('mean of rmin- and rmax-based basal rates\n'))
+    k0 <- ifelse(both, (k0min + k0max)/2, ifelse(is.na(k0min), k0max, k0min))
     k0
 }
 
