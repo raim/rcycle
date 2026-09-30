@@ -73,7 +73,7 @@ for ( mod in models ) {
 
 }
 
-## NOTE: model DR, gamma is u-shaped -> counteracted by k
+## NOTE: model DR, dr is u-shaped -> counteracted by k
 plotdev(file.path(out.path, 'pwm_rates_k_phi'),
         type='pdf', width=W, height=H)
 par(mai=c(.5,.55,.25,.15), mgp=c(1.3,0.3,0), tcl=-.25)
@@ -93,7 +93,7 @@ plotdev(file.path(out.path, 'pwm_rates_dr_phi'),
         type='pdf', width=W, height=H)
 par(mai=c(.5,.55,.25,.15), mgp=c(1.3,0.3,0), tcl=-.25)
 plot(phis, phis, ylim=log10(drrng), col=NA, axes=FALSE,
-     xlab=axis_labels['phi'], ylab=axis_labels['gamma'])
+     xlab=axis_labels['phi'], ylab=axis_labels['dr'])
 axis(1)
 logaxis(2)
 logaxis(4, labels=FALSE)
@@ -142,7 +142,7 @@ plotdev(file.path(out.path, 'pwm_rates_dr_tau'),
         type='pdf', width=W, height=H)
 par(mai=c(.5,.55,.25,.15), mgp=c(1.3,0.3,0), tcl=-.25)
 plot(taus, taus, ylim=log10(drrng), col=NA, axes=FALSE,
-     xlab=axis_labels['tau'], ylab=axis_labels['gamma'])
+     xlab=axis_labels['tau'], ylab=axis_labels['dr'])
 for ( i in seq_along(models) ) 
     lines(taus, log10(trates[[models[[i]]]][,'dr']), col=i, type='l', lty=i)
 axis(1)
