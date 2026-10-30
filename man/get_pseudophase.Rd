@@ -48,8 +48,9 @@ backwards, see \link{revert_phase}.}
 a \code{\link[stats]{prcomp}} object of class
 \code{"phases"}, with the added tables \code{rotation.phase} (cells)
 and \code{x.phase} (cohorts): the phase angle \code{theta} in PC1/PC2,
-the rank phase \code{phi}, amplitude and 3D angles; and
-\code{summary}.
+the rank phase \code{phi}, amplitude and 3D angles; \code{summary};
+and the preprocessing (\code{log}, \code{row.means}) for
+\link{project_cells}.
 }
 \description{
 get the pseudophase from a cohort state matrix

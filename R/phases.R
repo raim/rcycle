@@ -98,7 +98,7 @@ revert <- function(phases, srt, force=FALSE, verb=1) {
         if ( verb>0 )
             cat(paste("\treverting all phases\n"))
 
-        ids <- c('phi', 'theta')
+        ids <- c('phi', 'theta', 'lambda')
         
         phases <- alapply(phases, function(x) {
             for ( id in ids ) {
@@ -313,8 +313,9 @@ add_colors <- function(phases, col, type='x', ID, colid='col', warn=TRUE) {
 #' @return a \code{\link[stats]{prcomp}} object of class
 #'     \code{"phases"}, with the added tables \code{rotation.phase} (cells)
 #'     and \code{x.phase} (cohorts): the phase angle \code{theta} in PC1/PC2,
-#'     the rank phase \code{phi}, amplitude and 3D angles; and
-#'     \code{summary}.
+#'     the rank phase \code{phi}, amplitude and 3D angles; \code{summary};
+#'     and the preprocessing (\code{log}, \code{row.means}) for
+#'     \link{project_cells}.
 #' @export
 get_pseudophase <- function(states,
                             revert.phase=FALSE, 
@@ -332,8 +333,11 @@ get_pseudophase <- function(states,
     if ( log ) cstates <- log10(cstates+1)
 
     ## ROW-CENTERING cohorts
-    if ( row.center )
-        cstates <- cstates - apply(cstates, 1, mean) 
+    row.means <- NULL
+    if ( row.center ) {
+        row.means <- apply(cstates, 1, mean)
+        cstates <- cstates - row.means
+    }
 
     
     ## scale as in prcomp prior to SVD
@@ -407,6 +411,10 @@ get_pseudophase <- function(states,
     ##eigenvalues <- pca$sdev^2
     ##phases$variance <- eigenvalues/sum(eigenvalues)
     phases$summary <- summary(phases)$importance
+
+    ## preprocessing, to project new cells, see project_cells
+    phases$log <- log
+    phases$row.means <- row.means
 
     ## new: separate matrix
     phases$rotation.phase <- cbind.data.frame(order=order(phi),

@@ -1,0 +1,172 @@
+---
+title: "Division-cycle pseudophase in time"
+author: "Rainer Machn&eacute;"
+date: "`r format(Sys.time(), '%d %m %Y')`"
+output:
+    bookdown::html_document2:
+        base_format: rmarkdown::html_vignette
+        toc: true
+        toc_depth: 2
+        fig_caption: true
+bibliography: /home/raim/ref/tata.bib
+vignette: >
+  %\VignetteIndexEntry{Division-cycle pseudophase in time}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+<!-- compile with
+rmarkdown::render("vignettes/phase_time.Rmd", output_format = "html_document")
+requires the light Jackson et al. 2020 extract of the owner's pipeline,
+~/work/teaching/pwm/scmw/jackson20.rda; runs a few minutes
+-->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.pos = 'h',
+                      fig.height = 3, fig.width = 4, fig.align = "center")
+library(rcycle)
+## the development version, if the installed one is older
+if ( !"phase_time" %in% getNamespaceExports("rcycle") )
+    devtools::load_all("~/programs/rcycle", quiet=TRUE)
+script <- system.file("scripts", "jackson20_phasetime.R", package="rcycle")
+if ( script=="" )
+    script <- "~/programs/rcycle/inst/scripts/jackson20_phasetime.R"
+```
+
+How long do cells spend in each phase of the division cycle, and how
+variable is that? From a snapshot of an asynchronous, exponentially
+growing population, ergodic rate analysis [ERA, @Kafri2013] converts the
+order of the cells along the cycle into time: a cell with a fraction
+`F` of all cells between division and itself has the age
+`T*(1-log2(2-F))`, `T` the doubling time (see `ROADMAP.md`). Young
+cells are more frequent than old ones, so the linear calibration of the
+rank phase (`calibrate`) overestimates early ages.
+
+We use the 11 media of @Jackson2020, with five division-cycle
+cohorts (M/G1, G1, S, G2, M) and the growth rates of the owner's
+pipeline.
+
+```{r run, results='hide', message=FALSE, warning=FALSE}
+cdc <- c("cdc_M/G1", "cdc_G1", "cdc_S", "cdc_G2", "cdc_M")
+outfile <- tempfile(fileext=".rda")
+source(script)
+```
+
+# One medium: YPD
+
+```{r ypd}
+r <- R$YPD
+P <- r$P
+rp <- P$rotation.phase
+r$T
+r$durations
+```
+
+The origin (division) is the moving-average peak of the M/G1 cohort.
+`G1S` is the point of maximal change of the cell angle between the G1
+and the S cohort peaks (`phase_landmarks`, from the inflection
+segmentation of `get_segments`); in YPD it falls on the G1 peak.
+
+```{r ypd-states, fig.cap="Left: cohort states (moving average over 5% of the cells) along the ERA age; top axis: cohort peaks and G1S. Right: ERA age against the linear calibration of the rank phase, F*T (grey: identity).", fig.width=7}
+st <- J$jackson20_YPD$states[cdc,]
+ord <- order(rp$age)
+ma <- t(apply(st[, ord], 1, function(x)
+    stats::filter(x, rep(1, 500)/500, circular=TRUE)))
+ma <- ma/apply(ma, 1, max)
+par(mfcol=c(1,2), mai=c(.5,.5,.3,.1), mgp=c(1.3,.3,0), tcl=-.25)
+matplot(rp$age[ord], t(ma), type='l', lty=1, col=1:5,
+        xlab="age, h", ylab="state / max")
+axis(3, at=r$durations$age, labels=sub("cdc_", "", r$durations$landmark),
+     las=2, cex.axis=.7)
+legend("bottomleft", sub("cdc_", "", cdc), col=1:5, lty=1, cex=.7,
+       bty='n')
+plot(rp$age_F*r$T, rp$age, pch=".", xlab="linear, F*T (h)",
+     ylab="ERA age (h)")
+abline(0, 1, col="grey")
+```
+
+## Per-cell quality
+
+With `scale=TRUE` each cell has unit variance across cohorts.
+`cell_quality` recovers the unscaled amplitude in the PC1/PC2 plane and
+compares it with 20 noise cells per cell, drawn from Poisson counts of
+the same totals without a cycle (`noise_states`).
+
+```{r ypd-quality, fig.cap="Unscaled amplitude against total counts; red: not above the noise reference (p > 0.05), grey: noise cells.", fig.width=7}
+nz <- P$noise
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(J$jackson20_YPD$total[nz$cell], nz$amplitude.raw, pch=".",
+     col="grey", log="xy", xlab="total counts",
+     ylab="amplitude (unscaled)")
+points(J$jackson20_YPD$total, rp$amplitude.raw, pch=".",
+       col=ifelse(rp$noise, 2, 1))
+hist(rp$r2, breaks=50, main=NA, xlab="variance share in PC1/PC2")
+mean(rp$noise)
+```
+
+A cell's phase also depends on which genes represent its cohorts.
+`phase_bootstrap` resamples genes within cohorts:
+
+```{r ypd-boot}
+summary(rp$F.sd)   # fraction of the cycle
+summary(rp$age.sd) # hours
+```
+
+## Size along age
+
+The log total count is a proxy of cell size (and of capture
+efficiency). If size is controlled at G1 exit, its spread should narrow
+there. In YPD the mean is lowest from G1 to S and the spread is
+narrowest around the G2 peak, not at G1 exit.
+
+```{r ypd-size, fig.cap="Mean and standard deviation of log total counts along age; vertical lines: landmarks."}
+pr <- age_profile(rp$age, log(J$jackson20_YPD$total), breaks=20)
+par(mai=c(.5,.5,.1,.5), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pr$mid, pr$mean, type='b', xlab="age, h", ylab="mean log total")
+abline(v=r$durations$age, col="grey")
+par(new=TRUE)
+plot(pr$mid, pr$sd, type='b', col=2, axes=FALSE, xlab=NA, ylab=NA)
+axis(4, col=2, col.axis=2)
+mtext("sd log total", 4, 1.3, col=2)
+```
+
+## Daughters and mothers
+
+`split_counts` calls daughter cells by a two-component Poisson mixture
+of the counts of the daughter cohort. The fraction of daughter calls
+along age shows that this cohort is expressed in nearly all cells
+around division, so it marks the M/G1 stage, not daughters alone; the
+group durations (`group_durations`) are therefore not yet meaningful.
+
+```{r ypd-daughter, fig.cap="Fraction of cells called daughter along age."}
+pd <- age_profile(rp$age, as.numeric(r$daughter$high), breaks=20)
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(pd$mid, pd$mean, type='b', xlab="age, h", ylab="daughter calls")
+r$groups$G1S
+```
+
+# G1 against doubling time
+
+```{r media}
+tab[, c("medium", "T", "cells", "noise", "order.ok", "G1.S", "G1.G1S",
+        "G1.G1S.clean")]
+```
+
+`order.ok`: the cohort peaks are in cycle order from M/G1. Where they
+are not, the landmarks mix phases (e.g. M after M/G1), and the G1
+durations are not G1.
+
+```{r media-plot, fig.cap="G1 share of the doubling time, origin at the M/G1 peak, to the point of maximal change (G1S, filled) or the S peak (open), without noise cells; red: cohort order wrong. Spearman correlations for the 9 growing media and for those in correct order."}
+g <- !is.na(tab$T) & tab$mu > .1
+x <- tab[g,]
+par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(x$T, x$G1.G1S.clean/x$T, pch=19, col=ifelse(x$order.ok, 1, 2),
+     ylim=c(0, .6), xlim=c(1, 2.3), xlab="doubling time, h",
+     ylab="G1 / T")
+points(x$T, x$G1.S.clean/x$T, col=ifelse(x$order.ok, 1, 2))
+text(x$T, x$G1.G1S.clean/x$T, x$medium, pos=4, cex=.5, xpd=TRUE)
+sp <- function(y, i=TRUE) round(cor(x$T[i], y[i], method="spearman"), 2)
+c(all=sp(x$G1.G1S.clean/x$T), order.ok=sp(x$G1.G1S.clean/x$T, x$order.ok))
+```
+
+# References

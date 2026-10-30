@@ -4,6 +4,9 @@ A fast and scalable method to determine a `pseudophase` of cyclic transcription 
 
 ![https://vecteezy.com](vignettes/elephant.png)
 
+Plan for the division-cycle pseudophase in time (cell age by ergodic
+rate analysis, per-cell quality): [ROADMAP.md](ROADMAP.md).
+
 TODO:
 
 * clearer separate from prcomp, 

@@ -19,6 +19,7 @@ Imports:
 Suggests:
     deSolve,
     dpseg,
+    Matrix,
     testthat,
     WaveletComp
 Remotes:
