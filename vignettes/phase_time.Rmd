@@ -42,9 +42,14 @@ order of the cells along the cycle into time: a cell with a fraction
 cells are more frequent than old ones, so the linear calibration of the
 rank phase (`calibrate`) overestimates early ages.
 
-We use the 11 media of @Jackson2020, with five division-cycle
-cohorts (M/G1, G1, S, G2, M) and the growth rates of the owner's
-pipeline.
+We use the 11 media of @Jackson2020 and the growth rates of the
+owner's pipeline. The phase comes from all periodic Cyclebase genes in
+five peak-time bins (`cdc_bins_*`, 3080 genes); the landmarks are the
+peaks of the full division-cycle cohorts of @Spellman1998 (M/G1, G1, S,
+G2, M) along it. Removing the genes of the growth cohorts and of
+HOC/LOC from the Spellman cohorts (the pipeline's `cdc_*`) loses most
+cycling genes, halves the reproducibility of the phase and puts the
+cohorts in the wrong order in several media (`ROADMAP.md`).
 
 ```{r run, results='hide', message=FALSE, warning=FALSE}
 cdc <- c("cdc_M/G1", "cdc_G1", "cdc_S", "cdc_G2", "cdc_M")
@@ -65,10 +70,10 @@ r$durations
 The origin (division) is the moving-average peak of the M/G1 cohort.
 `G1S` is the point of maximal change of the cell angle between the G1
 and the S cohort peaks (`phase_landmarks`, from the inflection
-segmentation of `get_segments`); in YPD it falls on the G1 peak.
+segmentation of `get_segments`).
 
 ```{r ypd-states, fig.cap="Left: cohort states (moving average over 5% of the cells) along the ERA age; top axis: cohort peaks and G1S. Right: ERA age against the linear calibration of the rank phase, F*T (grey: identity).", fig.width=7}
-st <- J$jackson20_YPD$states[cdc,]
+st <- marks(J$jackson20_YPD)
 ord <- order(rp$age)
 ma <- t(apply(st[, ord], 1, function(x)
     stats::filter(x, rep(1, 500)/500, circular=TRUE)))

@@ -124,6 +124,9 @@ cell_quality <- function(phases, states, total, n, B=20, alpha=.05,
                          seed) {
 
     if ( !missing(seed) ) set.seed(seed)
+    if ( 1/(B+1) > alpha )
+        warning("B=", B, " noise cells cannot reach p <= alpha=", alpha,
+                ": all cells are flagged")
 
     obs <- project_cells(phases, states)
     sim <- noise_states(states[rownames(phases$x),], total, n, B=B)

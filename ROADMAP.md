@@ -98,33 +98,59 @@ part 4 are implemented; count-aware fitting is open.
    profiles, which would replace both the angle and the bootstrap.
 
 Example: `vignettes/phase_time.Rmd` (Jackson et al. 2020, YPD, and the
-11-media check).
+11-media check), compiled to `vignettes/phase_time.html`.
 
 ## First results (2026-10-30, `inst/scripts/jackson20_phasetime.R`)
 
-* G1 (M/G1 peak to G1S) as a share of T rises with the doubling time:
-  Spearman +0.78 over the 9 growing media, +0.90 without noise cells
-  (+0.83 for the 6 media in cycle order); to the S peak +0.75 / +0.77.
-  YPD: G1 0.17 h of T = 1.05 h.
+Phase from all periodic Cyclebase genes (`cdc_bins_*`), landmarks from
+the full Spellman cohorts (`sp_*`); see the next section for why.
+
+* Cohort peaks in cycle order in 10 of 11 media (not YPDDiauxic).
+* G1 (M/G1 peak to G1S) does not take a larger share of T in slower
+  media: G1/T 0.11-0.25 without noise cells, Spearman +0.19 with T over
+  the 9 growing media; YPD 0.13 of T = 1.05 h. G1 lengthens about in
+  proportion to T. (With the pipeline's YRO-filtered `cdc_*` cohorts
+  the share rose with T, Spearman +0.78, carried by the media in wrong
+  cohort order, whose G1 included M; +0.43 for the 6 in order.)
+* Noise cells (amplitude not above Poisson cells of the same totals,
+  B = 20): 3-21% in growing media, 42% in YPDDiauxic, 85% in CStarve.
+* Per-cell uncertainty from gene resampling (YPD): median 0.19 of the
+  cycle (0.20 h). Single cells are placed only roughly; durations come
+  from the population order.
 * Size proxy (YPD): mean log total is lowest from G1 to S; its spread
   is narrowest around the G2 peak, not at G1 exit.
-* **The cohort order is wrong in several media.** From the M/G1 peak,
-  Proline, Glutamine and MinimalEtOH give M, S, G1, G2 (M right after
-  M/G1, G1 after S), so their G1 includes M; YPDDiauxic and CStarve
-  are out of order too. YPEtOH, YPDRapa, YPD, Urea, MinimalGlucose and
-  AmmoniumSulfate are in cycle order. The principal curve (k = 3 or 4) repairs YPDDiauxic but
-  breaks YPDRapa and AmmoniumSulfate, so it is no fix. Next: test the
-  cohort order before reading durations (the validation TODO in
-  `R/phases.R`), and check whether M and M/G1 should be merged.
-* Noise cells (amplitude not above Poisson cells of the same totals):
-  13-33% in growing media, 58% in YPDDiauxic, 70% in CStarve.
-* Per-cell uncertainty from gene resampling (YPD): median 0.17 of the
-  cycle (0.19 h). Single cells are placed only roughly; durations come
-  from the population order.
 * The `daughter` cohort is high in ~90% of cells right after division
   and again in late M: it marks M/G1, not daughters, so mother and
   daughter G1 (`group_durations`) need another marker, or the daughter
   counts relative to age-matched cells.
+* The principal curve (k = 3 or 4) did not repair wrong cohort orders
+  with the filtered cohorts (it fixed YPDDiauxic, broke YPDRapa and
+  AmmoniumSulfate); the cause was the gene filter.
+
+## Which cohorts for the division-cycle phase (2026-10-30)
+
+The B8 filter removes from the Spellman cohorts every gene of the
+growth cohorts (`cgc_` Ribi, RP, AA, mRP, S/C) and of HOC/LOC: 3383
+genes, half the genome and 97% of the top 1000 Cyclebase genes. It
+leaves 376 of 790 Spellman genes (S: 25 of 71). Compared over the 11
+media (scratch analysis, cohort states recomputed from counts):
+
+| cohorts | genes | order wrong | split-half R | noise cells (YPD) |
+|---|---|---|---|---|
+| `cdc_` Spellman, filtered | 376 | 6 media | 0.17-0.41 | 30% |
+| `sp_` Spellman, full | 790 | 4 | 0.41-0.77 | 10% |
+| `cdc_bins_` Cyclebase p<.05, 5 bins | 3080 | 2 (YPDDiauxic, CStarve) | 0.33-0.77 | 21% |
+| Cyclebase top 300, 5 bins, filtered | 300 | 6 | 0.13-0.44 | 68% |
+| Cyclebase top 1500, 12 bins | 1500 | (neighbour swaps) | 0.31-0.84 | 12% |
+
+Split-half R: phases from two random halves of each cohort's genes,
+circular agreement (1 = identical). The filter halves the
+reproducibility and triples the noise cells, and it explains the wrong
+orders: the strongest cycling genes are also in the growth cohorts.
+Adopted (owner, 2026-10-30): the phase from all periodic Cyclebase
+genes, landmarks from the full Spellman cohorts' peaks along it. Open:
+more bins; where a growth cohort is to be read against the phase,
+leave only that cohort's genes out of the phase, not all of HOC/LOC.
 
 ## Not here
 

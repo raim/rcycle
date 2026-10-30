@@ -5,6 +5,11 @@
 ## Input: a light extract of the owner's pseudophase pipeline, list J
 ## with per medium counts, total, states, cohorts, cdc.srt and mu
 ## (growth rate, natural log per hour).
+## The phase is from all periodic Cyclebase genes (cdc_bins_*, five peak
+## time bins); the landmarks are the peaks of the full Spellman 1998
+## cohorts (sp_*) along it. The pipeline's cdc_* cohorts, Spellman
+## without growth-cohort and HOC/LOC genes, lose most cycling genes and
+## give the wrong cohort order in several media (ROADMAP.md).
 ## Usage: Rscript jackson20_phasetime.R [jackson20.rda]
 ## Output: the list R, saved to jackson20_phasetime.rda.
 
@@ -16,15 +21,25 @@ infile <- "~/work/teaching/pwm/scmw/jackson20.rda"
 if ( length(args) ) infile <- args[1]
 load(infile)
 
-## division-cycle cohorts in cycle order, and the G1/S point of
-## maximal change between the G1 and S peaks
+## cohorts for the phase; landmark cohorts in cycle order, named as
+## cdc_*, and the G1/S point of maximal change between the G1 and S peaks
+if ( !exists("phase.cohorts") ) phase.cohorts <- paste0("cdc_bins_", 1:5)
+if ( !exists("mark.cohorts") )
+    mark.cohorts <- paste0("sp_", c("M/G1", "G1", "S", "G2", "M"))
 cdc <- c("cdc_M/G1", "cdc_G1", "cdc_S", "cdc_G2", "cdc_M")
 between <- list(G1S=c("cdc_G1", "cdc_S"))
 
+## landmark cohort states, named as cdc
+marks <- function(x) {
+    mk <- x$states[mark.cohorts,]
+    rownames(mk) <- cdc
+    mk
+}
+
 ## pseudophase with origin at the M/G1 peak (division), S before G2
-cycle_phase <- function(st) {
+cycle_phase <- function(st, mk) {
     P <- get_pseudophase(st, revert.phase=TRUE, verb=0)
-    pk <- state_phase(st, P$rotation.phase$phi)
+    pk <- state_phase(mk, P$rotation.phase$phi)
     if ( phase_since(pk["cdc_G2"], pk["cdc_M/G1"]) <
          phase_since(pk["cdc_S"], pk["cdc_M/G1"]) )
         P <- revert(P, force=TRUE, verb=0)
@@ -34,16 +49,17 @@ phase_since <- function(phi, origin) (phi - origin) %% (2*pi)
 
 one_medium <- function(x, B=20, boot=0) {
 
-    st <- x$states[cdc,]
-    n <- lengths(x$cohorts[cdc])
+    st <- x$states[phase.cohorts,]
+    mk <- marks(x)
+    n <- lengths(x$cohorts[phase.cohorts])
     T <- ifelse(x$mu > 0, log(2)/x$mu, NA)
 
-    P <- cycle_phase(st)
+    P <- cycle_phase(st, mk)
     P <- get_segments(P, method='inflection', names='slope', spar=.001,
                       plot=FALSE)
     P <- phase_time(P, T=ifelse(is.na(T), 1, T), origin="cdc_M/G1",
-                    states=st)
-    lm <- phase_landmarks(P, st, between=between)
+                    states=mk)
+    lm <- phase_landmarks(P, mk, between=between)
     dur <- phase_durations(P, lm)
 
     ## are the cohort peaks in cycle order?
@@ -54,11 +70,11 @@ one_medium <- function(x, B=20, boot=0) {
 
     ## the same, without noise cells
     ok <- !P$rotation.phase$noise
-    Pc <- cycle_phase(st[, ok])
+    Pc <- cycle_phase(st[, ok], mk[, ok])
     Pc <- get_segments(Pc, method='inflection', names='slope', spar=.001,
                        plot=FALSE)
-    Pc <- phase_time(Pc, T=P$era$T, origin="cdc_M/G1", states=st[, ok])
-    durc <- phase_durations(Pc, phase_landmarks(Pc, st[, ok],
+    Pc <- phase_time(Pc, T=P$era$T, origin="cdc_M/G1", states=mk[, ok])
+    durc <- phase_durations(Pc, phase_landmarks(Pc, mk[, ok],
                                                  between=between))
 
     ## daughters by their daughter-specific gene counts
@@ -70,8 +86,8 @@ one_medium <- function(x, B=20, boot=0) {
 
     ## per-cell phase uncertainty by resampling genes
     if ( boot > 0 )
-        P <- phase_bootstrap(P, x$counts, x$cohorts[cdc], total=x$total,
-                             B=boot, seed=2)
+        P <- phase_bootstrap(P, x$counts, x$cohorts[phase.cohorts],
+                             total=x$total, B=boot, seed=2)
 
     list(T=T, mu=x$mu, n=ncol(st), P=P, landmarks=lm, durations=dur,
          order.ok=order.ok,
