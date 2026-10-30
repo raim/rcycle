@@ -232,6 +232,34 @@ Redesign around it rather than replacing it:
   below), which can use many cohorts or genes without the PCA plane,
   rather than through more bins in the angle.
 
+## Noise cells as markers (2026-10-30)
+
+`noise_marker.R` (session notes), YPD, YPDRapa, YPDDiauxic, CStarve,
+Nadal-Ribelles ctrl. A noise cell's own angle is mostly noise; what
+carries information is the excess of noise cells over Poisson cells of
+the same totals projected into the same PCA (`phases$noise`).
+
+* Per sample, the noise fraction marks non-cycling cells: CStarve 85%,
+  with angles matching the Poisson reference in every bin (0.11-0.14 of
+  8 bins); YPDDiauxic 42%; growing media 3-21%. It also depends on depth
+  (noise cells have about 20% fewer counts), so a non-cycling fraction
+  needs a depth correction, e.g. against growing cultures. For ERA,
+  non-cycling cells should not count in F, and the doubling time of the
+  cycling cells is then shorter than the population's.
+* Along the cycle, growing samples have more noise cells than the
+  reference in the G2/M to M/G1 stretch (YPD 0.23 and 0.18 vs 0.15 and
+  0.13 of cells; Nadal-Ribelles 0.20 and 0.20 vs 0.13 and 0.10) and
+  fewer in S. Real cells with weak cycle signal there: a marker of the
+  stretch five cohorts do not resolve, and a check for finer cohorts.
+* Not a separate growth state: matched by total counts, noise and
+  cycling cells differ by at most 3% in Ribi, RP, AA, HOC, LOC, except
+  S/C +8% in YPD (cells in the S/C state with a weaker cycle signal? for
+  the YRO paper). Only in CStarve do noise cells differ (Ribi -7%, AA
+  -12%).
+* Idea, not implemented: `noise_excess()`, observed vs reference noise
+  cells along the phase, and a depth-corrected non-cycling fraction per
+  sample.
+
 ## Benchmark against other tools (planned, 2026-10-30)
 
 Few cell cycle inference tools have been tested on yeast; most were
