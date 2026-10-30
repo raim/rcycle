@@ -181,6 +181,70 @@ genes, landmarks from the full Spellman cohorts' peaks along it. Open:
 more bins; where a growth cohort is to be read against the phase,
 leave only that cohort's genes out of the phase, not all of HOC/LOC.
 
+## Benchmark against other tools (planned, 2026-10-30)
+
+Few cell cycle inference tools have been tested on yeast; most were
+built and validated on mammalian cells. Candidates, on the same yeast
+data (Jackson 2020 media, Nadal-Ribelles 2025 ctrl, Gasch 2017):
+
+* discrete scores: Seurat `CellCycleScoring`, scran `cyclone` (classes
+  only; Seurat calls G1 when neither score is positive);
+* tricycle (Zheng et al. 2022): projection onto a reference PCA,
+  continuous angle; needs a yeast reference (orthologs of the mouse
+  reference, or one built from Cyclebase genes);
+* Revelio, reCAT, Cyclum: continuous orderings from markers, graphs or
+  autoencoders; peco needs FUCCI training data (none for yeast);
+* RNA velocity (DeepCycle, VeloCycle, which estimates cycle speed
+  directly): expected to fail in yeast, ~5% of genes have introns;
+  check the unspliced fraction first.
+
+Measures: cohort peak order, split-half reproducibility (phase from two
+halves of the genes), agreement with published classes (Nadal-Ribelles)
+and orderings (the Jackson ordering files read by the owner's
+pipeline), noise-cell fraction, and the ERA durations on top of each
+ordering (ERA is independent of the ordering method). External
+reference for durations: G1 or unbudded fractions by imaging or flow
+cytometry in the same media, from the literature.
+
+## Next (before returning to the growth law / YRO paper)
+
+Division point (the long M to M/G1 interval):
+
+1. Finer cohorts in M and early G1: Cyclebase bins at 60-100% of the
+   cycle, and known clusters in order, CLB2 (G2/M), Mcm1/ECB (late M,
+   early G1: CLN3, SWI4, CDC6, MCM genes), Ace2/Swi5 (cytokinesis and
+   daughter G1: SIC1, ASH1, CTS1, DSE1-4, EGT2), SBF/MBF (late G1:
+   CLN1/2, histones in S).
+2. Size as a division clock: total mRNA should halve at division (mother
+   and daughter share it). The steepest drop of mean log total along
+   the phase (we see its maximum before and its minimum after the M/G1
+   peak) marks division independently of the cohorts; capture
+   efficiency adds noise, so check against the daughter cohort onset.
+3. Signal amplitude: the unscaled amplitude and the noise fraction along
+   phase; a dip where cohorts change over may mark the transition.
+4. Count-aware phase: fit each cell's counts as Poisson along smooth
+   cohort (or gene) profiles of phase, maximum likelihood with an
+   uncertainty per cell; more cohorts resolve short phases without the
+   PCA plane.
+
+Tools for the paper:
+
+5. A package function for the whole chain (states, phase from Cyclebase
+   genes, landmarks from Spellman cohorts, orientation, ERA age, noise
+   flags), replacing `inst/scripts/phasetime_utils.R`.
+6. Confidence intervals for durations by resampling cells (and media
+   replicates where present); needed before reading trends over 9 media.
+7. Leave-cohort-out phases: a growth cohort (Ribi, RP, S/C) read
+   against a phase that does not contain its genes, rather than
+   removing all HOC/LOC genes.
+8. Growth cohorts along ERA age, not rank phase: time shares of YRO
+   states within the division cycle (the time-share balance of the
+   paper) need time weights, which the ERA age gives; noise cells
+   excluded or down-weighted.
+9. Regenerate the pipeline's division pseudophase
+   (genomeBrowser `clusterTranscriptomes_pseudophase.R`, B8 fix) with
+   the new cohorts, and run Gasch 2017.
+
 ## Not here
 
 The Heineike data sets in the pseudophase cache are unpublished and
