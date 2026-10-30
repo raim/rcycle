@@ -178,7 +178,7 @@ through the cells' loadings in the first $k$ PCs (each scaled by
 $\sigma_k$), starting at $\lambda = \theta$, and alternates least
 squares fits of the coefficients with projecting each cell to the
 nearest point of the curve, with $\lambda$ the arc length scaled to
-$2\pi$ (Hastie and Stuetzle 1989).
+$2\pi$ [@Hastie1989].
 
 ## Daughter calls
 
@@ -293,7 +293,7 @@ tab[, c("medium", "T", "cells", "noise", "order.ok", "G1.S", "G1.G1S",
 are not, the landmarks mix phases (e.g. M after M/G1), and the G1
 durations are not G1.
 
-```{r media-plot, fig.cap="G1 share of the doubling time, origin at the M/G1 peak, to the point of maximal change (G1S, filled) or the S peak (open), without noise cells; red: cohort order wrong. Spearman correlations for the 9 growing media and for those in correct order."}
+```{r media-plot, fig.cap="G1 share of the doubling time, origin at the M/G1 peak, to the point of maximal change (G1S, filled, with 95% intervals from resampling cells, `duration_ci`) or the S peak (open), without noise cells; red: cohort order wrong. Spearman correlations for the 9 growing media and for those in correct order."}
 g <- !is.na(tab$T) & tab$mu > .1
 x <- tab[g,]
 par(mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
@@ -301,6 +301,8 @@ plot(x$T, x$G1.G1S.clean/x$T, pch=19, col=ifelse(x$order.ok, 1, 2),
      ylim=c(0, .6), xlim=c(1, 2.3), xlab="doubling time, h",
      ylab="G1 / T")
 points(x$T, x$G1.S.clean/x$T, col=ifelse(x$order.ok, 1, 2))
+arrows(x$T, x$G1.lo/x$T, x$T, x$G1.hi/x$T, angle=90, code=3,
+       length=.02, col=ifelse(x$order.ok, 1, 2))
 text(x$T, x$G1.G1S.clean/x$T, x$medium, pos=4, cex=.5, xpd=TRUE)
 sp <- function(y, i=TRUE) round(cor(x$T[i], y[i], method="spearman"), 2)
 c(all=sp(x$G1.G1S.clean/x$T), order.ok=sp(x$G1.G1S.clean/x$T, x$order.ok))
@@ -325,20 +327,84 @@ round(sapply(v, function(i) c(
     min=min(x[[i]]/x$T), max=max(x[[i]]/x$T))), 2)
 ```
 
-```{r phases-plot, fig.cap="Left: S (G1S to SG2, filled) and the S peak width (open) in hours; right: as share of the doubling time. Red: cohort order wrong.", fig.width=7}
+```{r phases-plot, fig.cap="Left: S (G1S to SG2, filled, with 95% intervals from resampling cells) and the S peak width (open) in hours; right: as share of the doubling time. Red: cohort order wrong.", fig.width=7}
 col <- ifelse(x$order.ok, 1, 2)
 par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
-plot(x$T, x$S.clean, pch=19, col=col, ylim=c(0, .5),
+plot(x$T, x$S.clean, pch=19, col=col, ylim=c(0, .6),
      xlab="doubling time, h", ylab="S, h")
+arrows(x$T, x$S.lo, x$T, x$S.hi, angle=90, code=3, length=.02, col=col)
 points(x$T, x$wS.clean, col=col)
-plot(x$T, x$S.clean/x$T, pch=19, col=col, ylim=c(0, .3),
+plot(x$T, x$S.clean/x$T, pch=19, col=col, ylim=c(0, .4),
      xlab="doubling time, h", ylab="S / T")
+arrows(x$T, x$S.lo/x$T, x$T, x$S.hi/x$T, angle=90, code=3, length=.02,
+       col=col)
 points(x$T, x$wS.clean/x$T, col=col)
 ```
 
 S takes about the same time in all media, so its share of the cycle,
 and the width of the histone peak relative to T, fall in slower media;
 G1 and the S-to-G2 peak interval scale with T.
+
+# Growth cohorts along age
+
+To read a growth cohort against the division cycle, its genes are left
+out of the phase (`division_phase(..., exclude=)`), so that the phase
+cannot follow the cohort itself. Along the ERA age, the cells of a
+snapshot are not evenly spread: young cells are twice as frequent as
+the oldest. The average over a cell's cycle weights each cell by
+`2^(age/T)` (`time_weights`, `time_mean`); the snapshot mean over
+cells over-weights early G1.
+
+```{r growth, results='hide', message=FALSE}
+x <- J$jackson20_YPD
+gc <- c("cgc_Ribi", "cgc_RP", "cgc_AA", "cgc_mRP", "cgc_S/C")
+coh <- x$cohorts[phase.cohorts]
+mks <- setNames(x$cohorts[mark.cohorts], cdc)
+G <- lapply(setNames(gc, gc), function(k) {
+    Pk <- division_phase(x$counts, x$total, coh, mks, T=R$YPD$T,
+                         between=between, exclude=x$cohorts[[k]],
+                         noise.rm=TRUE, seed=1)
+    y <- cohort_states(x$counts[, Pk$cells], x$total[Pk$cells],
+                       x$cohorts[k])[1,]
+    list(P=Pk, y=y/mean(y))
+})
+```
+
+```{r growth-tab}
+round(t(sapply(G, function(g) {
+    a <- g$P$rotation.phase$age
+    g1 <- a < g$P$durations$age[g$P$durations$landmark=="G1S"]
+    hi <- g$y > median(g$y)
+    c(order.ok=g$P$order.ok, G1=max(a[g1]),
+      high.snapshot=mean(hi), high.time=time_mean(hi, a, R$YPD$T),
+      G1.snapshot=mean(g$y[g1]),
+      G1.time=time_mean(g$y[g1], a[g1], R$YPD$T))
+})), 3)
+```
+
+`high`: share of cells (snapshot) or of the cycle (time) with the
+cohort above its median; `G1`: the G1 duration (h) of the phase
+without the cohort's genes, and the cohort's mean in G1 (relative to
+all cells), over G1 cells or over the time of G1.
+
+```{r growth-plot, fig.cap="Growth cohorts along age in YPD, each against a phase without its genes: moving average over 5% of the cells, relative to the cohort mean; vertical lines: landmarks of the Ribi phase.", fig.width=7}
+par(mai=c(.5,.5,.3,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(1, type='n', xlim=c(0, R$YPD$T), ylim=c(.6, 1.4), xlab="age, h",
+     ylab="state / mean")
+d <- G$cgc_Ribi$P$durations
+abline(v=d$age, col="grey", lwd=.5)
+axis(3, at=d$age, labels=sub("cdc_", "", d$landmark), las=2,
+     cex.axis=.7)
+for ( i in seq_along(G) ) {
+    a <- G[[i]]$P$rotation.phase$age
+    o <- order(a)
+    n <- round(.05*length(a))
+    lines(a[o], stats::filter(G[[i]]$y[o], rep(1, n)/n, circular=TRUE),
+          col=i, lwd=1.5)
+}
+legend("topright", sub("cgc_", "", names(G)), col=seq_along(G),
+       lty=1, lwd=1.5, cex=.7, bty='n')
+```
 
 # Nadal-Ribelles et al. 2025
 

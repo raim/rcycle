@@ -36,67 +36,59 @@ marks <- function(x) {
     mk
 }
 
-## pseudophase with origin at the M/G1 peak (division), S before G2
-cycle_phase <- function(st, mk) {
-    P <- get_pseudophase(st, revert.phase=TRUE, verb=0)
-    pk <- state_phase(mk, P$rotation.phase$phi)
-    if ( phase_since(pk["cdc_G2"], pk["cdc_M/G1"]) <
-         phase_since(pk["cdc_S"], pk["cdc_M/G1"]) )
-        P <- revert(P, force=TRUE, verb=0)
-    P
-}
 phase_since <- function(phi, origin) (phi - origin) %% (2*pi)
 
-one_medium <- function(x, B=20, boot=0) {
+## interval between two landmarks and its quantiles over the resamples
+## of duration_ci
+ci_between <- function(ci, a, b, probs=c(.025, .975)) {
+    if ( is.null(ci) ) return(rep(NA, 3))
+    ag <- attr(ci, "ages")
+    est <- ci$age[ci$landmark==b] - ci$age[ci$landmark==a]
+    unname(c(est, stats::quantile(ag[b,] - ag[a,], probs, na.rm=TRUE)))
+}
 
-    st <- x$states[phase.cohorts,]
-    mk <- marks(x)
-    n <- lengths(x$cohorts[phase.cohorts])
+ci_at <- function(ci, l, col)
+    if ( is.null(ci) ) NA else ci[[col]][ci$landmark==l]
+
+## one data set: phase, ERA age, landmarks and durations with all cells
+## and without noise cells (division_phase), CIs of the latter by
+## resampling cells, peak widths, daughter calls, and optionally the
+## per-cell phase uncertainty by resampling genes
+one_medium <- function(x, B=20, boot=0, ci=100) {
+
     T <- ifelse(isTRUE(x$mu > 0), log(2)/x$mu, NA)
+    Tu <- ifelse(is.na(T), 1, T)
+    coh <- x$cohorts[phase.cohorts]
+    mks <- setNames(x$cohorts[mark.cohorts], cdc)
 
-    P <- cycle_phase(st, mk)
-    P <- get_segments(P, method='inflection', names='slope', spar=.001,
-                      plot=FALSE)
-    P <- phase_time(P, T=ifelse(is.na(T), 1, T), origin="cdc_M/G1",
-                    states=mk)
-    lm <- phase_landmarks(P, mk, between=between)
-    dur <- phase_durations(P, lm)
-
-    ## are the cohort peaks in cycle order?
-    order.ok <- identical(dur$landmark[dur$landmark %in% cdc], cdc)
-
-    ## quality against Poisson noise of the same totals
-    P <- cell_quality(P, st, x$total, n, B=B, seed=1)
-
-    ## the same, without noise cells
-    ok <- !P$rotation.phase$noise
-    Pc <- cycle_phase(st[, ok], mk[, ok])
-    Pc <- get_segments(Pc, method='inflection', names='slope', spar=.001,
-                       plot=FALSE)
-    Pc <- phase_time(Pc, T=P$era$T, origin="cdc_M/G1", states=mk[, ok])
-    durc <- phase_durations(Pc, phase_landmarks(Pc, mk[, ok],
-                                                 between=between))
+    P <- division_phase(x$counts, x$total, coh, mks, T=Tu,
+                        between=between, B=B, seed=1)
+    Pc <- division_phase(x$counts, x$total, coh, mks, T=Tu,
+                         between=between, B=B, noise.rm=TRUE, seed=1)
+    cic <- NULL
+    if ( ci > 0 ) cic <- duration_ci(Pc, B=ci, seed=3)
     width <- sapply(cdc, function(k)
-        peak_width(Pc$rotation.phase$age, mk[k, ok]))
+        peak_width(Pc$rotation.phase$age, Pc$marks[k,]))
 
     ## daughters by their daughter-specific gene counts
-    dcnt <- round(x$states["daughter",]*length(x$cohorts$daughter)*x$total)
+    dg <- intersect(x$cohorts$daughter, rownames(x$counts))
+    dcnt <- Matrix::colSums(x$counts[dg, , drop=FALSE])
     sp <- split_counts(dcnt, x$total)
     grp <- ifelse(sp$high, "daughter", "mother")
     gd <- lapply(c(S="cdc_S", G1S="G1S"), function(l)
-        group_durations(P, group=grp, to=lm[l]))
+        group_durations(P, group=grp, to=P$landmarks[l]))
 
     ## per-cell phase uncertainty by resampling genes
     if ( boot > 0 )
-        P <- phase_bootstrap(P, x$counts, x$cohorts[phase.cohorts],
-                             total=x$total, B=boot, seed=2)
+        P <- phase_bootstrap(P, x$counts, coh, total=x$total, B=boot,
+                             seed=2)
 
-    list(T=T, mu=x$mu, n=ncol(st), P=P, landmarks=lm, durations=dur,
-         order.ok=order.ok,
-         durations.clean=durc, width.clean=width, daughter=sp, groups=gd,
+    list(T=T, mu=x$mu, n=ncol(x$counts), P=P, Pc=Pc,
+         landmarks=P$landmarks, durations=P$durations,
+         order.ok=P$order.ok, durations.clean=Pc$durations,
+         ci.clean=cic, width.clean=width, daughter=sp, groups=gd,
          noise=mean(P$rotation.phase$noise))
 }
-
 
 ## summary table: one row per data set; durations in hours, or in units
 ## of the cycle where the growth rate is unknown
@@ -110,9 +102,13 @@ phase_table <- function(R) do.call(rbind, lapply(names(R), function(m) {
                G1.G1S=age_at(r$durations, "G1S"),
                G1.S.clean=age_at(r$durations.clean, "cdc_S"),
                G1.G1S.clean=age_at(r$durations.clean, "G1S"),
+               G1.lo=ci_at(r$ci.clean, "G1S", "age.lo"),
+               G1.hi=ci_at(r$ci.clean, "G1S", "age.hi"),
                ## phases between points of maximal change, and from
                ## peak to peak, without noise cells
                S.clean=dt(r$durations.clean, "G1S", "SG2"),
+               S.lo=ci_between(r$ci.clean, "G1S", "SG2")[2],
+               S.hi=ci_between(r$ci.clean, "G1S", "SG2")[3],
                G2.clean=dt(r$durations.clean, "SG2", "G2M"),
                SG2pk.clean=dt(r$durations.clean, "cdc_S", "cdc_G2"),
                G2Mpk.clean=dt(r$durations.clean, "cdc_G2", "cdc_M"),

@@ -212,3 +212,67 @@ test_that("the phase-time plots draw without warnings", {
     rv <- revert(Q, force=TRUE, verb=0)$rotation.phase$theta
     expect_gt(mean(cos(atan2(xy$y, xy$x) - rv)), .99)
 })
+
+## counts of cells at ages a: genes in cohorts with cosine profiles
+sim_counts <- function(a, T=1, pk=(0:4)/5, ng=20, tot, p=2e-3) {
+    genes <- paste0("g", seq_len(length(pk)*ng))
+    gp <- rep(pk, each=ng)
+    lam <- sapply(seq_along(a), function(j)
+        p*(1 + .8*cos(2*pi*(a[j]/T - gp)))*tot[j])
+    cnt <- matrix(rpois(length(lam), lam), nrow=length(genes),
+                  dimnames=list(genes, paste0("x", seq_along(a))))
+    list(counts=cnt, cohorts=split(genes, rep(paste0("c", seq_along(pk)),
+                                              each=ng)))
+}
+
+test_that("cohort_states is the mean fraction per gene", {
+    set.seed(9)
+    s <- sim_counts(sim_ages(50), tot=rep(5000, 50))
+    tot <- colSums(s$counts) + 100
+    st <- cohort_states(s$counts, tot, s$cohorts)
+    g <- s$cohorts$c2
+    expect_equal(unname(st["c2",]),
+                 unname(colMeans(t(t(s$counts[g,])/tot))))
+})
+
+test_that("division_phase recovers ages, durations and their CIs", {
+    set.seed(10)
+    T <- 2
+    a <- sim_ages(2000, T=T)
+    s <- sim_counts(a, T=T, tot=round(exp(rnorm(2000, log(3000), .3))))
+    ## the same genes for phase and landmarks, landmark names differ
+    mk <- setNames(s$cohorts, paste0("m", 1:5))
+    P <- division_phase(s$counts, cohorts=s$cohorts, marks=mk, T=T,
+                        B=20, seed=11)
+    expect_true(P$order.ok)
+    expect_equal(names(P$between), c("m2m3", "m3m4", "m4m5"))
+    expect_lt(median(age_err(P$rotation.phase$age, a, T)), .03*T)
+    ## peaks from 20 genes per cohort scatter by a few % of T
+    pk <- P$durations[P$durations$landmark %in% names(mk),]
+    expect_lt(max(age_err(pk$age, T*(0:4)/5, T)), .07*T)
+    expect_equal(length(P$cells), 2000)
+
+    ci <- duration_ci(P, B=30, seed=12)
+    expect_equal(ci$landmark, P$durations$landmark)
+    expect_true(all(ci$age.lo <= ci$age + 1e-9 & ci$age <= ci$age.hi + 1e-9))
+    i <- match(names(mk)[-1], ci$landmark)
+    expect_true(all(ci$age.lo[i] - .02*T <= T*(1:4)/5 &
+                    T*(1:4)/5 <= ci$age.hi[i] + .02*T))
+
+    ## leave genes out, and remove noise cells
+    Q <- division_phase(s$counts, cohorts=s$cohorts, marks=mk, T=T,
+                        exclude=s$cohorts$c1[1:10], noise.rm=TRUE, seed=13)
+    expect_true(Q$order.ok)
+    expect_lte(length(Q$cells), 2000)
+    expect_true("noise" %in% colnames(Q$rotation.phase))
+})
+
+test_that("time_mean turns snapshot shares into shares of the cycle", {
+    set.seed(14)
+    T <- 1.5
+    a <- sim_ages(1e5, T=T)
+    young <- a < .3*T
+    expect_equal(mean(young), era_fraction(.3), tolerance=.01)
+    expect_equal(time_mean(young, a, T), .3, tolerance=.01)
+    expect_equal(sum(time_weights(a, T)), 1)
+})

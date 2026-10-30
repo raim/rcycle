@@ -251,6 +251,26 @@ ctrl; script `division.R` in the session notes, not in the package):
 
 Tools for the paper:
 
+Steps 5-8 implemented (2026-10-30, `R/division.R`): `division_phase`
+(5, with `exclude` for 7 and `noise.rm`), `cohort_states`,
+`duration_ci` (6), `time_weights`/`time_mean` (8); the scripts use
+them. First results (vignette):
+
+* 95% intervals from resampling cells: S is tight in the large sets
+  (YPD about +-0.01 h) and still a falling share of T; G1 intervals
+  are wide in the small sets (MinimalGlucose about 0.03-0.20 of T,
+  Proline down to 0.05 of T), so a G1 trend over the 9 media cannot be
+  read from these data.
+* Growth cohorts in YPD, each against a phase without its genes (G1
+  0.11-0.15 h, as with all genes): S/C peaks right after division
+  (+14%) and is lowest at G1/S and in S (-12%); Ribi is low from late
+  G1 through S (-9%) and rises through G2/M; RP, AA and mRP vary by
+  less than 5%.
+* Snapshot vs time averages differ little for these cohorts (share of
+  cells above the median 0.50, of the cycle 0.50-0.52): the cohorts
+  vary little along age, so the ERA weights matter for durations more
+  than for cohort averages.
+
 5. A package function for the whole chain (states, phase from Cyclebase
    genes, landmarks from Spellman cohorts, orientation, ERA age, noise
    flags), replacing `inst/scripts/phasetime_utils.R`.
