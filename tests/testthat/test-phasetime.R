@@ -195,3 +195,20 @@ test_that("principal_phase follows a curved closed path", {
     rv <- revert(pc, force=TRUE, verb=0)
     expect_equal(rv$rotation.phase$lambda, -lam)
 })
+
+test_that("the phase-time plots draw without warnings", {
+    n <- setNames(rep(50, 5), rownames(st))
+    Q <- phase_time(P, T=T, origin="c1", states=st)
+    Q <- cell_quality(Q, st, tot, n, B=20, seed=8)
+    dur <- phase_durations(Q, phase_landmarks(Q, st))
+    pdf(NULL); on.exit(dev.off())
+    expect_no_warning(plotPhasePlane(Q))
+    expect_no_warning(plotPhasePlane(Q, raw=TRUE, example=NA))
+    expect_no_warning(plotPhaseOrder(Q))
+    expect_no_warning(plotEra(Q))
+    expect_no_warning(plotAgeStates(Q, st, dur))
+    ## mirrored PC2 after revert: cells keep their angle in the plot
+    xy <- plotPhasePlane(revert(Q, force=TRUE, verb=0))
+    rv <- revert(Q, force=TRUE, verb=0)$rotation.phase$theta
+    expect_gt(mean(cos(atan2(xy$y, xy$x) - rv)), .99)
+})

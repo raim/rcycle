@@ -57,6 +57,138 @@ outfile <- tempfile(fileext=".rda")
 source(script)
 ```
 
+
+# From cohort states to age, step by step
+
+```{r steps, fig.cap="From cohort states to age, YPD. A: cells (PCA loadings, each cell scaled to unit variance) in the PC1/PC2 plane, colored by ERA age; arrows: directions of the five Cyclebase cohorts; grey circles: noise cells; red: the angle theta of one cell. B: the same cells at their unscaled amplitude in the plane: noise cells fall to the center. C: the angle against the rank phase, the order of the cells along the cycle; steep where cells pass quickly, flat where they accumulate. D: the ERA transform of the fraction of cells since division into age (red), against the linear calibration (grey), and the density of ages. E: the full Spellman cohorts along age, with peaks and points of maximal change on the top axis; shaded: G1, S, G2/M.", fig.width=7, fig.height=9.5}
+P <- R$YPD$P
+labs <- paste("bin", 1:5)
+layout(matrix(c(1, 2, 3, 4, 5, 5), ncol=2, byrow=TRUE))
+par(mai=c(.5,.5,.35,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plotPhasePlane(P, labels=labs)
+mtext("A", 3, .5, adj=0, font=2)
+plotPhasePlane(P, raw=TRUE, labels=labs, example=NA)
+mtext("B", 3, .5, adj=0, font=2)
+plotPhaseOrder(P)
+mtext("C", 3, 1.3, adj=0, font=2)
+plotEra(P)
+mtext("D", 3, .5, adj=0, font=2)
+plotAgeStates(P, marks(J$jackson20_YPD), R$YPD$durations,
+              shade=c("cdc_M/G1", "G1S", "SG2"), xlab="age, h")
+mtext("E", 3, 1.3, adj=0, font=2)
+```
+
+# Methods
+
+## Cohort states and the pseudophase
+
+For cell $j$ with total count $N_j$ and gene counts $c_{gj}$, the state
+of cohort $k$ with $n_k$ genes is the mean fraction per gene,
+$s_{kj} = \frac{1}{n_k}\sum_{g\in k} c_{gj}/N_j$ (`get_states`). The
+cohort x cell matrix is centered per cohort (row means over cells),
+then each cell (column) is centered and scaled to unit variance, and
+decomposed by PCA, $Z = X V^\top$ (`get_pseudophase`, with
+`stats::prcomp`): the cohorts are the samples, with scores $X$, the
+cells the variables, with loadings $V$. A cell's phase angle is the
+angle of its loadings in the plane of the first two PCs,
+$\theta_j = \operatorname{atan2}(V_{j2}, V_{j1})$, and its rank phase
+spreads the cells evenly over the circle,
+$\phi_j = 2\pi\,\operatorname{rank}(\theta_j)/n - \pi$. The direction is
+set by the order of the cohorts.
+
+## Ergodic rate analysis: from order to age
+
+In an asynchronous population growing exponentially at rate
+$\alpha = \ln 2/T$, the distribution of cells along the cycle path
+$\ell$ does not change; let $f(\ell)$ be the density of cells and
+$F(\ell)=\int_0^\ell f$ the fraction between division ($\ell=0$) and
+$\ell$. With $N$ cells, divisions occur at rate $\alpha N$ (each adds one
+cell), so $2\alpha N$ newborn cells enter at $\ell = 0$ per time. The flux
+of cells through $\ell$, $J(\ell) = v(\ell) N f(\ell)$ with speed $v$, is
+the inflow minus what accumulates before $\ell$,
+$J(\ell) = 2\alpha N - \frac{d}{dt}(N F) = \alpha N (2 - F)$, so
+[@Kafri2013, Box 2]
+$$
+v(\ell) = \alpha\,\frac{2 - F(\ell)}{f(\ell)}\,, \qquad
+a(\ell) = \int_0^\ell \frac{d\ell'}{v(\ell')}
+        = \frac{1}{\alpha}\int_0^{F} \frac{dF'}{2-F'}
+        = T\left(1 - \log_2\left(2-F\right)\right)\,.
+$$
+Only the order of the cells enters, through $F$: the age of a cell
+(`era_age`, `phase_time`) follows from its rank, $F_j = (\mathrm{rank}_j
+- 1/2)/n$, counted from the origin in the direction of the phase. The
+ages have the density $p(a) = 2\alpha\,e^{-\alpha a}$ on $[0, T]$:
+young cells are twice as frequent as the oldest, which the linear
+calibration $a = F\,T$ ignores. The duration between two landmarks is
+the difference of their ages (`phase_durations`).
+
+A group of cells that receives a share $s$ of the newborn cells
+($s=1/2$ for mothers or daughters) and holds a fraction $f$ of all
+cells in a phase that starts at division and lasts $\tau$ obeys
+$f = 2s\,(1 - e^{-\alpha\tau})$, so (`era_duration`, `group_durations`)
+$$
+\tau = -T \log_2\left(1 - \frac{f}{2s}\right)\,,
+$$
+which is $a(F)$ for $s = 1$.
+
+## Landmarks
+
+A cohort peak is the maximum of the moving average of the cohort state
+over 5% of the cells, sorted by phase (`state_phase`). A point of
+maximal change between two peaks is where the cell angle changes
+fastest per cell: the maximum, on the arc between the peaks, of
+$\frac{d}{d\phi}(\theta - \phi)$ from a penalized spline of
+$\theta - \phi$ against $\phi$ (`get_segments`, `phase_landmarks`).
+The width of a peak is the age span over which the scaled moving
+average is at least one half.
+
+## Per-cell quality
+
+New cells, with states $s_{\cdot j}$, are projected into an existing
+PCA with its preprocessing: subtract the original cohort means, center
+and scale the column, $z_j$, and, since the score vectors $x_k$ are
+orthogonal with $\lVert x_k \rVert^2 = (m-1)\sigma_k^2$ ($m$ cohorts,
+$\sigma_k$ the PC standard deviations), the loadings are
+$r_{jk} = x_k^\top z_j / ((m-1)\sigma_k^2)$ (`project_cells`; exact for
+the original cells). The share of the cell's variance in the PC1/PC2
+plane is $r^2_j = \sum_{k\le 2}\sigma_k^2 r_{jk}^2 / \sum_k \sigma_k^2
+r_{jk}^2$, and its unscaled amplitude in that plane is
+$A_j = \mathrm{sd}_j\sqrt{r^2_j}$, with $\mathrm{sd}_j$ the cell's
+standard deviation across cohorts before scaling.
+
+The noise reference (`noise_states`) draws, for each cell, cohort
+counts without a cycle, $S_{kj} \sim \mathrm{Poisson}(N_j p_k)$, with
+the population fraction of each cohort's reads
+$p_k = \sum_j n_k s_{kj} N_j / \sum_j N_j$, and converts them to states
+$S_{kj}/(n_k N_j)$. With $B$ such noise cells per cell, projected into
+the same PCA, the p-value is $(1 + \#\{b: A_b \ge A_j\})/(B+1)$; cells
+with $p > 0.05$ are flagged as noise (`cell_quality`; $B \ge 20$).
+
+The phase uncertainty of a cell (`phase_bootstrap`) comes from
+resampling the genes of each cohort with replacement, recomputing the
+states and projecting: the spread of the cell's rank fraction $F$ over
+resamples, $\sigma_F$, gives the spread of its age by the derivative of
+the ERA transform, $\sigma_a = \sigma_F\,T/((2-F)\ln 2)$.
+
+## Closed principal curve
+
+`principal_phase` fits a closed curve
+$\gamma(\lambda) = c_0 + \sum_{m=1}^{K} (a_m \cos m\lambda + b_m \sin m\lambda)$
+through the cells' loadings in the first $k$ PCs (each scaled by
+$\sigma_k$), starting at $\lambda = \theta$, and alternates least
+squares fits of the coefficients with projecting each cell to the
+nearest point of the curve, with $\lambda$ the arc length scaled to
+$2\pi$ (Hastie and Stuetzle 1989).
+
+## Daughter calls
+
+`split_counts` fits the counts $x_j$ of a cohort as a mixture of two
+Poisson distributions with rates proportional to the total,
+$x_j \sim \pi_1\,\mathrm{Pois}(r_1 N_j) + \pi_2\,\mathrm{Pois}(r_2 N_j)$,
+by expectation maximization; cells with posterior $>1/2$ for the higher
+rate are called.
+
+
 # One medium: YPD
 
 ```{r ypd}
@@ -207,5 +339,50 @@ points(x$T, x$wS.clean/x$T, col=col)
 S takes about the same time in all media, so its share of the cycle,
 and the width of the histone peak relative to T, fall in slower media;
 G1 and the S-to-G2 peak interval scale with T.
+
+# Nadal-Ribelles et al. 2025
+
+Two deep sets of 10,000 cells: exponential growth in YPD (`ctrl`), and
+15 min after 0.4 M NaCl (`nacl`), not a steady state, so ERA does not
+strictly apply. The growth rate is not known, so ages are in units of
+the cycle. The cohort states are computed from the counts with the
+same gene lists.
+
+```{r nadal, results='hide', message=FALSE, warning=FALSE}
+nscript <- sub("jackson20", "nadal25", script)
+nad <- new.env()
+assign("outfile", tempfile(fileext=".rda"), envir=nad)
+source(nscript, local=nad)
+```
+
+```{r nadal-tab}
+nad$tab[, c("medium", "cells", "noise", "order.ok", "G1.G1S.clean",
+            "S.clean", "SG2pk.clean", "wS.clean")]
+nad$R$`ctrl-high`$durations[, c("landmark", "age", "duration")]
+```
+
+In the control, G1 takes 0.12 and S 0.21 of the cycle, close to YPD in
+@Jackson2020 (0.13 and 0.18 of T). After NaCl, G1 takes a larger share.
+
+The published classes (G1, S, G2M) along age: their S class agrees with
+the S peak; their G1 class covers both the first part of the cycle
+and much of its second half, where G2M cells should be. G1 may there be
+the class of cells without a clear S or G2M signal.
+
+```{r nadal-classes, fig.cap="Fraction of the published classes along age, Nadal-Ribelles 2025, control and NaCl; vertical lines: landmarks.", fig.width=7}
+par(mfcol=c(1,2), mai=c(.5,.5,.3,.1), mgp=c(1.3,.3,0), tcl=-.25)
+for ( id in names(nad$R) ) {
+    rp <- nad$R[[id]]$P$rotation.phase
+    cl <- nad$cls[[id]]
+    pr <- sapply(c("G1", "S", "G2M"), function(k)
+        age_profile(rp$age, as.numeric(cl==k), breaks=20)$mean)
+    a <- age_profile(rp$age, rp$age, breaks=20)$mid
+    matplot(a, pr, type='l', lty=1, col=1:3, ylim=c(0, 1),
+            xlab="age / cycle", ylab="fraction of cells", main=id)
+    abline(v=nad$R[[id]]$durations$age, col="grey", lwd=.5)
+    legend("top", c("G1", "S", "G2M"), col=1:3, lty=1, cex=.7, bty='n',
+           horiz=TRUE)
+}
+```
 
 # References

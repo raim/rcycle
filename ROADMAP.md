@@ -98,7 +98,14 @@ part 4 are implemented; count-aware fitting is open.
    profiles, which would replace both the angle and the bootstrap.
 
 Example: `vignettes/phase_time.Rmd` (Jackson et al. 2020, YPD, and the
-11-media check), compiled to `vignettes/phase_time.html`.
+11-media check; Nadal-Ribelles et al. 2025), compiled to
+`vignettes/phase_time.html`. Its Methods section gives the math of all
+steps (states, PCA, ERA derivation, group durations, landmarks,
+projection, noise reference, bootstrap, principal curve, daughter
+calls). Step-by-step figures: `plotPhasePlane`, `plotPhaseOrder`,
+`plotEra`, `plotAgeStates` (`R/plotphasetime.R`). Scripts:
+`inst/scripts/phasetime_utils.R` (shared), `jackson20_phasetime.R`,
+`nadal25_phasetime.R`.
 
 ## First results (2026-10-30, `inst/scripts/jackson20_phasetime.R`)
 
@@ -134,6 +141,17 @@ the full Spellman cohorts (`sp_*`); see the next section for why.
   and again in late M: it marks M/G1, not daughters, so mother and
   daughter G1 (`group_durations`) need another marker, or the daughter
   counts relative to age-matched cells.
+* Nadal-Ribelles et al. 2025 (`nadal25_phasetime.R`, growth rate
+  unknown, ages in units of the cycle): control (YPD) cohorts in order,
+  G1 0.12, S 0.21 of the cycle, as in Jackson YPD; 36% noise cells.
+  After 15 min of 0.4 M NaCl (not a steady state) G1 takes 0.33. Their
+  published S class agrees with our S peak (76-93% of cells at ages
+  0.15-0.35); their G1 class also covers much of the second half of
+  the cycle, perhaps cells without a clear S or G2M signal.
+* The last interval, from the G2/M point to the next M/G1 peak, is long
+  (0.3-0.65 of T in Jackson, 0.54 in Nadal-Ribelles control): M and
+  early G1 are poorly resolved by five cohorts, or the M/G1 peak lies
+  after division. Open: finer bins there, and an origin check.
 * The principal curve (k = 3 or 4) did not repair wrong cohort orders
   with the filtered cohorts (it fixed YPDDiauxic, broke YPDRapa and
   AmmoniumSulfate); the cause was the gene filter.
