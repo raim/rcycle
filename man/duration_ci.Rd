@@ -20,7 +20,9 @@ a data frame, one row per landmark in the order of
 \code{phases$durations}: the estimated \code{age} and
 \code{duration} until the next landmark, and their quantiles over
 resamples (\code{age.lo}, \code{age.hi}, \code{duration.lo},
-\code{duration.hi}).
+\code{duration.hi}); attribute \code{"ages"}: the landmark ages
+of all resamples, landmarks x resamples, for intervals between
+any two landmarks.
 }
 \description{
 Resamples the cells with replacement and recomputes the origin
