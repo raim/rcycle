@@ -252,10 +252,17 @@ the same totals projected into the same PCA (`phases$noise`).
   fewer in S. Real cells with weak cycle signal there: a marker of the
   stretch five cohorts do not resolve, and a check for finer cohorts.
 * Not a separate growth state: matched by total counts, noise and
-  cycling cells differ by at most 3% in Ribi, RP, AA, HOC, LOC, except
-  S/C +8% in YPD (cells in the S/C state with a weaker cycle signal? for
-  the YRO paper). Only in CStarve do noise cells differ (Ribi -7%, AA
-  -12%).
+  cycling cells differ by at most 3% in Ribi, RP, AA, HOC, LOC. Only in
+  CStarve do noise cells differ (Ribi -7%, AA -12%).
+* S/C and the cycle signal (`sc_noise.R`, `sc_noise2.R`): half the S/C
+  genes (321 of 640) are in the Cyclebase phase bins, so S/C must be
+  left out of the phase. Then, over the 9 growing Jackson media and
+  Nadal-Ribelles ctrl, cells with high S/C have a weaker cycle
+  amplitude (partial Spearman on log total, median -0.27, all
+  negative), and noise cells have more S/C in 8 of 10 sets (+2 to
+  +14%). RP shows the same weaker (-0.19), Ribi and AA weakly
+  (-0.08, -0.07), mRP not (+0.06); part may be composition (states are
+  shares of the total). Handed to the YRO paper.
 * Idea, not implemented: `noise_excess()`, observed vs reference noise
   cells along the phase, and a depth-corrected non-cycling fraction per
   sample.
