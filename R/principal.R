@@ -21,6 +21,10 @@ fourier <- function(lambda, K) {
 #' onto the curve, with the phase as arc length. The phase
 #' \code{lambda} is then aligned with the current \code{theta} (after
 #' \link{revert} and \link{shift}): same direction, mean offset 0.
+#' Experimental: on yeast single-cell data the curve ordered cells less
+#' reproducibly than the angle (ROADMAP.md); if the cells collapse onto
+#' a few points of the curve, the iteration stops with a warning and
+#' keeps the previous phase.
 #' @inheritParams revert
 #' @param k number of PCs.
 #' @param K order of the Fourier series.
@@ -43,26 +47,43 @@ principal_phase <- function(phases, k=3, K=4, iter=20, tol=1e-3,
     ## start: angle in PC1/PC2 of the original PCA
     lambda <- atan2(Y[,2], Y[,1])
 
+    ## least squares Fourier fit, slightly regularized
+    fitc <- function(l) {
+        X <- fourier(l, K)
+        solve(crossprod(X) + diag(1e-8*nrow(X), ncol(X)), crossprod(X, Y))
+    }
+
     g <- seq(-pi, pi, length.out=ngrid+1)[-1]
+    nn <- NULL
     for ( i in seq_len(iter) ) {
 
         ## fit curve and evaluate on grid
-        cf <- qr.solve(fourier(lambda, K), Y)
-        crv <- fourier(g, K) %*% cf
+        cf1 <- fitc(lambda)
+        crv1 <- fourier(g, K) %*% cf1
 
         ## arc length parametrization of the grid, in -pi:pi
-        seg <- sqrt(rowSums((crv - crv[c(ngrid, 1:(ngrid-1)),])^2))
-        s <- cumsum(seg)
-        s <- 2*pi*s/s[ngrid] - pi
+        seg <- sqrt(rowSums((crv1 - crv1[c(ngrid, 1:(ngrid-1)),])^2))
+        s1 <- cumsum(seg)
+        s1 <- 2*pi*s1/s1[ngrid] - pi
 
-        ## project cells to the nearest grid point
-        nn <- nearest(Y, crv)
+        ## project cells to the nearest grid point; stop if the cells
+        ## collapse onto a few points of the curve
+        nn1 <- nearest(Y, crv1)
+        if ( length(unique(nn1$index)) < 4*(2*K+1) ) {
+            warning("principal curve collapsed at iteration ", i,
+                    ", keeping the previous phase")
+            break
+        }
+        nn <- nn1
+        cf <- cf1
+        s <- s1
         new <- s[nn$index]
 
         dl <- abs(center_phase(new - lambda))
         lambda <- new
         if ( mean(dl) < tol ) break
     }
+    if ( is.null(nn) ) stop("principal curve collapsed at the start")
 
     ## align with the current theta: direction and mean offset
     th <- phases$rotation.phase$theta
@@ -76,7 +97,8 @@ principal_phase <- function(phases, k=3, K=4, iter=20, tol=1e-3,
 
     phases$rotation.phase$lambda <- lambda
     phases$rotation.phase$curve.dist <- nn$dist
-    phases$curve <- list(grid=data.frame(lambda=s, crv), coef=cf,
+    phases$curve <- list(grid=data.frame(lambda=s, fourier(g, K) %*% cf),
+                         coef=cf,
                          k=k, K=K, iter=i, sign=sg, offset=off)
     phases$processing <- c(phases$processing, "principal curve")
     phases

@@ -181,6 +181,46 @@ genes, landmarks from the full Spellman cohorts' peaks along it. Open:
 more bins; where a growth cohort is to be read against the phase,
 leave only that cohort's genes out of the phase, not all of HOC/LOC.
 
+## Angle or principal curve? (tested 2026-10-30)
+
+`curve_vs_angle.R` (session notes): the 9 growing Jackson media and
+Nadal-Ribelles ctrl, phase from all periodic Cyclebase genes in 5, 12
+or 20 peak-time bins, by the PC1/PC2 angle (`get_pseudophase`) or the
+closed principal curve in min(bins-1, 4) PCs (`principal_phase`),
+noise cells removed. Means over the 10 data sets:
+
+| bins | method | order ok | curve collapsed | split-half R | Cyclebase R | G1 CI width / T | S CI width / T |
+|---|---|---|---|---|---|---|---|
+| 5 | angle | 0.9 | - | 0.71 | 0.76 | 0.13 | 0.05 |
+| 12 | angle | 1.0 | - | 0.68 | 0.72 | 0.13 | 0.04 |
+| 20 | angle | 0.9 | - | 0.67 | 0.67 | 0.12 | 0.06 |
+| 5 | curve | 0.8 | 0.4 | 0.49 | 0.72 | 0.11 | 0.10 |
+| 12 | curve | 0.7 | 0.3 | 0.51 | 0.70 | 0.09 | 0.08 |
+| 20 | curve | 0.8 | 0.6 | 0.51 | 0.65 | 0.14 | 0.14 |
+
+Split-half R: agreement of the cell order from two halves of the genes.
+Cyclebase R: circular agreement of the peaks of 20 bins of held-out
+genes along the age (phase from the other half) with their Cyclebase
+peak times, an independent time axis. The angle is better on every
+measure; the curve collapses onto a few points in 30-60% of the runs
+(now caught: `principal_phase` stops and keeps the previous phase),
+and doubles the S intervals. More bins do not help the angle either:
+fewer genes per bin and the plane cannot use the extra structure.
+This is our simple curve (Fourier series on the scaled loadings); a
+curve in cohort-state space, or a smoothing-spline curve, might do
+better, but the evidence does not support a switch.
+
+**Decision: keep `get_pseudophase` (the angle, 5 bins) as the core.**
+Redesign around it rather than replacing it:
+
+* `division_phase` as the front end, with `method=` choosing the
+  ordering ("angle" default; "curve" experimental; later "poisson");
+  ERA, landmarks, CIs, quality and plots stay the same for all;
+* the phase tables apart from the `prcomp` object (README TODO);
+* finer resolution (M to early G1) through count-aware fitting (step 4
+  below), which can use many cohorts or genes without the PCA plane,
+  rather than through more bins in the angle.
+
 ## Benchmark against other tools (planned, 2026-10-30)
 
 Few cell cycle inference tools have been tested on yeast; most were

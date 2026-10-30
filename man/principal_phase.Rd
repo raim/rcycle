@@ -36,4 +36,8 @@ each coordinate against the cell phase, and re-projecting the cells
 onto the curve, with the phase as arc length. The phase
 \code{lambda} is then aligned with the current \code{theta} (after
 \link{revert} and \link{shift}): same direction, mean offset 0.
+Experimental: on yeast single-cell data the curve ordered cells less
+reproducibly than the angle (ROADMAP.md); if the cells collapse onto
+a few points of the curve, the iteration stops with a warning and
+keeps the previous phase.
 }
