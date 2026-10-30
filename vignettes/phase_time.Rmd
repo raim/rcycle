@@ -69,10 +69,10 @@ r$durations
 
 The origin (division) is the moving-average peak of the M/G1 cohort.
 `G1S` is the point of maximal change of the cell angle between the G1
-and the S cohort peaks (`phase_landmarks`, from the inflection
-segmentation of `get_segments`).
+and the S cohort peaks, `SG2` and `G2M` likewise (`phase_landmarks`,
+from the inflection segmentation of `get_segments`).
 
-```{r ypd-states, fig.cap="Left: cohort states (moving average over 5% of the cells) along the ERA age; top axis: cohort peaks and G1S. Right: ERA age against the linear calibration of the rank phase, F*T (grey: identity).", fig.width=7}
+```{r ypd-states, fig.cap="Left: cohort states (moving average over 5% of the cells) along the ERA age; top axis: cohort peaks and points of maximal change. Right: ERA age against the linear calibration of the rank phase, F*T (grey: identity).", fig.width=7}
 st <- marks(J$jackson20_YPD)
 ord <- order(rp$age)
 ma <- t(apply(st[, ord], 1, function(x)
@@ -173,5 +173,39 @@ text(x$T, x$G1.G1S.clean/x$T, x$medium, pos=4, cex=.5, xpd=TRUE)
 sp <- function(y, i=TRUE) round(cor(x$T[i], y[i], method="spearman"), 2)
 c(all=sp(x$G1.G1S.clean/x$T), order.ok=sp(x$G1.G1S.clean/x$T, x$order.ok))
 ```
+
+# S and G2 against doubling time
+
+S lasts from `G1S` to `SG2`, G2 from `SG2` to `G2M`; peak to peak
+intervals (S to G2 peak) are more robust than the points of maximal
+change between S, G2 and M, which jump between media. The width of a
+cohort peak is the full width at half maximum of its moving average
+along age; it includes the per-cell phase uncertainty, so it is an
+upper bound and not the cell-to-cell spread of a phase duration.
+
+```{r phases}
+v <- c(G1="G1.G1S.clean", S="S.clean", G2="G2.clean",
+       "S-G2 peaks"="SG2pk.clean", "S width"="wS.clean",
+       "G2 width"="wG2.clean")
+round(sapply(v, function(i) c(
+    hours=cor(x$T, x[[i]], method="spearman"),
+    share=cor(x$T, x[[i]]/x$T, method="spearman"),
+    min=min(x[[i]]/x$T), max=max(x[[i]]/x$T))), 2)
+```
+
+```{r phases-plot, fig.cap="Left: S (G1S to SG2, filled) and the S peak width (open) in hours; right: as share of the doubling time. Red: cohort order wrong.", fig.width=7}
+col <- ifelse(x$order.ok, 1, 2)
+par(mfcol=c(1,2), mai=c(.5,.5,.1,.1), mgp=c(1.3,.3,0), tcl=-.25)
+plot(x$T, x$S.clean, pch=19, col=col, ylim=c(0, .5),
+     xlab="doubling time, h", ylab="S, h")
+points(x$T, x$wS.clean, col=col)
+plot(x$T, x$S.clean/x$T, pch=19, col=col, ylim=c(0, .3),
+     xlab="doubling time, h", ylab="S / T")
+points(x$T, x$wS.clean/x$T, col=col)
+```
+
+S takes about the same time in all media, so its share of the cycle,
+and the width of the histone peak relative to T, fall in slower media;
+G1 and the S-to-G2 peak interval scale with T.
 
 # References

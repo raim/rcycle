@@ -22,12 +22,27 @@ if ( length(args) ) infile <- args[1]
 load(infile)
 
 ## cohorts for the phase; landmark cohorts in cycle order, named as
-## cdc_*, and the G1/S point of maximal change between the G1 and S peaks
+## cdc_*, and the points of maximal change between neighbouring peaks
+## (G1/S, S/G2, G2/M)
 if ( !exists("phase.cohorts") ) phase.cohorts <- paste0("cdc_bins_", 1:5)
 if ( !exists("mark.cohorts") )
     mark.cohorts <- paste0("sp_", c("M/G1", "G1", "S", "G2", "M"))
 cdc <- c("cdc_M/G1", "cdc_G1", "cdc_S", "cdc_G2", "cdc_M")
-between <- list(G1S=c("cdc_G1", "cdc_S"))
+between <- list(G1S=c("cdc_G1", "cdc_S"), SG2=c("cdc_S", "cdc_G2"),
+                G2M=c("cdc_G2", "cdc_M"))
+
+## width (full width at half maximum, units of age) of a cohort's
+## moving average over w of the cells along age
+peak_width <- function(age, y, w=.05) {
+    o <- order(age)
+    a <- age[o]
+    n <- round(w*length(y))
+    ma <- stats::filter(y[o], rep(1, n)/n, circular=TRUE)
+    ma <- (ma - min(ma))/(max(ma) - min(ma))
+    ## age step to each next cell, the last wraps to the first
+    da <- diff(c(a, a[1] + max(a)*length(a)/(length(a) - .5)))
+    sum(da[ma >= .5])
+}
 
 ## landmark cohort states, named as cdc
 marks <- function(x) {
@@ -76,6 +91,8 @@ one_medium <- function(x, B=20, boot=0) {
     Pc <- phase_time(Pc, T=P$era$T, origin="cdc_M/G1", states=mk[, ok])
     durc <- phase_durations(Pc, phase_landmarks(Pc, mk[, ok],
                                                  between=between))
+    width <- sapply(cdc, function(k)
+        peak_width(Pc$rotation.phase$age, mk[k, ok]))
 
     ## daughters by their daughter-specific gene counts
     dcnt <- round(x$states["daughter",]*length(x$cohorts$daughter)*x$total)
@@ -91,7 +108,7 @@ one_medium <- function(x, B=20, boot=0) {
 
     list(T=T, mu=x$mu, n=ncol(st), P=P, landmarks=lm, durations=dur,
          order.ok=order.ok,
-         durations.clean=durc, daughter=sp, groups=gd,
+         durations.clean=durc, width.clean=width, daughter=sp, groups=gd,
          noise=mean(P$rotation.phase$noise))
 }
 
@@ -105,6 +122,7 @@ for ( m in names(J) ) {
 
 ## summary table per medium
 age_at <- function(d, l) d$age[d$landmark==l]
+dt <- function(d, a, b) age_at(d, b) - age_at(d, a)
 tab <- do.call(rbind, lapply(names(R), function(m) {
     r <- R[[m]]
     data.frame(medium=m, mu=r$mu, T=r$T, cells=r$n, noise=r$noise,
@@ -113,12 +131,20 @@ tab <- do.call(rbind, lapply(names(R), function(m) {
                G1.G1S=age_at(r$durations, "G1S"),
                G1.S.clean=age_at(r$durations.clean, "cdc_S"),
                G1.G1S.clean=age_at(r$durations.clean, "G1S"),
+               ## phases between points of maximal change, and from
+               ## peak to peak, without noise cells
+               S.clean=dt(r$durations.clean, "G1S", "SG2"),
+               G2.clean=dt(r$durations.clean, "SG2", "G2M"),
+               SG2pk.clean=dt(r$durations.clean, "cdc_S", "cdc_G2"),
+               G2Mpk.clean=dt(r$durations.clean, "cdc_G2", "cdc_M"),
+               wS.clean=unname(r$width.clean["cdc_S"]),
+               wG2.clean=unname(r$width.clean["cdc_G2"]),
                daughters=mean(r$daughter$high),
                G1d=r$groups$G1S$duration[1], G1m=r$groups$G1S$duration[2],
                G1d.S=r$groups$S$duration[1], G1m.S=r$groups$S$duration[2])
 }))
 ## durations in units of T where T is unknown (no growth)
-tab[is.na(tab$T), grep("^G1", colnames(tab))] <- NA
+tab[is.na(tab$T), grep("^G|^S|^w", colnames(tab))] <- NA
 if ( !exists("outfile") ) outfile <- "jackson20_phasetime.rda"
 save(R, tab, file=outfile)
 print(tab, digits=2)

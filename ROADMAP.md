@@ -112,6 +112,17 @@ the full Spellman cohorts (`sp_*`); see the next section for why.
   proportion to T. (With the pipeline's YRO-filtered `cdc_*` cohorts
   the share rose with T, Spearman +0.78, carried by the media in wrong
   cohort order, whose G1 included M; +0.43 for the 6 in order.)
+* S takes about the same time in all media (G1S to SG2, 0.2-0.4 h;
+  Spearman with T +0.27 in hours, -0.49 as share of T, -0.83 for the 8
+  media in order), so it is a smaller share of the cycle in slower
+  media. The histone (S) peak is 0.17-0.29 h wide at half maximum, a
+  share of T that falls with T (-0.87); the G2 peak likewise (-0.58).
+  Widths include the per-cell phase uncertainty: upper bounds, not the
+  cell-to-cell spread of S. G2 between points of maximal change jumps
+  between media (0.00-0.37 of T); the S-to-G2 peak interval is steadier,
+  0.11-0.21 of T, and scales with T (share vs T +0.24, -0.08 in order).
+  9 media, one snapshot each; Proline's G1 and S peaks coincide
+  without noise cells.
 * Noise cells (amplitude not above Poisson cells of the same totals,
   B = 20): 3-21% in growing media, 42% in YPDDiauxic, 85% in CStarve.
 * Per-cell uncertainty from gene resampling (YPD): median 0.19 of the
