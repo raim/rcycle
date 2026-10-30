@@ -125,6 +125,26 @@ test_that("group_durations recovers daughter and mother G1 durations", {
     expect_equal(gd$duration[1:2], unname(expd), tolerance=.05)
 })
 
+test_that("ERA age at G1 exit is a weighted mean over mothers and daughters", {
+    ## asymmetric division: the ERA age of a landmark is
+    ## -log(E[exp(-r*tau)])/r over the arrival times tau of all newborn
+    ## cells (half mothers, half daughters), below their arithmetic mean
+    set.seed(15)
+    g1 <- c(d=.6, m=.2)
+    cv <- .1
+    tend <- 9
+    all <- sim_yeast(g1=g1, cv=cv, tend=tend)
+    alive <- function(t) all$birth <= t & all$div > t
+    cells <- all[alive(tend),]
+    r <- log(sum(alive(tend))/sum(alive(tend-2)))/2
+    Td <- log(2)/r
+    F <- mean(tend - cells$birth < cells$g1)
+    x <- exp(rnorm(1e5, -cv^2/2, cv))
+    expd <- -log(mean(exp(-r*c(g1["d"]*x, g1["m"]*x))))/r
+    expect_equal(era_age(F, Td), unname(expd), tolerance=.05)
+    expect_lt(era_age(F, Td), mean(g1))
+})
+
 test_that("split_counts separates two Poisson rates", {
     set.seed(3)
     tot <- round(runif(4000, 1000, 5000))

@@ -131,6 +131,36 @@ $$
 $$
 which is $a(F)$ for $s = 1$.
 
+## Asymmetric division
+
+Budding yeast divides asymmetrically: the daughter is smaller and stays
+longer in G1. ERA still holds for the whole population, since both
+cells of a division start at the origin, so the inflow is
+$2\alpha N$, and every cell passes every point of the path once; the
+size of the cells does not enter, only their order. The doubling time
+is that of the population, whatever the mother and daughter cycle
+times. With cells that reach a point $\ell$ at different times $\tau$
+(daughters later than mothers), the number of cells before $\ell$ is
+$N F = 2\alpha N \int_0^\infty e^{-\alpha t}\,P(\tau > t)\,dt
+= 2N(1 - \mathrm{E}[e^{-\alpha\tau}])$, so the ERA age is
+$$
+a(\ell) = -\frac{1}{\alpha}\ln \mathrm{E}\left[e^{-\alpha\tau(\ell)}\right]\,,
+$$
+an exponentially weighted mean of the arrival times over all newborn
+cells, slightly below their arithmetic mean (Jensen): for G1 of
+$0.1\,T$ in mothers and $0.4\,T$ in daughters it is $0.242\,T$ instead of
+$0.25\,T$. A phase that takes the same time $\Delta$ in all cells after
+a variable start is recovered exactly, since
+$\mathrm{E}[e^{-\alpha(\tau + \Delta)}] = e^{-\alpha\Delta}\,
+\mathrm{E}[e^{-\alpha\tau}]$: S and later phases are not biased by the
+longer daughter G1. Mother and daughter G1 apart need a call of the
+cells (`group_durations`), which our daughter cohort does not give (it
+marks M/G1). Noise cells (fewer counts) could be enriched among small
+daughters in early G1; in the Jackson and Nadal-Ribelles data they
+are only slightly enriched in G1 (median 1.1-fold), peak in G2/M, and
+removing them shifts G1 by -0.03 to +0.02 of T without a consistent
+sign.
+
 ## Landmarks
 
 A cohort peak is the maximum of the moving average of the cohort state

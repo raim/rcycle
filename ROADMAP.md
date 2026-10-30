@@ -45,8 +45,19 @@ which is the age formula for `s = 1`.
 Assumptions: steady state (balanced, asynchronous exponential growth),
 a single path that every cell follows in the same direction, and
 division as the origin. Budding yeast divides asymmetrically: mothers
-and daughters both restart in G1, daughters stay longer; the age above
-is then the population mean, and the group formula splits it.
+and daughters both restart in G1, daughters stay longer. ERA holds for
+the whole population (inflow 2aN, every cell passes every point once;
+cell size does not enter), with T the population doubling time. With
+arrival times tau that differ between cells, the ERA age of a point is
+-log(E[exp(-a*tau)])/a, an exponentially weighted mean over all newborn
+cells, slightly below the arithmetic mean (mothers 0.1 T, daughters
+0.4 T: 0.242 T instead of 0.25 T; tested on the agent-based
+simulation). A phase of the same duration in all cells after a
+variable start (S after G1) is recovered exactly. Mother and daughter
+G1 apart need a daughter call (`group_durations`). Noise cells are only
+slightly enriched in G1 (median 1.1-fold, Jackson and Nadal-Ribelles),
+peak in G2/M, and removing them shifts G1 by -0.03 to +0.02 of T,
+without a consistent sign (`noise_age.R` in the session notes).
 
 Pilot (2026-10-30, stored `cdc_phi`, origin at the M/G1 cohort peak,
 G1 ends at the S cohort peak): the ERA G1 share rises with doubling
