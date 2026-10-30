@@ -227,6 +227,28 @@ Division point (the long M to M/G1 interval):
    uncertainty per cell; more cohorts resolve short phases without the
    PCA plane.
 
+First tests of 1 and 2 (2026-10-30, Jackson YPD and Nadal-Ribelles
+ctrl; script `division.R` in the session notes, not in the package):
+
+* Cyclebase genes in 20 peak-time bins: their peak ages along our ERA
+  age follow the Cyclebase peak times (from synchronized cultures)
+  with slope 1.03 (YPD) and 1.00 (Nadal-Ribelles), up to the wrap at
+  the last bin; Spearman 0.99 in Nadal-Ribelles. So the ERA age agrees
+  with an independent time axis, and the long interval after the G2/M
+  point is real: Cyclebase also places 35-40% of the cycle after the
+  CLB2 wave (peak times 60-100%).
+* Marker waves along age, YPD: ECB (Mcm1) 0.04 and Ace2/Swi5 0.06
+  of T, right after the M/G1 origin; SBF/MBF 0.18, histones 0.24, CLB2
+  0.55. Nadal-Ribelles alike, except a flat ECB cohort. The M/G1 peak
+  is a good proxy for division.
+* Size clock: mean log total does not halve at any point (range about
+  0.2 in ln, not ln 2); it is highest right after the origin, falls
+  through G1 to a minimum in S, then rises. Its steepest drop lies
+  0.06 (YPD) to 0.17 (Nadal-Ribelles) of T after the M/G1 peak; if
+  mother-bud pairs are captured as one cell until separation, that is
+  where cells separate. Too weak and noisy to set the origin; total
+  counts mix size with capture.
+
 Tools for the paper:
 
 5. A package function for the whole chain (states, phase from Cyclebase
